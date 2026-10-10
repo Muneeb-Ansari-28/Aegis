@@ -1,0 +1,7 @@
+# Electron Builder Configuration (Later Phase)
+appId: com.aegis.redteam
+productName: Aegis
+directories:
+  output: release
+win:
+  target: nsis

@@ -1,0 +1,1 @@
+﻿{"strategies":["safe_wording_rephrase","neutral_documentation_context"],"excluded":["role_impersonation","instruction_override","encoding_or_obfuscation","jailbreak"]}

@@ -1,0 +1,6 @@
+{
+  "id": "LLM09:2025",
+  "name": "Misinformation",
+  "severity_base": 6.0,
+  "description": "Fabricated or misleading content produced by the model."
+}

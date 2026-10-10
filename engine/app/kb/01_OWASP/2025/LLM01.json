@@ -1,0 +1,11 @@
+﻿{
+  "id": "LLM01:2025",
+  "name": "Prompt Injection",
+  "description": "Untrusted content causes an LLM-powered application to follow instructions that conflict with the trusted task or application intent.",
+  "version": "2025",
+  "attack_surface": ["user_input", "external_content", "retrieved_content"],
+  "attack_types": ["direct", "indirect"],
+  "testable_by_aegis": true,
+  "severity_base": 9.0,
+  "scope_status": "Not part of the current eight-week LLM07 delivery; retained as taxonomy data for future assessment."
+}

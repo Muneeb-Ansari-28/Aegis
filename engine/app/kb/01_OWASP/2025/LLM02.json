@@ -1,0 +1,6 @@
+{
+  "id": "LLM02:2025",
+  "name": "Sensitive Information Disclosure",
+  "severity_base": 8.0,
+  "description": "Unauthorized exposure of sensitive or proprietary data."
+}

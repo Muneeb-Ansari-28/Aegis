@@ -1,0 +1,6 @@
+{
+  "id": "LLM05:2025",
+  "name": "Improper Output Handling",
+  "severity_base": 7.0,
+  "description": "Insufficient validation and sanitization of LLM outputs."
+}

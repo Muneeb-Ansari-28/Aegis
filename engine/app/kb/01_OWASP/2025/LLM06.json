@@ -1,0 +1,6 @@
+{
+  "id": "LLM06:2025",
+  "name": "Excessive Agency",
+  "severity_base": 8.5,
+  "description": "LLM systems granted damaging autonomy or unchecked tool actions."
+}

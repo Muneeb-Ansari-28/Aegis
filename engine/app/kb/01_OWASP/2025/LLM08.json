@@ -1,0 +1,6 @@
+{
+  "id": "LLM08:2025",
+  "name": "Vector and Embedding Weaknesses",
+  "severity_base": 6.5,
+  "description": "Exploitation of embeddings, RAG retrievers, or similarity search."
+}
