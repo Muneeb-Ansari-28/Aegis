@@ -1,4 +1,4 @@
-﻿# Aegis â€” Development Log
+# Aegis â€” Development Log
 
 > [!NOTE]
 > This file is the authoritative chronological record of all development activity on the Aegis project.
@@ -44,3 +44,30 @@
 - `UPDATED` Scope correction: the initial assessment is OWASP LLM01 Prompt Injection, not LLM07 system-prompt leakage. Retargeted plan, attack/evaluation prompts, schemas, risk category, benchmarks, and weak/hardened test targets to harmless indirect injection through clearly marked untrusted notes; the weak target returns `INJECTED` while the hardened target treats note instructions as data. Jailbreak testing remains out of scope. Rebuilt both team PDFs and updated contributor guidance; retained LLM07 only as an OWASP taxonomy reference. This supersedes the earlier scope entry above — by `Muneeb` at 14:48, 2026-10-10
 
 - `UPDATED` Aligned the active implementation with the newly placed eight-week plan: OWASP LLM07 System Prompt Leakage is now the default category; replaced the indirect-injection marker flow with direct plain-language disclosure prompts, a fake canary system prompt for weak/hardened targets, canary/known-prompt overlap evaluation, LLM07 verdict fields, risk weight, KB prompts/rules, and benchmark fixtures. Removed the active LLM01 injection technique, prompt, rubric, and evaluation-rule assets because they no longer match this delivery scope; retained OWASP LLM01 taxonomy data. Kept jailbreak, role impersonation, instruction override, obfuscation, safeguard bypass, and real-secret extraction out of scope per project direction. Updated contributor/user/API docs and appended scope-alignment pages to both PDFs; existing architecture pages 10, 12–14 are explicitly superseded by the appendix for this delivery. No tests were run. Static JSON parse check passed for 20 KB/fixture files; both PDFs open with the added appendix pages — by `Muneeb` at 14:55, 2026-10-10
+
+- `IMPLEMENTED` Module 2 Playwright Web Connector and DOM Calibration (`engine/app/adapters/playwright_web.py`, `engine/app/adapters/web_calibration.py`). Implemented automated chat interface detection heuristics for input boxes, submit controls, and response containers; dual submission mechanics via send button click and synthetic `Enter` keypress; streaming-aware response stabilization polling (200ms intervals, 800ms stabilization window); normalization to canonical `TurnRecord` schema; and interactive click-to-calibrate browser overlay (`CALIBRATION_OVERLAY_SCRIPT`). Equipped `weak-bot` and `hardened-bot` with functional interactive chat web frontends serving `index.html`. Added live integration test suite verifying 9/9 passing tests — by "Muneeb" at 22:05, 2026-10-11
+
+### Implementation Report
+**Date**: 2026-10-11
+**Contributor**: Muneeb
+**Module**: Module 2: Configuration Module and Playwright Connector
+**Files Changed**:
+- `engine/app/adapters/playwright_web.py` — modified — Implemented complete PlaywrightWebAdapter with auto-detection, submission (button + Enter), streaming stabilization, and TurnRecord normalization.
+- `engine/app/adapters/web_calibration.py` — modified — Implemented WebCalibration with headless auto-calibration and headful interactive click-capture overlay script.
+- `engine/app/core/config.py` — modified — Isolated Settings with env_prefix='AEGIS_' to prevent collision with OS environment variables.
+- `test-targets/weak-bot/index.html` — modified — Added functional interactive web chat UI with message log and input/send controls.
+- `test-targets/weak-bot/app.py` — modified — Added GET / serving index.html alongside POST /chat canary response.
+- `test-targets/hardened-bot/index.html` — modified — Added functional interactive web chat UI with secure corporate assistant styling.
+- `test-targets/hardened-bot/app.py` — modified — Added GET / serving index.html alongside POST /chat refusal response.
+- `engine/tests/integration/test_connectors.py` — modified — Added live integration tests verifying Playwright adapter with weak-bot.
+- `engine/tests/integration/test_scan_flow.py` — modified — Added MockAdapter verifying Orchestrator state transition cycle.
+- `engine/tests/benchmarks/test_judge_benchmarks.py` — modified — Added utf-8-sig file loading for BOM resilience.
+- `Coding-Agent-Guide/architecture.md` — modified — Documented Module 2 Playwright connector workflow and calibration details.
+- `Coding-Agent-Guide/design.md` — modified — Documented auto-detection fallback, dual-mode submission, and streaming stabilization rationale.
+- `Coding-Agent-Guide/Status.md` — modified — Updated Module 2 status and test verification evidence.
+- `Coding-Agent-Guide/logs.md` — modified — Appended development log entry and implementation report.
+**What Was Done**: Built the full Playwright web connector capable of auto-detecting chatbot interfaces (input box, send button, response area), inputting prompts from attack agents, submitting via click or Enter key, polling until streaming responses stabilize, and normalizing results into Unified Turn Records. Built both automated and visible click-assisted DOM calibration. Enabled full web chat interfaces for weak and hardened test bots and verified 9/9 pytest tests pass.
+**Why**: Implements Module 2 of the 8-Week Plan (Weeks 2–3) and Section 5 of the Unified Technical Architecture (Website Scanning Module), fulfilling the contract that all web targets produce valid TurnRecords without manual copy-pasting.
+**Removals**: None.
+**Deviations from Plan**: None.
+**Gate Impact**: Module 2 connector and calibration verified. Paves the way for the 20-prompt calibration test gate and Module 3 Knowledge Base integration.

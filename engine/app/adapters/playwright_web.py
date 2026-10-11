@@ -1,42 +1,439 @@
-﻿"""Playwright Web Connector for Web Chatbots."""
+"""Playwright Web Connector for Web Chatbots."""
+import asyncio
+import logging
 import time
 import uuid
-from typing import Optional
+from typing import Optional, Dict, Any, Union, List
+
+from playwright.async_api import (
+    async_playwright,
+    Playwright,
+    Browser,
+    BrowserContext,
+    Page,
+    TimeoutError as PlaywrightTimeoutError,
+)
+
 from app.adapters.base import BaseAdapter
 from app.schemas.turn_record import TurnRecord
-from app.core.errors import ConnectorTimeout
+from app.schemas.target import TargetCalibrationConfig
+from app.core.config import get_settings
+from app.core.errors import ConnectorTimeout, TargetCalibrationError
+
+logger = logging.getLogger(__name__)
+
+CANDIDATE_INPUT_SELECTORS: List[str] = [
+    "#chat-input",
+    "textarea#chat-input",
+    "input#chat-input",
+    "textarea[placeholder*='message' i]",
+    "textarea[placeholder*='chat' i]",
+    "textarea[placeholder*='ask' i]",
+    "textarea[placeholder*='prompt' i]",
+    "textarea[placeholder*='type' i]",
+    "textarea[aria-label*='chat' i]",
+    "textarea[aria-label*='message' i]",
+    "textarea[name='message']",
+    "textarea[name='prompt']",
+    "textarea",
+    "[contenteditable='true'][role='textbox']",
+    "[contenteditable='true']",
+    "input[type='text'][placeholder*='message' i]",
+    "input[type='text'][placeholder*='chat' i]",
+    "input[type='text'][placeholder*='ask' i]",
+    "input[type='text'][aria-label*='chat' i]",
+    "input[type='text'][aria-label*='message' i]",
+    "input[type='text']",
+]
+
+CANDIDATE_SUBMIT_SELECTORS: List[str] = [
+    "button#send",
+    "#send",
+    "button[type='submit']",
+    "button[aria-label*='send' i]",
+    "button[title*='send' i]",
+    "button:has-text('Send')",
+    "button:has-text('Submit')",
+    "button:has(svg)",
+    "input[type='submit']",
+]
+
+CANDIDATE_RESPONSE_SELECTORS: List[str] = [
+    ".chat-message.assistant:last-child",
+    "[data-message-author-role='assistant']:last-child",
+    ".assistant-message:last-child",
+    ".bot-message:last-child",
+    ".chat-message:last-child",
+    "#chat-box > .chat-message.assistant:last-child",
+    "#chat-box > *:last-child",
+    "[role='log'] > *:last-child",
+    ".prose:last-child",
+    "#chat-box",
+]
+
 
 class PlaywrightWebAdapter(BaseAdapter):
-    def __init__(self, target_url: str, selectors: Optional[dict] = None):
+    """
+    Playwright Web Connector.
+    Navigates to target web chatbots, performs DOM interface auto-detection or consumes
+    calibrated selectors, enters prompts, triggers submission (click or Enter), and polls
+    until the streaming assistant response stabilizes. Produces a Unified Turn Record.
+    """
+
+    def __init__(
+        self,
+        target_url: str,
+        selectors: Optional[Union[dict, TargetCalibrationConfig]] = None,
+        headless: Optional[bool] = None,
+        browser_timeout_ms: Optional[int] = None,
+        settle_timeout_ms: int = 800,
+        profile_dir: Optional[str] = None,
+    ):
         self.target_url = target_url
-        self.selectors = selectors or {}
-        self.browser = None
-        self.page = None
+        if isinstance(selectors, TargetCalibrationConfig):
+            self.selectors: Dict[str, Any] = selectors.model_dump()
+        elif isinstance(selectors, dict):
+            self.selectors = dict(selectors)
+        else:
+            self.selectors = {}
+
+        settings = get_settings()
+        self.headless: bool = settings.PLAYWRIGHT_HEADLESS if headless is None else headless
+        self.browser_timeout_ms: int = (
+            settings.BROWSER_TIMEOUT_MS if browser_timeout_ms is None else browser_timeout_ms
+        )
+        self.settle_timeout_ms: int = settle_timeout_ms
+        self.profile_dir: Optional[str] = profile_dir
+
+        self._playwright: Optional[Playwright] = None
+        self._browser: Optional[Browser] = None
+        self._context: Optional[BrowserContext] = None
+        self.page: Optional[Page] = None
 
     async def open(self) -> None:
-        """Launch browser and navigate to target URL."""
-        # Stub for playwright browser launch
-        pass
+        """Launch browser, establish context and navigate to the target page."""
+        if self.page is not None:
+            return
 
-    async def send_prompt(self, prompt: str, attempt: int) -> TurnRecord:
-        """Simulate typing prompt, submitting, and capturing response."""
+        logger.info(f"Launching Playwright (headless={self.headless}) for target {self.target_url}")
+        self._playwright = await async_playwright().start()
+
+        if self.profile_dir:
+            logger.info(f"Using persistent profile directory: {self.profile_dir}")
+            self._context = await self._playwright.chromium.launch_persistent_context(
+                user_data_dir=self.profile_dir,
+                headless=self.headless,
+                timeout=self.browser_timeout_ms,
+            )
+            self.page = self._context.pages[0] if self._context.pages else await self._context.new_page()
+        else:
+            self._browser = await self._playwright.chromium.launch(
+                headless=self.headless,
+                timeout=self.browser_timeout_ms,
+            )
+            self._context = await self._browser.new_context(
+                viewport={"width": 1280, "height": 800},
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Aegis/0.1.0",
+            )
+            self.page = await self._context.new_page()
+
+        try:
+            await self.page.goto(self.target_url, wait_until="domcontentloaded", timeout=self.browser_timeout_ms)
+        except Exception as e:
+            logger.error(f"Failed to navigate to target {self.target_url}: {e}")
+            await self.close()
+            raise TargetCalibrationError(f"Could not open target URL {self.target_url}: {e}")
+
+        # If required selectors are not provided, run automatic chat detection
+        if not self.selectors.get("input_selector") or not self.selectors.get("response_selector"):
+            detected = await self.detect_chat_interface()
+            self.selectors.update({k: v for k, v in detected.items() if v and not self.selectors.get(k)})
+
+    async def detect_chat_interface(self) -> Dict[str, Optional[str]]:
+        """
+        Heuristic scanner that identifies chat input, submit button, and response area on the page.
+        """
+        if not self.page:
+            raise TargetCalibrationError("Browser page is not initialized.")
+
+        detected: Dict[str, Optional[str]] = {
+            "input_selector": None,
+            "submit_selector": None,
+            "response_selector": None,
+        }
+
+        # 1. Detect Chat Input
+        for selector in CANDIDATE_INPUT_SELECTORS:
+            try:
+                locator = self.page.locator(selector).first
+                if await locator.count() > 0 and await locator.is_visible():
+                    detected["input_selector"] = selector
+                    logger.info(f"Auto-detected chat input: {selector}")
+                    break
+            except Exception:
+                continue
+
+        # 2. Detect Submit Control
+        for selector in CANDIDATE_SUBMIT_SELECTORS:
+            try:
+                locator = self.page.locator(selector).first
+                if await locator.count() > 0 and await locator.is_visible():
+                    detected["submit_selector"] = selector
+                    logger.info(f"Auto-detected submit button: {selector}")
+                    break
+            except Exception:
+                continue
+
+        # 3. Detect Response Element
+        for selector in CANDIDATE_RESPONSE_SELECTORS:
+            try:
+                locator = self.page.locator(selector).first
+                if await locator.count() > 0:
+                    detected["response_selector"] = selector
+                    logger.info(f"Auto-detected response container: {selector}")
+                    break
+            except Exception:
+                continue
+
+        if not detected["response_selector"]:
+            # Fallback for dynamic containers
+            detected["response_selector"] = "#chat-box > *:last-child"
+
+        return detected
+
+    async def _wait_for_stable_response(
+        self,
+        response_selector: str,
+        initial_text: str,
+        max_timeout_ms: int,
+    ) -> str:
+        """
+        Polls response element until text stops changing (streaming completed).
+        """
+        assert self.page is not None
         start_time = time.time()
-        # Simulated response for initial skeleton
-        return TurnRecord(
-            turn_id=str(uuid.uuid4()),
-            scan_id="scan-mock",
-            turn_index=attempt,
-            prompt=prompt,
-            response="I refuse to provide hidden system instructions or internal test strings.",
-            status="success",
-            latency_ms=int((time.time() - start_time) * 1000),
-        )
+        timeout_sec = max_timeout_ms / 1000.0
+        stability_interval = 0.2
+        required_stable_checks = max(1, int((self.settle_timeout_ms / 1000.0) / stability_interval))
+
+        current_stable_checks = 0
+        last_seen_text = initial_text
+
+        while (time.time() - start_time) < timeout_sec:
+            await asyncio.sleep(stability_interval)
+            try:
+                locator = self.page.locator(response_selector).last
+                if await locator.count() == 0:
+                    continue
+
+                text = (await locator.inner_text()).strip()
+
+                # If text is empty or unchanged from pre-prompt state, keep waiting
+                if not text or text == initial_text:
+                    continue
+
+                if text == last_seen_text:
+                    current_stable_checks += 1
+                    if current_stable_checks >= required_stable_checks:
+                        return text
+                else:
+                    last_seen_text = text
+                    current_stable_checks = 0
+
+            except Exception:
+                continue
+
+        if last_seen_text and last_seen_text != initial_text:
+            return last_seen_text
+
+        raise ConnectorTimeout(f"Timed out after {max_timeout_ms}ms waiting for response to stabilize at {response_selector}")
+
+    async def send_prompt(
+        self,
+        prompt: str,
+        attempt: int,
+        scan_id: str = "scan-default",
+        strategy: Optional[str] = None,
+    ) -> TurnRecord:
+        """
+        Inserts prompt into input box, submits via button or Enter key, captures settled response,
+        and returns a normalized Unified Turn Record.
+        """
+        if not self.page:
+            await self.open()
+
+        assert self.page is not None
+        start_time = time.time()
+        turn_id = str(uuid.uuid4())
+
+        input_sel = self.selectors.get("input_selector")
+        submit_sel = self.selectors.get("submit_selector")
+        resp_sel = self.selectors.get("response_selector") or "#chat-box > *:last-child"
+
+        if not input_sel:
+            detected = await self.detect_chat_interface()
+            input_sel = detected.get("input_selector")
+            if not input_sel:
+                return TurnRecord(
+                    turn_id=turn_id,
+                    scan_id=scan_id,
+                    turn_index=attempt,
+                    prompt=prompt,
+                    response="[CONNECTOR_ERROR] No chat input element found on the target page.",
+                    status="error",
+                    latency_ms=0,
+                    strategy=strategy,
+                    metadata={"error": "Missing input_selector", "target_url": self.target_url},
+                )
+            self.selectors["input_selector"] = input_sel
+            if not submit_sel:
+                submit_sel = detected.get("submit_selector")
+                self.selectors["submit_selector"] = submit_sel
+
+        # Snapshot baseline text before submission
+        baseline_text = ""
+        try:
+            resp_locator = self.page.locator(resp_sel).last
+            if await resp_locator.count() > 0:
+                baseline_text = (await resp_locator.inner_text()).strip()
+        except Exception:
+            baseline_text = ""
+
+        # Locate input element, clear and enter prompt
+        try:
+            input_locator = self.page.locator(input_sel).first
+            await input_locator.wait_for(state="visible", timeout=self.browser_timeout_ms)
+            await input_locator.click()
+            await input_locator.fill(prompt)
+        except Exception as e:
+            latency_ms = int((time.time() - start_time) * 1000)
+            logger.error(f"Failed to enter prompt into {input_sel}: {e}")
+            return TurnRecord(
+                turn_id=turn_id,
+                scan_id=scan_id,
+                turn_index=attempt,
+                prompt=prompt,
+                response=f"[CONNECTOR_ERROR] Failed to type prompt: {e}",
+                status="error",
+                latency_ms=latency_ms,
+                strategy=strategy,
+                metadata={"error": str(e), "target_url": self.target_url},
+            )
+
+        # Submit via button click or Enter key
+        try:
+            submitted = False
+            if submit_sel:
+                submit_locator = self.page.locator(submit_sel).first
+                if await submit_locator.count() > 0 and await submit_locator.is_visible():
+                    await submit_locator.click()
+                    submitted = True
+
+            if not submitted:
+                # Default to pressing Enter key
+                await input_locator.press("Enter")
+        except Exception as e:
+            latency_ms = int((time.time() - start_time) * 1000)
+            logger.error(f"Failed to submit prompt: {e}")
+            return TurnRecord(
+                turn_id=turn_id,
+                scan_id=scan_id,
+                turn_index=attempt,
+                prompt=prompt,
+                response=f"[CONNECTOR_ERROR] Failed to submit prompt: {e}",
+                status="error",
+                latency_ms=latency_ms,
+                strategy=strategy,
+                metadata={"error": str(e), "target_url": self.target_url},
+            )
+
+        # Wait for and capture streaming/stabilized assistant response
+        timeout_ms = self.selectors.get("wait_timeout_ms", 15000)
+        try:
+            captured_text = await self._wait_for_stable_response(
+                response_selector=resp_sel,
+                initial_text=baseline_text,
+                max_timeout_ms=timeout_ms,
+            )
+            latency_ms = int((time.time() - start_time) * 1000)
+            return TurnRecord(
+                turn_id=turn_id,
+                scan_id=scan_id,
+                turn_index=attempt,
+                prompt=prompt,
+                response=captured_text,
+                status="success",
+                latency_ms=latency_ms,
+                strategy=strategy,
+                metadata={
+                    "target_url": self.target_url,
+                    "input_selector": input_sel,
+                    "submit_selector": submit_sel,
+                    "response_selector": resp_sel,
+                },
+            )
+        except ConnectorTimeout as e:
+            latency_ms = int((time.time() - start_time) * 1000)
+            logger.warning(f"Response timeout for prompt attempt {attempt}: {e}")
+            return TurnRecord(
+                turn_id=turn_id,
+                scan_id=scan_id,
+                turn_index=attempt,
+                prompt=prompt,
+                response="[CONNECTOR_TIMEOUT] Target did not produce a stable response within timeout limit.",
+                status="timeout",
+                latency_ms=latency_ms,
+                strategy=strategy,
+                metadata={"error": str(e), "target_url": self.target_url},
+            )
+        except Exception as e:
+            latency_ms = int((time.time() - start_time) * 1000)
+            logger.error(f"Unexpected error capturing response: {e}")
+            return TurnRecord(
+                turn_id=turn_id,
+                scan_id=scan_id,
+                turn_index=attempt,
+                prompt=prompt,
+                response=f"[CONNECTOR_ERROR] Failed capturing response: {e}",
+                status="error",
+                latency_ms=latency_ms,
+                strategy=strategy,
+                metadata={"error": str(e), "target_url": self.target_url},
+            )
 
     async def reset_session(self) -> None:
-        """Reload page or click reset button."""
-        pass
+        """Reload page or re-initialize chat session."""
+        if self.page:
+            logger.info("Reloading target page to reset session state.")
+            await self.page.reload(wait_until="domcontentloaded")
 
     async def close(self) -> None:
-        """Close browser context."""
-        pass
+        """Clean up page, browser context, and Playwright driver."""
+        if self.page:
+            try:
+                await self.page.close()
+            except Exception:
+                pass
+            self.page = None
 
+        if self._context:
+            try:
+                await self._context.close()
+            except Exception:
+                pass
+            self._context = None
+
+        if self._browser:
+            try:
+                await self._browser.close()
+            except Exception:
+                pass
+            self._browser = None
+
+        if self._playwright:
+            try:
+                await self._playwright.stop()
+            except Exception:
+                pass
+            self._playwright = None
+        logger.info("Playwright session terminated.")

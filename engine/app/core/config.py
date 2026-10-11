@@ -1,12 +1,18 @@
 """Aegis Engine Configuration Settings."""
-import os
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix="AEGIS_",
+        env_file=".env",
+        extra="allow",
+    )
+
     HOST: str = "127.0.0.1"
     PORT: int = 8765
     DEBUG: bool = True
-    
+
     # Ollama Endpoints & Models
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     MODEL_ATTACK: str = "qwen2.5:3b"
@@ -24,11 +30,9 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./aegis.db"
 
-    class Config:
-        env_file = ".env"
-        extra = "allow"
 
 _settings: Settings | None = None
+
 
 def get_settings() -> Settings:
     global _settings
