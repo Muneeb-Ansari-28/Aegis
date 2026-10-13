@@ -71,3 +71,22 @@
 **Removals**: None.
 **Deviations from Plan**: None.
 **Gate Impact**: Module 2 connector and calibration verified. Paves the way for the 20-prompt calibration test gate and Module 3 Knowledge Base integration.
+
+- `IMPLEMENTED` Module 2 follow-through: tightened target URL validation, removed Attack Agent's hardcoded prompt fallback, and added Orchestrator stop requests, telemetry events, persisted turns, and linked findings on confirmed exploits; focused orchestrator tests passed 3/3 — by "Muneeb" at 18:37, 2026-10-13
+
+### Implementation Report
+**Date**: 2026-10-13
+**Contributor**: Muneeb
+**Module**: Module 2: Configuration, Agents, and Orchestrator Integration
+**Files Changed**:
+- `engine/app/agents/orchestrator.py` — modified — Added stop request handling, lifecycle/turn events, TurnRecord persistence, and finding creation linked to exploited turns.
+- `engine/app/agents/attack_agent.py` — modified — Removed the hardcoded prompts used when KB prompt files are missing; startup now surfaces the missing KB data.
+- `engine/app/schemas/target.py` — modified — Validate HTTP(S) URLs using parsed scheme and hostname.
+- `engine/tests/integration/test_scan_flow.py` — modified — Cover persistence, finding creation, telemetry, stop behavior, and keep the skeleton test independent of Ollama/database services.
+- `Coding-Agent-Guide/Status.md` — modified — Updated module progress, gate evidence, and next steps.
+- `Coding-Agent-Guide/logs.md` — modified — Appended this implementation record.
+**What Was Done**: Added scan stop support at turn boundaries, persisted every evaluated turn and a linked finding for a confirmed exploit, and emitted scan-start, turn-completed, stop/completion, and failure telemetry events. Tightened URL validation and ensured attack prompts come from the KB rather than a hardcoded fallback. Added focused mock-based coverage; `pytest -q tests/integration/test_scan_flow.py` passes (3 tests).
+**Why**: Completes missing Module 2 follow-through called out in the implementation plan and advances the Module 3/5 agent orchestration path while preserving deterministic Python control flow.
+**Removals**: Removed only the Attack Agent's hardcoded emergency prompt list. Missing KB content now raises a clear `FileNotFoundError`; no downstream code depends on that fallback.
+**Deviations from Plan**: Live Ollama accuracy, scan API lifecycle integration, database migrations, and live target gate criteria remain unverified and are listed as next work. Persistence currently relies on the configured SQLAlchemy schema being available.
+**Gate Impact**: Mock coverage verifies stop, persistence calls, finding linkage, and event emission. Gate 3 remains not passed because live weak/hardened target acceptance and database-backed end-to-end scan verification are outstanding.

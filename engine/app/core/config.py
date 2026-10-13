@@ -15,9 +15,9 @@ class Settings(BaseSettings):
 
     # Ollama Endpoints & Models
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-    MODEL_ATTACK: str = "qwen2.5:3b"
-    MODEL_JUDGE: str = "qwen2.5:3b"
-    MODEL_TRIAGE: str = "llama-guard3:1b"
+    MODEL_ATTACK: str = "llama3.2:latest"
+    MODEL_JUDGE: str = "llama3.2:latest"
+    MODEL_TRIAGE: str = "llama3.2:latest"
     MODEL_EMBED: str = "nomic-embed-text:v1.5"
 
     # Playwright Settings
