@@ -1,11 +1,12 @@
 ﻿"""Scan Lifecycle Request/Response Schemas."""
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 class ScanCreate(BaseModel):
     target_id: str
     category: str = "LLM07"
-    budget: int = 10
+    budget: int = Field(default=10, ge=1, le=20)
+    authorized: bool = False
 
 class ScanResponse(BaseModel):
     scan_id: str
@@ -20,4 +21,15 @@ class ScanStatusResponse(BaseModel):
     current_attempt: int
     budget: int
     exploited: bool = False
+
+
+class ScanTurnResponse(BaseModel):
+    """Persisted prompt/response turn replayed to the live chat view."""
+    turn_index: int
+    prompt: str
+    response: str
+    latency_ms: int = 0
+    strategy: Optional[str] = None
+    verdict: Optional[dict] = None
+    created_at: Optional[str] = None
 

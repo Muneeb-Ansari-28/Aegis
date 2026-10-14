@@ -1,6 +1,7 @@
 """Target Registration & Configuration Schemas."""
+import ipaddress
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional, Dict, Any
+from typing import Optional
 from urllib.parse import urlsplit
 
 
@@ -10,6 +11,18 @@ class TargetCalibrationConfig(BaseModel):
     submit_selector: str
     response_selector: str
     wait_timeout_ms: int = Field(default=15000, ge=1000, le=120000)
+
+
+class CalibrationSessionResponse(BaseModel):
+    """Progress returned while the user selects controls in the target browser."""
+    session_id: str
+    target_id: str
+    status: str
+    step: int
+    input_selected: bool = False
+    enter_selected: bool = False
+    calibration_config: Optional[TargetCalibrationConfig] = None
+    error: Optional[str] = None
 
 
 ALLOWED_TARGET_TYPES = {"web", "api", "app"}
@@ -46,8 +59,23 @@ class TargetCreate(BaseModel):
         """Require an HTTP(S) URL with a host name."""
         stripped = v.strip()
         parsed = urlsplit(stripped)
-        if parsed.scheme.lower() not in {"http", "https"} or not parsed.hostname:
+        host = (parsed.hostname or "").lower().rstrip(".")
+        is_local_hostname = (
+            host in {"localhost", "host.docker.internal"}
+            or host.endswith((".localhost", ".local", ".test"))
+            or ("." not in host and ":" not in host)
+        )
+        try:
+            address = ipaddress.ip_address(host)
+            is_local_address = address.is_loopback or address.is_private or address.is_link_local
+        except ValueError:
+            is_local_address = False
+        if parsed.scheme.lower() not in {"http", "https"} or not host:
             raise ValueError("URL must be a valid http:// or https:// URL with a host.")
+        if parsed.username or parsed.password:
+            raise ValueError("Local target URLs must not contain embedded credentials.")
+        if not (is_local_hostname or is_local_address):
+            raise ValueError("Aegis pre-deployment scans only accept local or private-network target URLs.")
         return stripped
 
 

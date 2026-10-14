@@ -1,4 +1,3 @@
-import React from 'react';
 
 export default function EvidencePair({ prompt, response }: { prompt: string; response: string }) {
   return (

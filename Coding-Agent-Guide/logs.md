@@ -26,6 +26,8 @@
 
 *(Append new entries below this line. Never modify entries above.)*
 
+
+
 - `UPDATED` Guide reviewed against `Aegis_8-Week_Plan_with_MCP.md`, the 22-page `Aegis-Architecture.pdf`, and the repository. Added a guide index, replaced the folder reference with a current-tree comparison, corrected status to distinguish scaffolded files from verified gates, and added the required implementation completion report rule. No project files or features were removed; the existing `Coding-Agent-Guide` name was retained because it matches the plan â€” by "Muneeb" at 13:52, 2026-10-10
 
 - `IMPLEMENTED` Created root-level `Aegis-Folder-Structure-Guide.pdf` with a concise purpose line for each of the 224 current folders and files; linked it from the contributor guide and folder reference so the team can find it beside the eight-week plan â€” by "Muneeb" at 14:00, 2026-10-10
@@ -90,3 +92,228 @@
 **Removals**: Removed only the Attack Agent's hardcoded emergency prompt list. Missing KB content now raises a clear `FileNotFoundError`; no downstream code depends on that fallback.
 **Deviations from Plan**: Live Ollama accuracy, scan API lifecycle integration, database migrations, and live target gate criteria remain unverified and are listed as next work. Persistence currently relies on the configured SQLAlchemy schema being available.
 **Gate Impact**: Mock coverage verifies stop, persistence calls, finding linkage, and event emission. Gate 3 remains not passed because live weak/hardened target acceptance and database-backed end-to-end scan verification are outstanding.
+
+- `IMPLEMENTED` Added desktop-triggered Playwright auto and interactive calibration endpoints. The assessment UI now opens the existing visible selector capture, shows its input/send/response click instructions, and saves the resulting CSS selectors to the registered target. Added the Aegis desktop overview, scan setup, local history, guided assistant, and profile screens with authorization confirmation and OWASP LLM07-only execution. Scan and target calls use the existing engine API; desktop UI automation and persisted scan lifecycle remain unimplemented. No tests or builds were run. — by "Muneeb" at 17:22, 2026-10-14
+
+### Implementation Report
+**Date**: 2026-10-14
+**Contributor**: Muneeb
+**Module**: Module 2: Playwright Connector and Calibration
+**Files Changed**:
+- `engine/app/api/v1/targets.py` — modified — Added auto and interactive calibration routes that call WebCalibration and save the captured selector config to the target.
+- `engine/app/adapters/web_calibration.py` — modified — Clarified the visible overlay's send-button click instruction.
+- `Coding-Agent-Guide/design.md` — modified — Documented the desktop authorization and calibration entry point.
+- `Coding-Agent-Guide/Status.md` — modified — Recorded the UI calibration integration and pending runtime verification.
+- `Coding-Agent-Guide/logs.md` — modified — Appended implementation log and report.
+**What Was Done**: Exposed the existing Playwright auto-detection and visible click-capture workflows through target API routes. Both routes validate the registered web target and save their selectors through TargetService. The interactive route displays guidance to click the chat input, send button, and assistant response.
+**Why**: Makes the already implemented Module 2 calibration capability usable from the desktop assessment flow.
+**Removals**: None.
+**Deviations from Plan**: The interactive API request remains open while the visible browser collects selectors; timeout is bounded to 15–180 seconds. The end-to-end desktop flow has not been runtime verified.
+**Gate Impact**: Existing connector gate evidence remains unchanged. The desktop-triggered calibration path is implemented but not yet runtime verified.
+
+### Implementation Report
+**Date**: 2026-10-14
+**Contributor**: Muneeb
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/App.tsx` — modified — Replaced the navigation-only shell with overview, scan setup, scan history, guided assistant, and local profile screens.
+- `desktop/src/api/client.ts` — modified — Added typed target, calibration, scan, findings, and health API calls plus local assistant guidance.
+- `desktop/src/index.css` — modified — Added the desktop workbench styling and responsive layouts.
+- `Coding-Agent-Guide/Status.md` — modified — Updated UI integration status and remaining gate work.
+- `Coding-Agent-Guide/logs.md` — modified — Appended implementation log and report.
+**What Was Done**: Built the Aegis desktop workbench with target registration, web and desktop assessment choices, an explicit authorization checkbox, OWASP LLM Top 10 selection, LLM07-only execution, Playwright auto and click calibration controls, attempt budget, local scan request history, assistant guidance chat, and profile preferences. The UI calls existing engine endpoints and clearly indicates that the desktop adapter, non-LLM07 pipelines, and persistent scan lifecycle are incomplete. Scan history and profile data remain local to the desktop browser profile.
+**Why**: Replaces the placeholder Electron/React UI views with an interface for exercising the implemented target, calibration, health, and scan request modules while showing their current scope.
+**Removals**: Replaced the prior navigation-only `App.tsx` and the placeholder-only global stylesheet; no engine module or API contract was removed.
+**Deviations from Plan**: The assistant is built-in local setup guidance rather than a model-backed chatbot, and desktop application scanning is surfaced as a future option because `UiaAppAdapter` is still a stub. Scan history is local because scan lifecycle persistence is not implemented. No tests or build were run.
+**Gate Impact**: Module 7 UI is implemented but its integrated demo remains unverified. Modules 2, 3, 5, 5b, and 6 gate states are not advanced by this UI work.
+
+- `UPDATED` Clarified the scan setup copy and submit action to state that the current scan endpoint only creates a request record until orchestrator dispatch is connected — by "Muneeb" at 17:24, 2026-10-14
+
+### Implementation Report
+**Date**: 2026-10-14
+**Contributor**: Muneeb
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/App.tsx` — modified — Clarified the current scan lifecycle boundary in the setup, consent, and activity copy.
+- `Coding-Agent-Guide/logs.md` — modified — Appended this UI status clarification and report.
+**What Was Done**: Updated the scan configuration language to identify scan submissions as request records while orchestrator dispatch remains in progress. The user-facing consent text now describes authorized target interaction and local request history without implying that the stub endpoint already performs a scan.
+**Why**: Keeps the scan screen aligned with the current ScanService implementation and the desktop integration gate status.
+**Removals**: None.
+**Deviations from Plan**: None.
+**Gate Impact**: Module 7 remains unverified; this change clarifies the visible status and does not advance a gate.
+
+- `UPDATED` Restyled the Aegis desktop UI with a flat white and blue palette, clearer typography, and simplified card and navigation treatments; removed the dark background styling and gradients — by "Muneeb" at 17:36, 2026-10-14
+
+### Implementation Report
+**Date**: 2026-10-14
+**Contributor**: Muneeb
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/index.css` — modified — Replaced the dark neon theme with a flat light palette, restrained blue accents, and more readable type sizing.
+- `desktop/index.html` — modified — Removed dark Tailwind body classes so the light theme controls the page canvas.
+- `Coding-Agent-Guide/logs.md` — modified — Appended this report.
+**What Was Done**: Restyled the existing UI screens with white surfaces, pale neutral page backgrounds, navy text, blue selection and action states, lighter borders, and consistent spacing. Removed gradient backgrounds and glow effects and set native controls to light mode.
+**Why**: Responds to the requested visual direction and makes the interface calmer and easier to scan.
+**Removals**: Removed dark body utility classes and the prior dark theme declarations; no UI functionality or components were removed.
+**Deviations from Plan**: None.
+**Gate Impact**: Module 7 remains unverified. No tests or build were run; the running Vite server applied the CSS and HTML changes through hot reload.
+
+### Implementation Report
+**Date**: 2026-10-14
+**Contributor**: Muneeb
+**Module**: Module 2: Configuration and Playwright Connector
+**Files Changed**:
+- `engine/app/adapters/web_calibration.py` — modified — Added two-control click capture, progress callbacks, selector validation, and response area detection.
+- `engine/app/api/v1/targets.py` — modified — Added asynchronous calibration sessions and progress polling.
+- `engine/app/schemas/target.py` — modified — Added calibration session schema and local/private URL validation.
+- `engine/app/adapters/playwright_web.py` — previously modified in this task context — Used by the calibration and visible browser workflow; no additional edit in this report window.
+**What Was Done**: Click calibration now opens a visible browser and asks for the chatbot input and Enter/Send control. Aegis reports each selection so the UI can check off the corresponding item. Automatic calibration now rejects missing response areas instead of accepting a fallback selector.
+**Why**: Implements the requested calibration flow for local pre-deployment targets and prevents unusable selectors from being saved.
+**Removals**: Replaced the previous three-click interaction that required the user to select a response bubble; response detection is now automatic after the two requested controls are selected.
+**Deviations from Plan**: None.
+**Gate Impact**: Module 2 remains unverified for full browser calibration. Initialization and unreachable-target checks passed; the live target test was blocked because port 8001 serves an unrelated appliance site.
+
+### Implementation Report
+**Date**: 2026-10-14
+**Contributor**: Muneeb
+**Module**: Module 5: Orchestrator
+**Files Changed**:
+- `engine/app/agents/orchestrator.py` — modified — Emits prompt-start and prompt-completion events with category and response data.
+- `engine/app/core/events.py` — previously modified in this task context — Retains bounded telemetry history for late UI subscribers.
+- `engine/app/services/scan_service.py` — previously modified in this task context — Dispatches scans to a visible Playwright adapter and tracks lifecycle.
+- `engine/app/api/v1/scans.py` — previously modified in this task context — Returns useful validation and lookup errors.
+- `engine/app/schemas/scan.py` — previously modified in this task context — Adds authorization and bounded prompt budget fields.
+- `engine/tests/integration/test_scan_flow.py` — modified — Covers prompt-start telemetry and uses isolated event channel identifiers.
+**What Was Done**: Connected scan start/status/stop to the orchestrator. Scan events include prompt and chatbot response payloads for the live view. Scan turns and findings continue to persist through the orchestrator, and stop requests are handled at turn boundaries.
+**Why**: The previous scan endpoint did not actually run an assessment, so the UI had no live scan activity to show.
+**Removals**: Removed category-only lifecycle events that duplicated the scan and turn event stream; category progress is presented from scan and turn status in the UI.
+**Deviations from Plan**: None.
+**Gate Impact**: Module 5 mock lifecycle tests pass (3/3). Gate 3 remains unpassed pending live weak/hardened target verification.
+
+### Implementation Report
+**Date**: 2026-10-14
+**Contributor**: Muneeb
+**Module**: Module 6: Risk, Persistence, and Report
+**Files Changed**:
+- `engine/app/core/config.py` — modified — Places the default SQLite database under the Aegis application data directory.
+- `engine/app/core/database.py` — modified — Ensures application data directories exist before database engine creation.
+- `engine/app/api/v1/router.py` — modified — Creates mapped tables at engine startup.
+- `engine/app/services/target_service.py` — modified — Persists targets and calibration settings in SQLite.
+**What Was Done**: Added startup table creation and SQLite-backed target registration, lookup, listing, and calibration updates so targets survive engine restarts.
+**Why**: Calibration and scan start require targets and selectors to remain available across engine/API calls.
+**Removals**: Replaced target-only in-memory lookup as the sole store with database persistence while retaining the in-memory cache.
+**Deviations from Plan**: Used startup `metadata.create_all` for this integrated prototype; formal database migrations remain future work.
+**Gate Impact**: Module 6 remains unverified; database-backed end-to-end scan and report evidence checks remain pending.
+
+### Implementation Report
+**Date**: 2026-10-14
+**Contributor**: Muneeb
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/App.tsx` — modified — Adds calibration checkboxes and the live scan workspace with prompt, response, and category progress.
+- `desktop/src/api/client.ts` — modified — Adds calibration polling, scan status/stop, and authorized scan request contracts.
+- `desktop/src/hooks/useScanSocket.ts` — modified — Types live telemetry events and retains a bounded event feed.
+- `desktop/src/index.css` — modified — Styles the calibration and live scan views.
+- `desktop/src/components/EvidencePair.tsx`, `desktop/src/components/LogStream.tsx`, `desktop/src/components/SeverityBadge.tsx`, `desktop/src/views/Dashboard.tsx`, `desktop/src/views/FindingsInspector.tsx`, `desktop/src/views/LiveTelemetry.tsx`, `desktop/src/views/ReportViewer.tsx`, `desktop/src/views/TargetConfig.tsx` — modified — Removed unused React imports reported by the TypeScript production build.
+**What Was Done**: The scan screen now offers automatic and click calibration. Click mode displays two progress checkboxes. Starting a supported scan opens a visible Playwright browser and navigates to a live view with current prompt/response turns, progress, stop action, and OWASP category status.
+**Why**: Provides a testable UI for the actual Playwright and orchestrator modules requested by the user.
+**Removals**: Removed unused React imports to clear existing TypeScript no-unused errors; no components or runtime behavior depended on those imports.
+**Deviations from Plan**: Desktop application scanning remains explicitly unavailable because its native adapter is not implemented. Only LLM07 currently dispatches to the scan pipeline.
+**Gate Impact**: Frontend TypeScript/Vite production build passes. Module 7 integrated browser demo remains unverified until run against an available local chat target.
+
+### Implementation Report
+**Date**: 2026-10-14
+**Contributor**: Muneeb
+**Module**: Module 2: Configuration and Playwright Connector
+**Files Changed**:
+- `engine/app/adapters/playwright_web.py` — modified — Added specific selectors for the Aegis test site's assistant textbox and Send question button.
+- `engine/app/adapters/web_calibration.py` — modified — Waits for client-rendered pages, opens recognizable closed chat panels, detects a dynamic conversation log, lets users open a chat during click calibration, and safely captures a disabled composer button.
+**What Was Done**: Fixed automatic and click calibration for the local React storefront at `http://127.0.0.1:5173`. Automatic calibration opens its Ask Aegis panel and stores the actual assistant controls. Click calibration allows the user to open a closed chat, captures the input and Send control, and prevents the selection click from submitting a message.
+**Why**: The target renders its assistant in a closed dialog, and its Send button is disabled until text is entered. Calibration previously ran before the React controls appeared and intercepted the click needed to open the dialog.
+**Removals**: None.
+**Deviations from Plan**: Added automatic detection/opening for recognizable chat launchers and temporarily enabled only disabled submit buttons paired with a text composer during click capture. The capture-phase listener prevents the click from invoking the app's submit handler; the calibration browser is closed when capture completes.
+**Gate Impact**: Automatic calibration was verified against the user's running 5173 target. Click capture verified against the same target with no message sent. Module 2's broader target compatibility gate remains open.
+
+### Implementation Report
+**Date**: 2026-10-14
+**Contributor**: Muneeb
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/App.tsx` — modified — Updated the URL field example to the user's local test-site address.
+**What Was Done**: Changed the URL example to `http://127.0.0.1:5173` so the calibration screen reflects the supplied local test site.
+**Why**: Makes the intended local testing workflow clearer when registering a new target.
+**Removals**: None.
+**Deviations from Plan**: None.
+**Gate Impact**: Production frontend build passes; Module 7 remains pending a full interactive scan demo.
+
+### Implementation Report
+**Date**: 2026-10-14
+**Contributor**: Muneeb
+**Module**: Module 2: Configuration and Playwright Connector
+**Files Changed**:
+- `engine/app/api/v1/targets.py` — modified — Runs automatic calibration with a visible browser.
+- `engine/app/adapters/playwright_web.py` — modified — Brings visible Playwright pages to the foreground after navigation.
+- `engine/app/adapters/web_calibration.py` — modified — Keeps automatic-calibration target visible briefly and foregrounds the click-calibration page.
+**What Was Done**: Both automatic and click calibration now open the registered target in a visible, foreground Playwright browser. Automatic calibration keeps the browser open briefly after detecting controls, then closes it and saves the selectors. Click calibration keeps the page open until the two requested controls are captured or the session times out.
+**Why**: Automatic calibration had been using headless Chromium, which made the site appear not to open even when calibration ran successfully.
+**Removals**: None.
+**Deviations from Plan**: None.
+**Gate Impact**: Automatic calibration was re-run successfully against `http://127.0.0.1:5173`; connector compatibility gates remain partly open.
+
+### Implementation Report
+**Date**: 2026-10-14
+**Contributor**: Muneeb
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/App.tsx` — modified — Shows target-opening progress text while either calibration mode is running.
+**What Was Done**: Calibration status text now tells the user that the target is opening in Playwright and explains what to click in manual mode.
+**Why**: Makes the browser-opening step visible in Aegis while the calibration request is in progress.
+**Removals**: None.
+**Deviations from Plan**: None.
+
+- `FIXED` Click-calibration session status race: interactive sessions now report `saving_selectors` after both controls are captured and only turn `completed` once `calibration_config` is persisted, so a client can never observe a completed session without selectors — by "Muneeb" at 19:21, 2026-10-14
+
+### Implementation Report
+**Date**: 2026-10-14
+**Contributor**: Muneeb
+**Module**: Module 2: Configuration and Playwright Connector
+**Files Changed**:
+- `engine/app/api/v1/targets.py` — modified — `update_progress` sets `saving_selectors` at step 2 instead of `completed`; `completed` is assigned only after the response area is detected and `TargetService.calibrate_target` persists the selectors.
+**What Was Done**: Interactive calibration sessions no longer flip to `completed` while `calibration_config` is still unset.
+**Why**: The desktop client polls every 300 ms and treated `completed` + null config as a timeout, printing a false "Calibration timed out before both target controls were selected." error after a successful two-click capture (reproduced with an end-to-end run).
+**Removals**: None.
+**Deviations from Plan**: None.
+**Gate Impact**: Live session timeline verified: `opening_browser` → `saving_selectors` (config unset) → `completed` (config set). Module 2 evidence improved; connector compatibility gate remains open.
+
+- `FIXED` Calibration screen feedback: authorization errors now appear inside the browser calibration box with the consent card highlighted and scrolled into view, scheme-less URLs such as `127.0.0.1:5173` are normalized to `http://` before target registration, calibration failures surface inline, and stale calibration state resets when the URL changes — by "Muneeb" at 19:21, 2026-10-14
+
+### Implementation Report
+**Date**: 2026-10-14
+**Contributor**: Muneeb
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/App.tsx` — modified — Added `normalizeTargetUrl`/`normalizeTargetUrlSafe`, an inline `calibError` state shown inside the calibration box, consent scroll-and-highlight when authorization is missing, URL-change state reset, clearer automatic/click status copy, the styled two-step tick checklist markup, and a bounded config-wait loop before click calibration may report a timeout.
+- `desktop/src/index.css` — modified — Added the previously missing `.calibration-checklist`, `.checklist-item`, `.checklist-box`, `.checklist-status`, `.calibration-error`, and `.consent-card.attention` styles.
+**What Was Done**: Clicking Automatic calibration or Click to calibrate now always produces visible feedback: an unticked authorization checkbox scrolls to and highlights the consent card with an inline error beside the buttons; invalid or scheme-less URLs get a clear message and `http://` is prepended automatically; the click-calibration checklist shows "Click on the input area" and "Click on the Enter / Send button" ticking green as the session reports each captured control.
+**Why**: The consent gate failed silently below the fold (the browser never opened), `new URL('127.0.0.1:5173')` threw `Invalid URL`, and `.calibration-checklist` had no CSS so the two required ticks rendered as bare native checkboxes that looked broken.
+**Removals**: Replaced the old raw-checkbox checklist markup and the blanket status strings inside `App.tsx`; no engine API, endpoint, or schema was removed or changed.
+**Deviations from Plan**: None.
+**Gate Impact**: Frontend `npm run build` (tsc + vite) passes. Module 7 integrated demo remains pending; no gate claimed passed by this change.
+
+- `FIXED` Target deletion now persists: `TargetService.delete_target` removes the database row as well as the in-memory cache entry, so deleted targets no longer reappear in `GET /targets` — by "Muneeb" at 19:21, 2026-10-14
+
+### Implementation Report
+**Date**: 2026-10-14
+**Contributor**: Muneeb
+**Module**: Module 6: Risk, Persistence, and Report
+**Files Changed**:
+- `engine/app/services/target_service.py` — modified — `delete_target` pops the in-memory entry and deletes the `targets` row in the same session, returning true when either store contained the target.
+**What Was Done**: `DELETE /api/v1/targets/{id}` now removes the target from the list permanently.
+**Why**: The previous implementation deleted only the cache entry while `list_targets` reads the database, so `DELETE` returned success but the target reappeared immediately; after an engine restart the empty cache also made deletion return 404 for existing rows. Calibration testing left several unusable duplicate targets because of this.
+**Removals**: None.
+**Deviations from Plan**: None.
+**Gate Impact**: Verified live: four test targets were deleted and `GET /targets` returned only the pre-existing "Aegis" target. No gate claimed passed by this change.
+
+- `UPDATED` Calibration flow validated end to end against a local fixture target with 17/17 automated Playwright checks (consent gate, automatic calibration, click-calibration ticks, URL normalization, selector persistence); frontend production build passes; engine suite reports 10 passed with the known pre-existing port-8001 weak-bot conflict — by "Muneeb" at 19:21, 2026-10-14
+
+**Gate Impact**: Production frontend build passes. Module 7 remains pending a full interactive scan demo.
