@@ -2,6 +2,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import health, targets, scans, findings, reports, proxy, websocket
+from app.core.database import Base, engine
+from app.models import entities as _entities
+from app.core.paths import ensure_app_dirs
 
 app = FastAPI(
     title="Aegis Red-Teaming Engine",
@@ -17,6 +20,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def initialize_database() -> None:
+    """Create the declared SQLAlchemy tables in the per-user Aegis data directory."""
+    ensure_app_dirs()
+    Base.metadata.create_all(bind=engine)
 
 app.include_router(health.router, prefix="/api/v1/health", tags=["Health"])
 app.include_router(targets.router, prefix="/api/v1/targets", tags=["Targets"])

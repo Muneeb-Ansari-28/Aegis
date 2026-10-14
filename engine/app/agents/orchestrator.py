@@ -76,11 +76,31 @@ class Orchestrator:
                     break
                 self.current_attempt = turn_index
                 prompt, strategy = await self.attack_agent.generate_prompt(turn_index, previous_feedback)
+                await self._emit(
+                    "turn_started",
+                    attempt=turn_index,
+                    budget=self.max_budget,
+                    category="LLM07",
+                    prompt=prompt,
+                    strategy=strategy,
+                )
                 turn = await self.adapter.send_prompt(prompt, turn_index)
+                turn.scan_id = self.scan_id
                 turn.strategy = strategy
                 verdict = await self.evaluator.evaluate(turn)
                 self._persist_turn(turn, verdict)
-                await self._emit("turn_completed", attempt=turn_index, verdict=verdict.model_dump(mode="json"))
+                await self._emit(
+                    "turn_completed",
+                    attempt=turn_index,
+                    budget=self.max_budget,
+                    category="LLM07",
+                    prompt=turn.prompt,
+                    response=turn.response,
+                    latency_ms=turn.latency_ms,
+                    status=turn.status,
+                    strategy=turn.strategy,
+                    verdict=verdict.model_dump(mode="json"),
+                )
                 if verdict.exploited:
                     self.state = ScanState.COMPLETED
                     break

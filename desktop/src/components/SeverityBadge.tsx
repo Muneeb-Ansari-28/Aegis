@@ -1,4 +1,3 @@
-import React from 'react';
 
 export default function SeverityBadge({ severity }: { severity: string }) {
   const colors: Record<string, string> = {

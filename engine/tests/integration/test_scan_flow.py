@@ -1,3 +1,4 @@
+import uuid
 import pytest
 from app.agents.orchestrator import Orchestrator
 from app.adapters.base import BaseAdapter
@@ -86,10 +87,11 @@ class StaticEvaluator:
 async def test_orchestrator_persists_turn_finding_and_events():
     rows = []
     adapter = MockAdapter()
-    orchestrator = Orchestrator("test-scan", adapter, 2, lambda: MemorySession(rows))
+    scan_id = f"test-scan-{uuid.uuid4()}"
+    orchestrator = Orchestrator(scan_id, adapter, 2, lambda: MemorySession(rows))
     orchestrator.attack_agent = StaticAttackAgent()
     orchestrator.evaluator = StaticEvaluator(exploited=True)
-    queue = event_bus.subscribe("test-scan")
+    queue = event_bus.subscribe(scan_id)
     try:
         verdict = await orchestrator.run()
         assert verdict is not None and verdict.exploited
@@ -98,10 +100,11 @@ async def test_orchestrator_persists_turn_finding_and_events():
         assert rows[0].turn_index == 1
         assert rows[1].turn_id == rows[0].id
         assert (await queue.get())["event"] == "scan_started"
+        assert (await queue.get())["event"] == "turn_started"
         assert (await queue.get())["event"] == "turn_completed"
         assert (await queue.get())["event"] == "scan_completed"
     finally:
-        event_bus.unsubscribe("test-scan", queue)
+        event_bus.unsubscribe(scan_id, queue)
 
 
 @pytest.mark.asyncio

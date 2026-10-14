@@ -23,6 +23,8 @@ from app.core.errors import ConnectorTimeout, TargetCalibrationError
 logger = logging.getLogger(__name__)
 
 CANDIDATE_INPUT_SELECTORS: List[str] = [
+    "#assistant-question",
+    "textarea[aria-label*='ask' i]",
     "#chat-input",
     "textarea#chat-input",
     "input#chat-input",
@@ -47,6 +49,8 @@ CANDIDATE_INPUT_SELECTORS: List[str] = [
 ]
 
 CANDIDATE_SUBMIT_SELECTORS: List[str] = [
+    "button[aria-label='Send question']",
+    "button[aria-label*='send question' i]",
     "button#send",
     "#send",
     "button[type='submit']",
@@ -59,6 +63,10 @@ CANDIDATE_SUBMIT_SELECTORS: List[str] = [
 ]
 
 CANDIDATE_RESPONSE_SELECTORS: List[str] = [
+    ".assistant-message.assistant",
+    ".assistant-thread .assistant-message.assistant",
+    ".assistant-message.assistant:last-child",
+    ".assistant-thread .assistant-message.assistant:last-child",
     ".chat-message.assistant:last-child",
     "[data-message-author-role='assistant']:last-child",
     ".assistant-message:last-child",
@@ -143,6 +151,8 @@ class PlaywrightWebAdapter(BaseAdapter):
             logger.error(f"Failed to navigate to target {self.target_url}: {e}")
             await self.close()
             raise TargetCalibrationError(f"Could not open target URL {self.target_url}: {e}")
+        if not self.headless:
+            await self.page.bring_to_front()
 
         # If required selectors are not provided, run automatic chat detection
         if not self.selectors.get("input_selector") or not self.selectors.get("response_selector"):
@@ -206,9 +216,18 @@ class PlaywrightWebAdapter(BaseAdapter):
         response_selector: str,
         initial_text: str,
         max_timeout_ms: int,
+        fallback_baselines: Optional[Dict[str, str]] = None,
     ) -> str:
         """
         Polls response element until text stops changing (streaming completed).
+
+        The calibrated selector always wins while its text changes, but a
+        calibrated selector can match a permanently empty placeholder (for
+        example a trailing ``*:last-child`` spacer sitting after every
+        assistant message). While the primary selector stays stuck at its
+        baseline, this probe checks the known response candidates and switches
+        to the first one whose text grew, so replies rendered in sibling
+        containers are still captured deterministically.
         """
         assert self.page is not None
         start_time = time.time()
@@ -216,20 +235,52 @@ class PlaywrightWebAdapter(BaseAdapter):
         stability_interval = 0.2
         required_stable_checks = max(1, int((self.settle_timeout_ms / 1000.0) / stability_interval))
 
+        fallbacks = dict(fallback_baselines or {})
+        fallbacks.pop(response_selector, None)
+        active_selector = response_selector
+        active_initial = initial_text
         current_stable_checks = 0
-        last_seen_text = initial_text
+        last_seen_text = active_initial
+        checks = 0
+        probe_every_checks = 5  # probe candidate selectors once per second
 
         while (time.time() - start_time) < timeout_sec:
             await asyncio.sleep(stability_interval)
+            checks += 1
             try:
-                locator = self.page.locator(response_selector).last
+                locator = self.page.locator(active_selector).last
                 if await locator.count() == 0:
-                    continue
+                    text = ""
+                else:
+                    text = (await locator.inner_text()).strip()
 
-                text = (await locator.inner_text()).strip()
+                primary_stuck = active_selector == response_selector and (
+                    not text or text == active_initial
+                )
+                if primary_stuck and fallbacks and checks % probe_every_checks == 0:
+                    for candidate, baseline in fallbacks.items():
+                        try:
+                            candidate_locator = self.page.locator(candidate).last
+                            if await candidate_locator.count() == 0:
+                                continue
+                            candidate_text = (await candidate_locator.inner_text()).strip()
+                        except Exception:
+                            continue
+                        if candidate_text and candidate_text != baseline:
+                            logger.info(
+                                "Response selector %s produced no change; capturing replies via %s",
+                                response_selector,
+                                candidate,
+                            )
+                            active_selector = candidate
+                            active_initial = baseline
+                            last_seen_text = baseline
+                            current_stable_checks = 0
+                            text = candidate_text
+                            break
 
                 # If text is empty or unchanged from pre-prompt state, keep waiting
-                if not text or text == initial_text:
+                if not text or text == active_initial:
                     continue
 
                 if text == last_seen_text:
@@ -243,7 +294,7 @@ class PlaywrightWebAdapter(BaseAdapter):
             except Exception:
                 continue
 
-        if last_seen_text and last_seen_text != initial_text:
+        if last_seen_text and last_seen_text != active_initial:
             return last_seen_text
 
         raise ConnectorTimeout(f"Timed out after {max_timeout_ms}ms waiting for response to stabilize at {response_selector}")
@@ -298,6 +349,20 @@ class PlaywrightWebAdapter(BaseAdapter):
                 baseline_text = (await resp_locator.inner_text()).strip()
         except Exception:
             baseline_text = ""
+        # Known response candidates are baselined too, so the wait loop can
+        # detect a reply that renders outside a stale calibrated placeholder.
+        fallback_baselines: Dict[str, str] = {}
+        for candidate in CANDIDATE_RESPONSE_SELECTORS:
+            if candidate == resp_sel:
+                continue
+            try:
+                candidate_locator = self.page.locator(candidate).last
+                if await candidate_locator.count() > 0:
+                    fallback_baselines[candidate] = (await candidate_locator.inner_text()).strip()
+                else:
+                    fallback_baselines[candidate] = ""
+            except Exception:
+                fallback_baselines[candidate] = ""
 
         # Locate input element, clear and enter prompt
         try:
@@ -354,6 +419,7 @@ class PlaywrightWebAdapter(BaseAdapter):
                 response_selector=resp_sel,
                 initial_text=baseline_text,
                 max_timeout_ms=timeout_ms,
+                fallback_baselines=fallback_baselines,
             )
             latency_ms = int((time.time() - start_time) * 1000)
             return TurnRecord(

@@ -1,28 +1,28 @@
 # Aegis Project Status
 
-> **Last reviewed:** 2026-10-13 by Muneeb
-> **Evidence basis:** Runtime verification against local test targets (`weak-bot` on port 8001 and `hardened-bot` on port 8002) via Playwright Chromium automation; pytest test suite (11 passed on 2026-10-13).
+> **Last reviewed:** 2026-10-14 by Muneeb
+> **Evidence basis:** Frontend TypeScript/Vite production build passed; scan lifecycle mock tests (3/3) passed; connector initialization and unreachable-target checks (2/2 selected) passed. Calibration verified against the user-provided local test site at 127.0.0.1:5173. Desktop calibration UI end-to-end run passes 17/17 automated checks (consent gate, automatic calibration, click-calibration tick checklist, URL normalization) against a local fixture target; the click-calibration session race and target-deletion persistence were fixed. Connector initialization/unreachable checks and scan lifecycle mock tests pass; port 8001 currently serves an unrelated site.
 
 ## Overall Status
 
-The repository contains the foundation and active implementation for the eight-week LLM07 System Prompt Leakage plan. Module 2's Playwright connector and calibration are verified with live browser automation and streaming stabilization. The current engine suite passes all 11 tests; Ollama model accuracy and database-backed scan lifecycle gates remain unverified.
+The repository contains the foundation and active implementation for the eight-week LLM07 System Prompt Leakage plan. Frontend production build and mock scan lifecycle tests pass. A live browser test is pending because port 8001 currently serves an unrelated local site; Ollama model accuracy and full persistence/report gates remain unverified.
 
 | Module | Planned window | Current status | Gate |
 |---|---|---|---|
 | 1. Foundation and test target | Week 1 | Verified: Turn Record contract frozen, weak and hardened bots running | Gate 1 verified |
-| 2. Configuration and Playwright connector | Weeks 2–3 | **In Progress / Verified**: Playwright connector, auto-detection, Enter/Click submission, streaming stabilization, and calibration implemented and tested | Connector verified; 20-prompt calibration test ready |
-| 3. Knowledge base and Attack Agent | Weeks 3–4 | KB fixed/template prompts feed the Attack Agent; Ollama generates plain-language rephrases. Live Ollama behavior not verified | Not passed |
-| 4. Evaluation Agent | Weeks 4–5 | RubricJudge calls Ollama and validates JudgeVerdict JSON; benchmark accuracy not verified | Gate 2 not passed |
-| 5. Orchestrator | Weeks 5–6 | Deterministic loop now supports stop requests, turn persistence, finding creation, and event emission; focused mock tests pass | Gate 3 not passed |
+| 2. Configuration and Playwright connector | Weeks 2Ã¢â‚¬â€œ3 | Automatic and two-step click calibration are implemented with session polling. Session completion race fixed: sessions report `saving_selectors` after capture and `completed` only once selectors are persisted, so a completed session always carries `calibration_config`. Full browser capture is pending a live target test. | Connector partly verified; calibration flow pending |
+| 3. Knowledge base and Attack Agent | Weeks 3ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“4 | KB fixed/template prompts feed the Attack Agent; Ollama generates plain-language rephrases. Live Ollama behavior not verified | Not passed |
+| 4. Evaluation Agent | Weeks 4ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“5 | RubricJudge calls Ollama and validates JudgeVerdict JSON; benchmark accuracy not verified | Gate 2 not passed |
+| 5. Orchestrator | Weeks 5Ã¢â‚¬â€œ6 | Scan start/status/stop dispatch, turn persistence, and prompt telemetry are connected to the visible Playwright adapter. Mock lifecycle tests pass. | Gate 3 not passed |
 | 5b. MCP tool layer | Week 6 | Client, schemas, and four server modules present; parity, timeout, and crash handling not verified | Gate 5b not passed |
-| 6. Risk, persistence, and report | Weeks 6–7 | Risk, models, report service/template, and endpoints present; evidence consistency and PDF output not verified | Gate 4 not passed |
-| 7. Integration, UI, and demo | Weeks 7–8 | Desktop views and documentation files present; integrated demo not verified | Not passed |
+| 6. Risk, persistence, and report | Weeks 6Ã¢â‚¬â€œ7 | Startup database creation and target/calibration persistence are connected; target deletion now persists to the database (previously cache-only, so deleted targets reappeared). Report and full evidence gates remain pending. | Gate 4 not passed |
+| 7. Integration, UI, and demo | Weeks 7Ã¢â‚¬â€œ8 | UI connects calibration and scan lifecycle APIs and includes live prompt/response and category progress. Desktop scanning remains unavailable; integrated browser demo is pending. | Not passed |
 
 ## Gate Evidence
 
 | Gate | Acceptance criteria from the plan | Current assessment |
 |---|---|---|
-| 1 | Startup database creation, frozen Turn Record contract, and locally running test bot | Frozen Turn Record contract verified; both `weak-bot` (port 8001) and `hardened-bot` (port 8002) operational and serve interactive web chat UIs. **Gate 1 verified.** |
+| 1 | Startup database creation, frozen Turn Record contract, and locally running test bot | Frozen Turn Record contract is verified. Current availability of the test bots was not verified in this run; port 8001 serves an unrelated local application. Recheck target availability before claiming the live target gate. |
 | 2 | Judge returns valid JSON and reaches at least 90% accuracy on labelled benchmark | JSON guard and benchmark pairs test passing (`test_benchmark_pairs`). Complete LLM model run pending Ollama. **Not passed.** |
 | 3 | Weak bot exploit found; hardened bot exhausts budget without exploit; stop works mid-scan | Stop, turn persistence, finding creation, and telemetry behavior pass mock tests (`test_scan_flow.py`, 3 passed). Live weak/hardened target acceptance and database-backed end-to-end scan are unverified. **Not passed.** |
 | 4 | Styled PDF is produced and finding evidence matches persisted evidence | Report service stub exists. **Not passed.** |
@@ -36,18 +36,20 @@ The repository contains the foundation and active implementation for the eight-w
   - Streaming stabilization polls response DOM until text is stable across checks.
   - Produces valid `TurnRecord` instances with latency tracking and metadata.
 - `WebCalibration` (`engine/app/adapters/web_calibration.py`):
-  - Provides headless `auto_calibrate()` and headful `calibrate_interactive()` with DOM click-capture overlay (`CALIBRATION_OVERLAY_SCRIPT`).
+  - Provides automatic calibration and visible two-control click calibration with session progress callbacks. The response selector is detected automatically after input and send controls are selected; The updated browser click flow is verified against the supplied local target; broader target compatibility remains open.
 - Test Target Servers:
   - `weak-bot` serves interactive chat interface and leaks canary `AEGIS-CANARY-7731` on direct inquiry.
   - `hardened-bot` serves interactive chat interface and strictly refuses prompt extraction.
-- Test Suite:
-  - `pytest` executed with 9/9 tests passing (`test_playwright_initialization`, `test_playwright_unreachable_target`, `test_playwright_live_weak_bot_interaction`, etc.).
+- Current checks: `test_scan_flow.py` passes 3/3; connector initialization and unreachable-target tests pass 2/2 selected. `test_playwright_live_weak_bot_interaction` was not verified because port 8001 serves another local application. Frontend `npm run build` passes.
+
+- Calibration UX fixes verified 2026-10-14: authorization errors render inside the calibration box with the consent card highlighted and scrolled into view, scheme-less URLs normalize to `http://`, and the click checklist ticks "Click on the input area" then "Click on the Enter / Send button" as each control is captured. End-to-end automated run: 17/17 checks passed against a local fixture target; `npm run build` passes; engine suite 10 passed with the pre-existing port-8001 conflict only.
 
 ## Next Work
 
-1. Connect scan API start/status/stop endpoints to the orchestrator and persist scan lifecycle state.
-2. Add database migrations and verify scans, turns, and findings end to end against the database.
-3. Run the live Ollama judge benchmark and verify weak/hardened target gate criteria.
+1. Run the integrated calibration and scan flow against the weak and hardened local targets when port 8001 is available.
+2. Add database migrations and verify scan, turn, and finding persistence end to end.
+3. Implement the desktop UI Automation connector, then verify the web and desktop assessment flows in the integrated demo.
+4. Run the live Ollama judge benchmark and verify weak/hardened target gate criteria.
 
 ## Contributors
 

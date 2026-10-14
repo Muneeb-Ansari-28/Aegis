@@ -1,5 +1,6 @@
 """Aegis Engine Configuration Settings."""
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from app.core.paths import get_app_data_dir
 
 
 class Settings(BaseSettings):
@@ -28,7 +29,7 @@ class Settings(BaseSettings):
     MAX_ATTEMPTS_PER_CATEGORY: int = 10
 
     # Database
-    DATABASE_URL: str = "sqlite:///./aegis.db"
+    DATABASE_URL: str = f"sqlite:///{(get_app_data_dir() / 'db' / 'aegis.db').as_posix()}"
 
 
 _settings: Settings | None = None
