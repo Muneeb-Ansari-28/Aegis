@@ -317,3 +317,59 @@
 - `UPDATED` Calibration flow validated end to end against a local fixture target with 17/17 automated Playwright checks (consent gate, automatic calibration, click-calibration ticks, URL normalization, selector persistence); frontend production build passes; engine suite reports 10 passed with the known pre-existing port-8001 weak-bot conflict — by "Muneeb" at 19:21, 2026-10-14
 
 **Gate Impact**: Production frontend build passes. Module 7 remains pending a full interactive scan demo.
+
+
+feature was implemented = Design V1 Milestone 1 application shell and semantic design system, verified build and isolated browser workflows by "Shahzaman" at 20:06, 2026-10-17
+
+### Implementation Report
+**Date**: 2026-10-17
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/components/ApplicationShell.tsx` — created — Presentation-only sidebar/header, existing view navigation, health status, accessible compact drawer and focus management.
+- `desktop/src/App.tsx` — modified — Wrap unchanged page components with the shared shell; retain existing state and scanner handlers.
+- `desktop/src/index.css` — modified — Semantic graphite light tokens, shared typography/buttons/panels, shell layout, responsive navigation, focus and reduced-motion styling.
+- `Project-Context/frontend-design.md` — modified — Record user approval, implemented foundation values, verification and remaining scope; foundation file was already untracked before this milestone.
+- `Project-Context/Status.md` — modified — Append milestone progress and explicit verification limits.
+- `Project-Context/logs.md` — modified — Append this implementation record without altering previous entries.
+**What Was Done**: Implemented the approved shell foundation without changing page implementations, API contracts or scanning logic. Production build passed. Chromium checks passed existing navigation and header actions, responsive shell bounds at 320/390/768/1024/1440px, modal keyboard isolation/Escape/backdrop/resize, scroll restoration, same-view draft preservation, authorization guard, profile saving, assistant responses and reduced motion. Desktop/drawer screenshots inspected. Isolated API/WebSocket fixtures passed target registration and normalization, auto/click-calibration UI, authorized start payload, polling, telemetry, transcript replay, history/filter, return-to-scan and stop. No runtime exceptions observed in these checks.
+**Why**: Establish the approved neutral, consistent, accessible shared foundation while keeping scanner behavior and state ownership stable for iterative page work.
+**Removals**: Replaced the old inline sidebar/header and their styles with ApplicationShell. Removed its unsupported shortcut and workspace-switch decoration, and replaced the unsupported Playwright availability claim with "Not checked". Removed unused shell icon imports and duplicate CSS import (main.tsx retains it). No page, backend feature, integration or dependency removed.
+**Deviations from Plan**: None in authorized milestone scope. Legacy page compositions remain unchanged and may scroll horizontally inside the shell on small screens; full page reflow is deferred. No dark mode or unsupported navigation introduced.
+**Gate Impact**: Frontend build and scoped browser checks pass. Live engine/target calibration, actual scan execution/Ollama/stopping, Electron runtime, screen-reader/full contrast/zoom audits and non-Chromium browsers remain untested. Engine was offline; fixture results are not live integration evidence. No backend gate or full integrated demo newly marked passed. Existing Vite CJS warning remains. Work stopped after Milestone 1; no Git publication performed.
+
+
+feature was updated = removed redundant desktop sidebar spacing while retaining short-window scrolling by "Shahzaman" at 20:12, 2026-10-17
+
+### Implementation Report
+**Date**: 2026-10-17
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/index.css` — modified — Use 16px desktop sidebar gaps, remove duplicate bottom-section top padding, preserve child heights.
+- `Project-Context/frontend-design.md` — modified — Append sidebar refinement and verification details.
+- `Project-Context/Status.md` — modified — Append review refinement status.
+- `Project-Context/logs.md` — modified — Append this report.
+**What Was Done**: Browser measurements identified 24px section gap plus 24px bottom-section padding causing early overflow. Reduced the required normal sidebar height from 630px to 590px without reducing navigation touch targets. Kept overflow-y auto; shorter windows scroll normally. Build passed. Chromium layout checks passed at width 1366 and heights 400/500/600/650/720/768/900, with normal navigation and a browser-only additional Live scan-sized item. Bottom sections remained reachable, Refresh and Settings keyboard focus scrolled into view, and the 390x400 compact drawer retained bottom access and Escape dismissal. Desktop screenshot inspected.
+**Why**: Address visual review feedback with a focused spacing fix while preserving access on short windows.
+**Removals**: Redundant desktop sidebar bottom-section top padding only. No feature or page content removed.
+**Deviations from Plan**: None.
+**Gate Impact**: Build and scoped layout checks pass; existing Vite CJS warning remains. No scanner logic changed or live integration rerun. Exact user viewport, Electron and other browsers unverified; no backend gate change. Stayed on shahzaman; no commit, push or PR.
+
+
+feature was updated = visually hid desktop sidebar native scrollbar while preserving independent scrolling by "Shahzaman" at 20:19, 2026-10-17
+
+### Implementation Report
+**Date**: 2026-10-17
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/index.css` — modified — Sidebar-only scrollbar-width and WebKit scrollbar fallback rules.
+- `Project-Context/frontend-design.md` — modified — Append corrected scrollbar specification and verification limits.
+- `Project-Context/Status.md` — modified — Append verification status.
+- `Project-Context/logs.md` — modified — Append this report.
+**What Was Done**: Hid the desktop sidebar native scrollbar while retaining overflow-y auto, fixed position and existing width. Visually inspected Chromium screenshots at 1366x768 and 1366x400 before/after scrolling to the bottom. Verified wheel/keyboard scrolling, system-status/profile access, unchanged main scrollbar styles and scrolling, and compact drawer access/Escape. Frontend build passed with the existing Vite CJS warning.
+**Why**: Prior spacing changes did not resolve the visible scrollbar feedback; this correction directly controls scrollbar rendering without disabling overflow.
+**Removals**: Native desktop sidebar scrollbar visuals only; no scrolling functionality removed.
+**Deviations from Plan**: None. No width, spacing, page content, scanner logic or unrelated styling changes.
+**Gate Impact**: Scoped Chromium visual/interaction checks and build pass. Firefox/WebKit, physical touchpad and Electron runtime not tested; native input handlers remain unchanged. No live scanner rerun or backend gate update. No commit, push or PR.

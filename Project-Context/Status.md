@@ -54,3 +54,25 @@ The repository contains the foundation and active implementation for the eight-w
 ## Contributors
 
 Approved contributor names: **Muneeb**, **Shahzaman**, and **Salman**.
+
+## Frontend Design V1 — Milestone 1 (2026-10-17)
+
+**Module:** Module 7: Integration, UI, and Demo — application shell and design system.
+**State:** Shell implemented and frontend checks passed; awaiting user review before individual page redesigns. Branch: `shahzaman`; no commit, push, merge or PR.
+
+- Added a reusable presentation-only application shell, graphite semantic tokens, shared panel/button/heading styles, sidebar/header, active/focus/hover states, compact modal navigation and reduced-motion support.
+- Modified frontend files: `desktop/src/App.tsx`, `desktop/src/index.css`; added `desktop/src/components/ApplicationShell.tsx`. Updated the approved `frontend-design.md` and appended this status and the implementation log.
+- Verified `npm run build` (TypeScript + Vite), unchanged page components and scanner state/handlers by Git comparison, Chromium shell/navigation at 320/390/768/1024/1440px, keyboard modal behavior, draft preservation, consent guard, profile and assistant. No browser runtime exceptions in these checks.
+- Isolated browser API/WebSocket fixtures passed registration, URL normalization, auto/click-calibration UI, authorized start payload, live navigation, polling, telemetry, transcript replay, history/filter and stop checks. Fixtures never entered application source or the real engine.
+- **Gate impact:** Frontend milestone verification passes within this scope. Module 7 integrated demo and backend gates remain unverified by this change. The engine was offline; live calibration, scanning, Ollama and stop integration were not run. Electron, screen-reader/full contrast/zoom audits and non-Chromium browsers were not tested. Existing Vite CJS deprecation warning remains.
+- **Remaining:** User review; individual page redesign/reflow and page-specific accessibility improvements. Narrow page content may scroll horizontally within the responsive shell. No dashboard or other page redesign begun.
+
+
+### Milestone 1 review refinement — 2026-10-17
+
+Removed redundant desktop sidebar spacing in `desktop/src/index.css` and prevented section shrinkage. Automatic overflow scrolling remains available. Frontend build passed. Chromium layout checks passed at 1366px width and heights 400/500/600/650/720/768/900, including an additional Live scan-sized DOM fixture. No overflow at 650px tall with the extra item, or 600px without it. Bottom footer/services/profile access and keyboard focus verified on short windows; compact drawer checked at 390x400. No page or scanner code changed. Live integration not rerun for this CSS-only refinement; no backend gate change.
+
+
+### Sidebar scrollbar visibility correction — 2026-10-17
+
+Scoped native scrollbar hiding to the desktop sidebar only, retaining fixed width and automatic overflow scrolling. Build passed. Chromium desktop/short-window screenshots inspected (1366x768, 1366x400 top and bottom). Wheel/keyboard scrolling, bottom status/profile access, main scrolling and compact drawer checks passed. Firefox/WebKit, physical touchpad and Electron runtime not tested. Scanner code unchanged; no live scan rerun or backend gate update.

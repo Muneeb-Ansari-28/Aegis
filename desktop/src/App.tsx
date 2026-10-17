@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Activity, AlertTriangle, ArrowUpRight, Bot, Boxes, Check, ChevronDown, CircleHelp, Clock3, Command, Fingerprint, Globe2, History, Laptop, LoaderCircle, MessageSquare, MousePointer2, Play, Plus, Radio, ScanLine, Search, Settings2, Shield, ShieldCheck, SlidersHorizontal, Sparkles, Square, UserRound, Wifi, X } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowUpRight, Bot, Boxes, Check, CircleHelp, Clock3, Command, Fingerprint, Globe2, History, Laptop, LoaderCircle, MousePointer2, Play, Plus, Radio, ScanLine, Search, Settings2, Shield, ShieldCheck, SlidersHorizontal, Sparkles, Square, UserRound, X } from 'lucide-react';
 import { api, assist, type CalibrationSession, type ScanRecord, type ScanTurn, type Target } from './api/client';
 import { useScanSocket, type ScanEvent } from './hooks/useScanSocket';
-import './index.css';
+import ApplicationShell, { type AppPage as Page } from './components/ApplicationShell';
 
-type Page = 'overview' | 'scan' | 'live' | 'history' | 'assistant' | 'profile';
 type ScanMode = 'web' | 'desktop';
 type ChatMessage = { role: 'assistant' | 'user'; text: string };
 type LocalScan = ScanRecord & { targetName?: string; createdAt: string };
@@ -62,29 +61,16 @@ export default function App() {
     });
   }, [activeScan?.scan_id]);
 
-  const nav: Array<{ id: Page; name: string; icon: typeof Activity; group?: string }> = [
-    { id: 'overview', name: 'Overview', icon: Activity, group: 'WORKSPACE' },
-    { id: 'scan', name: 'New assessment', icon: ScanLine },
-    ...(activeScan ? [{ id: 'live' as Page, name: 'Live scan', icon: Activity, group: 'RUNNING' }] : []),
-    { id: 'history', name: 'Scan history', icon: History, group: 'INTELLIGENCE' },
-    { id: 'assistant', name: 'Aegis assistant', icon: MessageSquare },
-  ];
-  return <div className="app-shell">
-    <aside className="sidebar">
-      <div className="brand"><div className="brand-mark"><Shield size={20} strokeWidth={2.5}/><span/></div><div><strong>AEGIS</strong><small>AI SECURITY WORKBENCH</small></div></div>
-      <div className="workspace-switch"><div className="workspace-avatar">A</div><div><strong>Personal workspace</strong><small>Local environment</small></div><ChevronDown size={15}/></div>
-      <div className="nav-list">{nav.map((item) => <div key={item.id}>{item.group && <p className="nav-label">{item.group}</p>}<button onClick={() => setPage(item.id)} className={cx('nav-item', page === item.id && 'active')}><item.icon size={17}/>{item.name}{item.id === 'scan' && <span className="nav-shortcut">⌘ K</span>}</button></div>)}</div>
-      <div className="sidebar-bottom"><div className="engine-card"><div className="engine-card-title"><span className={cx('status-dot', engineOnline && 'online', engineOnline === false && 'offline')}/><strong>{engineOnline === null ? 'Checking engine' : engineOnline ? 'Engine connected' : 'Engine offline'}</strong><button className="icon-button tiny" title="Refresh connection" onClick={() => void refresh()}><Radio size={14}/></button></div><div className="engine-row"><span>Ollama</span><span className={cx('pill-status', ollamaOnline && 'good')}>{ollamaOnline === null ? 'Checking' : ollamaOnline ? 'Ready' : 'Offline'}</span></div><div className="engine-row"><span>Playwright</span><span className="pill-status good">Available</span></div></div><button className={cx('nav-item', 'profile-nav', page === 'profile' && 'active')} onClick={() => setPage('profile')}><div className="profile-avatar">{profileName.slice(0,1).toUpperCase()}</div><span className="profile-text">{profileName}<small>Local profile</small></span><Settings2 size={16}/></button><div className="sidebar-footer">AEGIS DESKTOP <span>v0.1.0</span></div></div>
-    </aside>
-    <main className="main-area"><header className="topbar"><div className="breadcrumbs"><span>Workspace</span><span className="crumb-slash">/</span><strong>{page === 'overview' ? 'Overview' : page === 'scan' ? 'New assessment' : page === 'live' ? 'Live scan' : page === 'history' ? 'Scan history' : page === 'assistant' ? 'Aegis assistant' : 'Profile & preferences'}</strong></div><div className="top-actions"><div className="connection-chip"><Wifi size={14}/><span>{engineOnline ? 'Connected' : 'Engine status'}</span><span className={cx('status-dot', engineOnline && 'online', engineOnline === false && 'offline')}/></div><button className="icon-button" title="Help" onClick={() => setPage('assistant')}><CircleHelp size={18}/></button><button className="header-avatar" onClick={() => setPage('profile')}>{profileName.slice(0,1).toUpperCase()}</button></div></header>
+  return <><ApplicationShell page={page} onNavigate={setPage} hasActiveScan={Boolean(activeScan)}
+    profileName={profileName} engineOnline={engineOnline} ollamaOnline={ollamaOnline} onRefresh={refresh}>
       {page === 'overview' && <Overview history={history} targets={targets} activeScan={activeScan} onNavigate={setPage} engineOnline={engineOnline} ollamaOnline={ollamaOnline}/>}
       {page === 'scan' && <NewScan targets={targets} refresh={refresh} onStarted={onScanStarted} notify={setToast}/>}
       {page === 'live' && activeScan && <LiveScanPage scan={activeScan} targetName={history.find(item => item.scan_id === activeScan.scan_id)?.targetName || 'Local target'} onStatus={onScanStatus}/>}
       {page === 'history' && <HistoryPage history={history} onRefresh={() => { const h = readHistory(); setHistory(h); }} />}
       {page === 'assistant' && <Assistant history={history}/>}
       {page === 'profile' && <Profile onSaveName={setProfileName}/>}
-    </main>{toast && <div className="toast"><Check size={17}/>{toast}<button onClick={() => setToast('')}><X size={15}/></button></div>}
-  </div>;
+    </ApplicationShell>{toast && <div className="toast"><Check size={17}/>{toast}<button onClick={() => setToast('')}><X size={15}/></button></div>}
+  </>;
 }
 
 function Heading({ eyebrow, title, sub, action }: { eyebrow: string; title: string; sub: string; action?: ReactNode }) { return <div className="page-heading"><div><div className="eyebrow">{eyebrow}</div><h1>{title}</h1><p>{sub}</p></div>{action}</div>; }
