@@ -317,3 +317,174 @@
 - `UPDATED` Calibration flow validated end to end against a local fixture target with 17/17 automated Playwright checks (consent gate, automatic calibration, click-calibration ticks, URL normalization, selector persistence); frontend production build passes; engine suite reports 10 passed with the known pre-existing port-8001 weak-bot conflict — by "Muneeb" at 19:21, 2026-10-14
 
 **Gate Impact**: Production frontend build passes. Module 7 remains pending a full interactive scan demo.
+
+
+feature was implemented = Design V1 Milestone 1 application shell and semantic design system, verified build and isolated browser workflows by "Shahzaman" at 20:06, 2026-10-17
+
+### Implementation Report
+**Date**: 2026-10-17
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/components/ApplicationShell.tsx` — created — Presentation-only sidebar/header, existing view navigation, health status, accessible compact drawer and focus management.
+- `desktop/src/App.tsx` — modified — Wrap unchanged page components with the shared shell; retain existing state and scanner handlers.
+- `desktop/src/index.css` — modified — Semantic graphite light tokens, shared typography/buttons/panels, shell layout, responsive navigation, focus and reduced-motion styling.
+- `Project-Context/frontend-design.md` — modified — Record user approval, implemented foundation values, verification and remaining scope; foundation file was already untracked before this milestone.
+- `Project-Context/Status.md` — modified — Append milestone progress and explicit verification limits.
+- `Project-Context/logs.md` — modified — Append this implementation record without altering previous entries.
+**What Was Done**: Implemented the approved shell foundation without changing page implementations, API contracts or scanning logic. Production build passed. Chromium checks passed existing navigation and header actions, responsive shell bounds at 320/390/768/1024/1440px, modal keyboard isolation/Escape/backdrop/resize, scroll restoration, same-view draft preservation, authorization guard, profile saving, assistant responses and reduced motion. Desktop/drawer screenshots inspected. Isolated API/WebSocket fixtures passed target registration and normalization, auto/click-calibration UI, authorized start payload, polling, telemetry, transcript replay, history/filter, return-to-scan and stop. No runtime exceptions observed in these checks.
+**Why**: Establish the approved neutral, consistent, accessible shared foundation while keeping scanner behavior and state ownership stable for iterative page work.
+**Removals**: Replaced the old inline sidebar/header and their styles with ApplicationShell. Removed its unsupported shortcut and workspace-switch decoration, and replaced the unsupported Playwright availability claim with "Not checked". Removed unused shell icon imports and duplicate CSS import (main.tsx retains it). No page, backend feature, integration or dependency removed.
+**Deviations from Plan**: None in authorized milestone scope. Legacy page compositions remain unchanged and may scroll horizontally inside the shell on small screens; full page reflow is deferred. No dark mode or unsupported navigation introduced.
+**Gate Impact**: Frontend build and scoped browser checks pass. Live engine/target calibration, actual scan execution/Ollama/stopping, Electron runtime, screen-reader/full contrast/zoom audits and non-Chromium browsers remain untested. Engine was offline; fixture results are not live integration evidence. No backend gate or full integrated demo newly marked passed. Existing Vite CJS warning remains. Work stopped after Milestone 1; no Git publication performed.
+
+
+feature was updated = removed redundant desktop sidebar spacing while retaining short-window scrolling by "Shahzaman" at 20:12, 2026-10-17
+
+### Implementation Report
+**Date**: 2026-10-17
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/index.css` — modified — Use 16px desktop sidebar gaps, remove duplicate bottom-section top padding, preserve child heights.
+- `Project-Context/frontend-design.md` — modified — Append sidebar refinement and verification details.
+- `Project-Context/Status.md` — modified — Append review refinement status.
+- `Project-Context/logs.md` — modified — Append this report.
+**What Was Done**: Browser measurements identified 24px section gap plus 24px bottom-section padding causing early overflow. Reduced the required normal sidebar height from 630px to 590px without reducing navigation touch targets. Kept overflow-y auto; shorter windows scroll normally. Build passed. Chromium layout checks passed at width 1366 and heights 400/500/600/650/720/768/900, with normal navigation and a browser-only additional Live scan-sized item. Bottom sections remained reachable, Refresh and Settings keyboard focus scrolled into view, and the 390x400 compact drawer retained bottom access and Escape dismissal. Desktop screenshot inspected.
+**Why**: Address visual review feedback with a focused spacing fix while preserving access on short windows.
+**Removals**: Redundant desktop sidebar bottom-section top padding only. No feature or page content removed.
+**Deviations from Plan**: None.
+**Gate Impact**: Build and scoped layout checks pass; existing Vite CJS warning remains. No scanner logic changed or live integration rerun. Exact user viewport, Electron and other browsers unverified; no backend gate change. Stayed on shahzaman; no commit, push or PR.
+
+
+feature was updated = visually hid desktop sidebar native scrollbar while preserving independent scrolling by "Shahzaman" at 20:19, 2026-10-17
+
+### Implementation Report
+**Date**: 2026-10-17
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/index.css` — modified — Sidebar-only scrollbar-width and WebKit scrollbar fallback rules.
+- `Project-Context/frontend-design.md` — modified — Append corrected scrollbar specification and verification limits.
+- `Project-Context/Status.md` — modified — Append verification status.
+- `Project-Context/logs.md` — modified — Append this report.
+**What Was Done**: Hid the desktop sidebar native scrollbar while retaining overflow-y auto, fixed position and existing width. Visually inspected Chromium screenshots at 1366x768 and 1366x400 before/after scrolling to the bottom. Verified wheel/keyboard scrolling, system-status/profile access, unchanged main scrollbar styles and scrolling, and compact drawer access/Escape. Frontend build passed with the existing Vite CJS warning.
+**Why**: Prior spacing changes did not resolve the visible scrollbar feedback; this correction directly controls scrollbar rendering without disabling overflow.
+**Removals**: Native desktop sidebar scrollbar visuals only; no scrolling functionality removed.
+**Deviations from Plan**: None. No width, spacing, page content, scanner logic or unrelated styling changes.
+**Gate Impact**: Scoped Chromium visual/interaction checks and build pass. Firefox/WebKit, physical touchpad and Electron runtime not tested; native input handlers remain unchanged. No live scanner rerun or backend gate update. No commit, push or PR.
+
+
+feature was implemented = Design V1 Milestone 2 Overview redesign with truthful local metrics and responsive dashboard by "Shahzaman" at 20:40, 2026-10-17
+
+### Implementation Report
+**Date**: 2026-10-17
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/App.tsx` — modified — Replace inline Overview/Stat with imported Overview; pass existing profile/refresh callbacks and remove unused icons.
+- `desktop/src/components/Overview.tsx` — created — Compact dashboard header, local metrics, recent requests, actual health presentation and supported navigation actions.
+- `desktop/src/components/overview.css` — created — Dashboard-scoped responsive layout, table, cards, health and interaction styling.
+- `Project-Context/frontend-design.md` — modified — Append implemented dashboard decisions and limits.
+- `Project-Context/Status.md` — modified — Append verification and review state.
+- `Project-Context/logs.md` — modified — Append this report.
+**What Was Done**: Replaced the blue introductory banner with a compact greeting; added restrained metric cards, actual saved recent requests with last-known status, honest service states and supported quick actions. Preserved shell and other page components, App state/handlers, API client and telemetry. Build passes. Chromium fixture tests verified empty/offline/populated/connected/disconnected and loading presentation, local counts, quick actions, settings, View all, header start, refresh request and selected-scan navigation. Responsive bounds passed 320/390/768/1024/1280/1440px; table focus verified; desktop/mobile screenshots inspected. Corrected a mobile overflow in the table's hidden label and unused imports discovered by verification.
+**Why**: Implement approved Panel 1 visual hierarchy while distinguishing browser-local snapshots from live results and avoiding unsupported product claims.
+**Removals**: Removed Overview's oversized banner, old inline Stat helper, unsupported desktop-scan promotion and misleading broad coverage footer. Replaced target-count snapshot with last-known completed local count; target registration remains unchanged. Existing New Assessment modes and all other page functionality retained. Old global CSS retained to avoid unrelated shared-style changes.
+**Deviations from Plan**: No unsupported report/notification/results actions or decorative illustration added. Existing read-only profile preferences remain the destination for connection settings. Full live-status reconciliation and historical-result navigation are not introduced.
+**Gate Impact**: Frontend build and scoped Chromium checks pass; existing Vite CJS warning remains. Browser-only fixtures never enter production code/data. One test harness route-release error occurred after loading text verification; subsequent refresh and selected-scan checks passed with corrected fixtures. No live backend, real calibration/scan, Electron, other browser or full accessibility audit claimed. No backend gate change. Work remains on shahzaman without commit, push or PR; Milestone 2 awaits review.
+
+
+feature was updated = corrected Milestone 2 Dashboard composition against approved Panel 1 by "Shahzaman" at 20:51, 2026-10-17
+
+### Implementation Report
+**Date**: 2026-10-17
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/components/Overview.tsx` — modified — Compact header and service presentation, working-area wrapper, decorative shield/context rail and concise action copy.
+- `desktop/src/components/overview.css` — modified — Reference-proportioned desktop grid, compact cards/panels/table/empty state/actions, illustration and responsive adaptations.
+- `Project-Context/frontend-design.md` — modified — Append visual correction specification and evidence.
+- `Project-Context/Status.md` — modified — Record visual approval still pending.
+- `Project-Context/logs.md` — modified — Append this report.
+**What Was Done**: Compared the existing 1280x800 render with approved Panel 1 before editing; identified excessive width/height, missing context rail and below-fold Quick Actions. Reworked the dashboard composition and inspected corrected empty/offline and populated screenshots at 1280x800, plus mobile at 390px. Build passed; Chromium Quick Actions/history/settings/refresh, actual fixture rendering, and body/content overflow checks at six widths from 320 to 1440px passed without runtime exceptions. Milestone 1 shell and all scanner handlers retained.
+**Why**: The initial implementation passed functional checks but did not sufficiently match the approved visual composition. This is a correction to Milestone 2, not a new milestone.
+**Removals**: Removed oversized Overview eyebrow and redundant visual service explanations; explanations remain in accessible text/hover descriptions. No functionality or scanner integration removed.
+**Deviations from Plan**: Simplified CSS/icon shield illustration instead of exact reference art. Real local metrics, last-known labels, unchecked/unavailable states and supported setup guidance replace unsupported sample results and report actions. Approved shell preserved.
+**Gate Impact**: Build and scoped Chromium visual/interaction checks pass; user visual approval pending. Live engine scanning, Electron and other browsers not retested. No backend gate change, dependency, commit, push, merge or PR.
+
+
+feature was updated = refined Milestone 2 to the full-size Dashboard reference with layered local shield artwork by "Shahzaman" at 06:53, 2026-10-18
+
+### Implementation Report
+**Date**: 2026-10-18
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/components/Overview.tsx` — modified — Profile/time greeting, four reference-aligned truthful metrics, persistent five-column table, selected-scan target link, service descriptions, full-width Quick Actions placement and artwork reference.
+- `desktop/src/components/overview.css` — modified — Consolidated dashboard-scoped styles for full-size reference proportions, typography, service density, decoration and responsive behavior.
+- `desktop/src/assets/security-dashboard.svg` — created — Local decorative layered blue shield artwork, no external resources.
+- `Project-Context/frontend-design.md` — modified — Append full-size visual authority, actual behavior and verification limits.
+- `Project-Context/Status.md` — modified — Append progress awaiting approval.
+- `Project-Context/logs.md` — modified — Append this report.
+**What Was Done**: Compared original 1440x900 render with the full-size reference, replaced undersized presentation, expanded the bottom actions across both columns, retained empty table headings, restored visible service explanations and added layered vector artwork. Repeated screenshot comparison and reduced excess service/artwork height until the complete dashboard fit 1440x900. Visually inspected desktop and mobile captures. Chromium fixture checks passed empty/offline and populated states, truthful count/unavailable findings presentation, quick actions, settings/history, refresh requests, selected-scan link, table focus and six widths from 320 to 1440px. Final build passed. An initial build command used the repository root and failed for missing package.json; it was rerun in desktop. SVG module typing failure was fixed using a bundled asset URL; no configuration/dependency change.
+**Why**: Faithfully implement the user's full-size reference rather than the earlier compact interpretation, while preserving true data and supported functionality.
+**Removals**: Replaced the simple CSS shield and accumulated CSS overrides; removed the redundant greeting-level start button while retaining start actions in empty state and Quick Actions. Changed prior latest-request metric to explicitly last-known Running count. Selected-scan Open moved to the target-name control; no scanner integration removed.
+**Deviations from Plan**: The approved shell is preserved. Findings remain unavailable, running/completed are last-known local counts, unsupported report action remains setup guidance, and capability copy reflects LLM07. SVG is a vector recreation, not the original raster artwork.
+**Gate Impact**: Frontend build and scoped Chromium checks pass; visual approval still belongs to the user. No live engine scanning, Electron, non-Chromium or full accessibility audit rerun. Existing Vite CJS warning remains. No backend gate change or Git publication; work stopped for visual approval.
+
+
+feature was implemented = Milestone 3 four-step New Assessment wizard by "Shahzaman" at 07:16, 2026-10-18
+
+### Implementation Report
+**Date**: 2026-10-18
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/App.tsx` — modified — Replace only the inline NewScan view with the extracted wizard; remove its unused imports/helpers.
+- `desktop/src/components/NewAssessment.tsx` — created — Four-step presentation, progress rail, labeled controls, authorization, calibration feedback and review.
+- `desktop/src/components/new-assessment.css` — created — Scoped graphite-neutral styling, geometric decoration, responsive stepper and form layouts.
+- `desktop/src/hooks/useAssessmentWizard.ts` — created — Existing registration/calibration/scan integration organized into wizard state with operation and stale-result guards.
+- `Project-Context/frontend-design.md` — modified — Append Milestone 3 design decisions and verification limits.
+- `Project-Context/Status.md` — modified — Append implementation status pending user approval.
+- `Project-Context/logs.md` — modified — Append this implementation report.
+**What Was Done**: Inspected the approved reference, design guidance and existing NewScan handlers before extraction. Implemented a responsive four-step wizard using the existing target, consent, calibration and scan contracts. Added target-specific invalidation, retained registered target snapshots, synchronous in-flight guards and stale-response checks. Preserved manual input/Send selection, polling/deadlines and selector saving/reuse. Reviewed four desktop captures and mobile; refined panel spacing and step focus. Final build and Chromium fixture checks passed as detailed in frontend-design.md. Initial build identified a History icon import removed during extraction; restored it. Initial browser harness used the wrong navigation-label case; corrected the fixture selector. Used port 3001 because 3000 was occupied. Temporary verification artifacts are outside the repository.
+**Why**: Implement the approved Milestone 3 workflow and visual hierarchy while retaining scanner behavior and real backend contracts.
+**Removals**: Replaced the inline NewScan presentation/helpers with NewAssessment and useAssessmentWizard. Removed unsupported selectable desktop/OWASP options from this form, presenting desktop as unavailable and only LLM07 as runnable. Removed its redundant summary/help aside; review is Step 4 and the existing Assistant remains accessible. History, Assistant, Profile, Live Scan, shell and Dashboard implementations are unchanged.
+**Deviations from Plan**: Calibration controls occupy Step 2 rather than the reference image's target panel; explicit consent occupies Step 1 before browser interaction, as required by the requested four-step workflow. CSS geometry approximates the reference decoration. No API or scanner contract deviation.
+**Gate Impact**: Frontend build, scoped Chromium fixture behavior, responsive checks and screenshot inspection pass. User visual/functional approval pending. Live engine calibration/scanning, Electron, other browsers and assistive technologies not tested; no backend gate newly passed. No dependencies, commit, push, merge or PR.
+
+
+feature was updated = finalized visually approved Milestone 3 for authorized publication by "Shahzaman" at 14:46, 2026-10-18
+
+### Implementation Report
+**Date**: 2026-10-18
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/components/NewAssessment.tsx` — modified — Correct one invalid UTF-8 target-option separator byte found during final review.
+- `Project-Context/Status.md` — modified — Append completion, visual approval and integration-testing deferral.
+- `Project-Context/frontend-design.md` — modified — Append approval and final verification record.
+- `Project-Context/logs.md` — modified — Append finalization report; prior implementation report lists the complete seven-file milestone scope.
+**What Was Done**: Confirmed shahzaman and reviewed Milestone 3 changes. Re-ran frontend build and Chromium wizard fixtures, plus Dashboard refresh/actions and desktop/compact navigation checks. All passed; existing Vite CJS warning remains. Prepared only the four milestone frontend files and three associated context documents for the explicitly authorized commit/push to origin/shahzaman.
+**Why**: Record the user's visual approval and publish the completed milestone with accurate test limitations.
+**Removals**: None during finalization.
+**Deviations from Plan**: None; minor encoding correction only.
+**Gate Impact**: Milestone 3 implementation complete and visually approved. Frontend build and fixture checks passed. Live Playwright calibration and end-to-end scanning remain untested; full integration testing deferred until all frontend screens are complete. No backend gate newly passed. No unrelated files (including run_aegis.ps1), merge, PR or Milestone 4 work included.
+
+
+feature was updated = recorded approved frontend Milestones 1–3 and PR preparation verification by "Shahzaman" at 14:56, 2026-10-18
+
+### Implementation Report
+**Date**: 2026-10-18
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `Project-Context/Status.md` — modified — Append consolidated approval status, actual verification and remaining redesign/integration work.
+- `Project-Context/frontend-design.md` — modified — Append approved milestone checkpoint and scope boundaries.
+- `Project-Context/logs.md` — modified — Append this report, preserving history.
+**What Was Done**: Read project context, confirmed clean shahzaman and reviewed milestone/branch scope including untracked files. Milestone 3 was already published as 29610de; no frontend source correction was required. Fresh frontend build and existing temporary Chromium wizard fixtures passed. No frontend npm test command or checked-in test suite exists. Marked Milestones 1–3 implemented and visually approved; documented Live Scan and Results redesigns as unimplemented.
+**Why**: Prepare accurate review context for a future explicitly authorized PR to main without implying the entire frontend or live integration is complete.
+**Removals**: None; all existing documentation and log history preserved.
+**Deviations from Plan**: Documentation-only commit because the relevant Milestone 3 frontend changes were already committed and pushed.
+**Gate Impact**: Build and fixture checks passed; existing Vite CJS warning remains. Live Playwright calibration and full LLM07 end-to-end testing remain pending, with full integration testing deferred until all frontend screens are complete. Backend functionality/API contracts/scanner logic preserved. No backend gate newly passed. No run_aegis.ps1 change, main modification, PR, merge or Milestone 4 work.

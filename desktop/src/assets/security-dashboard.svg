@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 340" fill="none">
+  <defs>
+    <linearGradient id="glass" x1="100" y1="60" x2="300" y2="270" gradientUnits="userSpaceOnUse"><stop stop-color="#c3d0ff" stop-opacity=".7"/><stop offset="1" stop-color="#f6f8ff" stop-opacity=".5"/></linearGradient>
+    <linearGradient id="blue" x1="100" y1="100" x2="270" y2="300" gradientUnits="userSpaceOnUse"><stop stop-color="#b8c8ff"/><stop offset=".55" stop-color="#7894ff"/><stop offset="1" stop-color="#4361dc"/></linearGradient>
+    <linearGradient id="shield" x1="190" y1="140" x2="240" y2="235" gradientUnits="userSpaceOnUse"><stop stop-color="#6584ee"/><stop offset="1" stop-color="#274bb8"/></linearGradient>
+    <filter id="shadow" x="-40%" y="-30%" width="180%" height="180%"><feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#667ecb" flood-opacity=".18"/></filter>
+  </defs>
+  <path d="M18 190 350 4v251L105 338 18 278Z" fill="#e6ecff" opacity=".5"/>
+  <path d="M120 108 216 50q13-8 13 8v166L120 280Z" fill="#dce5ff" opacity=".5"/>
+  <path d="m245 66 71 40q10 6 10 18v124l-91-51V75q0-15 10-9Z" fill="url(#blue)" opacity=".42" stroke="#a5b7ff"/>
+  <g filter="url(#shadow)">
+    <path d="m178 107 114 65q12 7 12 22v114l-139-79V115q0-15 13-8Z" fill="#aebfff" opacity=".42"/>
+    <path d="m183 112 118 67q12 7 12 20v112q0 12-11 6l-119-67q-11-6-11-19V120q0-14 11-8Z" fill="url(#blue)" opacity=".7" stroke="#dce5ff" stroke-width="2"/>
+    <path d="m207 128 134 76q10 6 10 18v113l-153-87V136q0-14 9-8Z" fill="url(#glass)" stroke="#fff" stroke-opacity=".9"/>
+    <g transform="translate(201 151) skewY(29)">
+      <path d="M36 0C23 10 13 12 0 9v40c0 28 18 45 36 53 19-8 37-25 37-53V9C60 12 49 10 36 0Z" fill="#fff"/>
+      <path d="M36 12C26 18 17 21 9 20v29c0 23 13 37 27 44 15-7 28-21 28-44V20c-9 1-18-2-28-8Z" fill="url(#shield)"/>
+      <path d="M36 24v55c-10-7-16-16-16-31V30c6 0 11-2 16-6Z" fill="#f3f6ff"/>
+      <path d="M36 24c6 4 11 6 17 6v18c0 15-6 24-17 31V24Z" fill="#9bb2ff"/>
+    </g>
+  </g>
+  <g transform="translate(129 143) skewY(29)"><rect width="46" height="55" rx="6" fill="url(#glass)"/><path d="M12 15h24M12 26h17M12 37h24" stroke="#8ca4ff" stroke-width="4"/></g>
+  <g transform="translate(105 206) skewY(29)" filter="url(#shadow)"><rect width="58" height="54" rx="8" fill="url(#blue)"/><path d="M13 16h29M13 27h21M13 38h29" stroke="#e5ebff" stroke-width="3"/></g>
+  <g filter="url(#shadow)"><path d="m20 258 45-26 45 26-45 27Z" fill="#c8d6ff" stroke="#e0e8ff"/><path d="M20 258v30l45 27v-30Z" fill="#a6baff"/><path d="m65 285 45-27v30l-45 27Z" fill="#809bfb"/><path d="m51 259 14-8 14 8-14 8Z" stroke="white" stroke-width="2"/></g>
+  <g transform="translate(291 262) skewY(29)"><rect width="60" height="58" rx="7" fill="white" fill-opacity=".95" stroke="#edf1ff"/><path d="M15 17h31M15 29h22M15 41h31" stroke="#5c7cff" stroke-width="4"/></g>
+</svg>

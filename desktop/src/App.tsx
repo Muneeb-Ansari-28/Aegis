@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Activity, AlertTriangle, ArrowUpRight, Bot, Boxes, Check, ChevronDown, CircleHelp, Clock3, Command, Fingerprint, Globe2, History, Laptop, LoaderCircle, MessageSquare, MousePointer2, Play, Plus, Radio, ScanLine, Search, Settings2, Shield, ShieldCheck, SlidersHorizontal, Sparkles, Square, UserRound, Wifi, X } from 'lucide-react';
-import { api, assist, type CalibrationSession, type ScanRecord, type ScanTurn, type Target } from './api/client';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { AlertTriangle, ArrowUpRight, Bot, Check, CircleHelp, Command, Globe2, History, LoaderCircle, Radio, Search, Settings2, Shield, ShieldCheck, SlidersHorizontal, Sparkles, Square, UserRound, X } from 'lucide-react';
+import { api, assist, type ScanRecord, type ScanTurn, type Target } from './api/client';
 import { useScanSocket, type ScanEvent } from './hooks/useScanSocket';
-import './index.css';
+import Overview from './components/Overview';
+import NewAssessment from './components/NewAssessment';
+import ApplicationShell, { type AppPage as Page } from './components/ApplicationShell';
 
-type Page = 'overview' | 'scan' | 'live' | 'history' | 'assistant' | 'profile';
-type ScanMode = 'web' | 'desktop';
 type ChatMessage = { role: 'assistant' | 'user'; text: string };
 type LocalScan = ScanRecord & { targetName?: string; createdAt: string };
 const HISTORY_KEY = 'aegis.scan-history';
@@ -17,19 +17,6 @@ const OWASP = [
 function readHistory(): LocalScan[] { try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]') as LocalScan[]; } catch { return []; } }
 function errorText(e: unknown): string { return e instanceof Error ? e.message : 'Something went wrong. Check that the Aegis engine is running.'; }
 function cx(...v: Array<string | false | null | undefined>): string { return v.filter(Boolean).join(' '); }
-function normalizeTargetUrl(raw: string): string {
-  const trimmed = raw.trim();
-  if (!trimmed) throw new Error('Enter the local target URL before continuing.');
-  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `http://${trimmed}`;
-  let parsed: URL;
-  try { parsed = new URL(withScheme); } catch { throw new Error('Enter a valid URL such as http://127.0.0.1:5173.'); }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new Error('Target URL must start with http:// or https://.');
-  return withScheme;
-}
-function normalizeTargetUrlSafe(raw: string): string {
-  try { return normalizeTargetUrl(raw); } catch { return raw.trim() || 'the target URL'; }
-}
-
 export default function App() {
   const [page, setPage] = useState<Page>('overview');
   const [engineOnline, setEngineOnline] = useState<boolean | null>(null);
@@ -62,85 +49,19 @@ export default function App() {
     });
   }, [activeScan?.scan_id]);
 
-  const nav: Array<{ id: Page; name: string; icon: typeof Activity; group?: string }> = [
-    { id: 'overview', name: 'Overview', icon: Activity, group: 'WORKSPACE' },
-    { id: 'scan', name: 'New assessment', icon: ScanLine },
-    ...(activeScan ? [{ id: 'live' as Page, name: 'Live scan', icon: Activity, group: 'RUNNING' }] : []),
-    { id: 'history', name: 'Scan history', icon: History, group: 'INTELLIGENCE' },
-    { id: 'assistant', name: 'Aegis assistant', icon: MessageSquare },
-  ];
-  return <div className="app-shell">
-    <aside className="sidebar">
-      <div className="brand"><div className="brand-mark"><Shield size={20} strokeWidth={2.5}/><span/></div><div><strong>AEGIS</strong><small>AI SECURITY WORKBENCH</small></div></div>
-      <div className="workspace-switch"><div className="workspace-avatar">A</div><div><strong>Personal workspace</strong><small>Local environment</small></div><ChevronDown size={15}/></div>
-      <div className="nav-list">{nav.map((item) => <div key={item.id}>{item.group && <p className="nav-label">{item.group}</p>}<button onClick={() => setPage(item.id)} className={cx('nav-item', page === item.id && 'active')}><item.icon size={17}/>{item.name}{item.id === 'scan' && <span className="nav-shortcut">⌘ K</span>}</button></div>)}</div>
-      <div className="sidebar-bottom"><div className="engine-card"><div className="engine-card-title"><span className={cx('status-dot', engineOnline && 'online', engineOnline === false && 'offline')}/><strong>{engineOnline === null ? 'Checking engine' : engineOnline ? 'Engine connected' : 'Engine offline'}</strong><button className="icon-button tiny" title="Refresh connection" onClick={() => void refresh()}><Radio size={14}/></button></div><div className="engine-row"><span>Ollama</span><span className={cx('pill-status', ollamaOnline && 'good')}>{ollamaOnline === null ? 'Checking' : ollamaOnline ? 'Ready' : 'Offline'}</span></div><div className="engine-row"><span>Playwright</span><span className="pill-status good">Available</span></div></div><button className={cx('nav-item', 'profile-nav', page === 'profile' && 'active')} onClick={() => setPage('profile')}><div className="profile-avatar">{profileName.slice(0,1).toUpperCase()}</div><span className="profile-text">{profileName}<small>Local profile</small></span><Settings2 size={16}/></button><div className="sidebar-footer">AEGIS DESKTOP <span>v0.1.0</span></div></div>
-    </aside>
-    <main className="main-area"><header className="topbar"><div className="breadcrumbs"><span>Workspace</span><span className="crumb-slash">/</span><strong>{page === 'overview' ? 'Overview' : page === 'scan' ? 'New assessment' : page === 'live' ? 'Live scan' : page === 'history' ? 'Scan history' : page === 'assistant' ? 'Aegis assistant' : 'Profile & preferences'}</strong></div><div className="top-actions"><div className="connection-chip"><Wifi size={14}/><span>{engineOnline ? 'Connected' : 'Engine status'}</span><span className={cx('status-dot', engineOnline && 'online', engineOnline === false && 'offline')}/></div><button className="icon-button" title="Help" onClick={() => setPage('assistant')}><CircleHelp size={18}/></button><button className="header-avatar" onClick={() => setPage('profile')}>{profileName.slice(0,1).toUpperCase()}</button></div></header>
-      {page === 'overview' && <Overview history={history} targets={targets} activeScan={activeScan} onNavigate={setPage} engineOnline={engineOnline} ollamaOnline={ollamaOnline}/>}
-      {page === 'scan' && <NewScan targets={targets} refresh={refresh} onStarted={onScanStarted} notify={setToast}/>}
+  return <><ApplicationShell page={page} onNavigate={setPage} hasActiveScan={Boolean(activeScan)}
+    profileName={profileName} engineOnline={engineOnline} ollamaOnline={ollamaOnline} onRefresh={refresh}>
+      {page === 'overview' && <Overview history={history} activeScan={activeScan} onNavigate={setPage} engineOnline={engineOnline} ollamaOnline={ollamaOnline} profileName={profileName} onRefresh={refresh}/>}
+      {page === 'scan' && <NewAssessment targets={targets} refresh={refresh} onStarted={onScanStarted} notify={setToast}/>}
       {page === 'live' && activeScan && <LiveScanPage scan={activeScan} targetName={history.find(item => item.scan_id === activeScan.scan_id)?.targetName || 'Local target'} onStatus={onScanStatus}/>}
       {page === 'history' && <HistoryPage history={history} onRefresh={() => { const h = readHistory(); setHistory(h); }} />}
       {page === 'assistant' && <Assistant history={history}/>}
       {page === 'profile' && <Profile onSaveName={setProfileName}/>}
-    </main>{toast && <div className="toast"><Check size={17}/>{toast}<button onClick={() => setToast('')}><X size={15}/></button></div>}
-  </div>;
+    </ApplicationShell>{toast && <div className="toast"><Check size={17}/>{toast}<button onClick={() => setToast('')}><X size={15}/></button></div>}
+  </>;
 }
 
 function Heading({ eyebrow, title, sub, action }: { eyebrow: string; title: string; sub: string; action?: ReactNode }) { return <div className="page-heading"><div><div className="eyebrow">{eyebrow}</div><h1>{title}</h1><p>{sub}</p></div>{action}</div>; }
-
-function Overview({ history, targets, activeScan, onNavigate, engineOnline, ollamaOnline }: { history: LocalScan[]; targets: Target[]; activeScan: ScanRecord | null; onNavigate: (p: Page) => void; engineOnline: boolean | null; ollamaOnline: boolean | null }) {
-  const latest = history[0];
-  return <div className="page-content"><Heading eyebrow="SECURITY OVERVIEW" title="Good to see you." sub="Your AI security workbench is ready. Start an assessment or review recent activity." action={<button className="button primary" onClick={() => onNavigate('scan')}><Plus size={16}/>New assessment</button>}/>
-    <div className="welcome-banner"><div className="banner-orb"><ShieldCheck size={24}/></div><div className="banner-copy"><span className="banner-overline">AEGIS SECURITY POSTURE</span><h2>Assess your AI surface with confidence.</h2><p>Set up Playwright for an authorized LLM target and explore the Aegis workspace.</p></div><div className="banner-decoration"/></div>
-    <div className="stat-grid"><Stat icon={ScanLine} label="Total assessments" value={String(history.length).padStart(2,'0')} note="In this workspace" color="blue"/><Stat icon={ShieldCheck} label="Targets registered" value={String(targets.length).padStart(2,'0')} note="Web and desktop apps" color="green"/><Stat icon={Fingerprint} label="Findings confirmed" value="—" note="Not supplied by engine yet" color="amber"/><Stat icon={Clock3} label="Latest activity" value={latest ? new Date(latest.createdAt).toLocaleDateString() : '—'} note={activeScan ? 'Request submitted to engine' : latest ? latest.targetName || 'Assessment started' : 'No scans yet'} color="purple"/></div>
-    <div className="overview-columns"><section className="panel quick-panel"><div className="panel-head"><div><h3>Quick start</h3><p>Choose a starting point for your assessment</p></div><Sparkles size={18} className="muted-icon"/></div><button className="quick-action" onClick={() => onNavigate('scan')}><div className="quick-icon cyan"><Globe2 size={19}/></div><div><strong>Assess a web application</strong><small>Connect to a browser-based LLM chat interface</small></div><ArrowUpRight size={16}/></button><button className="quick-action" onClick={() => onNavigate('scan')}><div className="quick-icon lavender"><Laptop size={19}/></div><div><strong>Assess a desktop application</strong><small>Configure a desktop target for UI automation</small></div><ArrowUpRight size={16}/></button><button className="quick-action" onClick={() => onNavigate('assistant')}><div className="quick-icon mint"><Bot size={19}/></div><div><strong>Ask the Aegis assistant</strong><small>Get help with configuration and results</small></div><ArrowUpRight size={16}/></button></section>
-      <section className="panel activity-panel"><div className="panel-head"><div><h3>Recent activity</h3><p>Your latest scan requests</p></div><button className="text-button" onClick={() => onNavigate('history')}>View history <ArrowUpRight size={14}/></button></div>{history.length ? history.slice(0,4).map((s,i) => <div className="activity-row" key={s.scan_id}><div className={cx('activity-icon', i === 0 ? 'active-run' : '')}><ScanLine size={15}/></div><div className="activity-details"><strong>{s.targetName || 'Assessment'}</strong><small>{s.category} · {new Date(s.createdAt).toLocaleString()}</small></div><span className={cx('scan-status', s.status.toLowerCase())}>{s.status}</span></div>) : <div className="empty-activity"><div className="empty-icon"><History size={19}/></div><strong>No activity yet</strong><p>Your assessments will show up here.</p><button className="text-button" onClick={() => onNavigate('scan')}>Start your first scan <ArrowUpRight size={14}/></button></div>}</section></div>
-    <div className="bottom-strip"><div className="bottom-strip-icon"><Boxes size={17}/></div><div><strong>Built for focused LLM security testing</strong><small>OWASP LLM Top 10 · Playwright browser automation · Local-first</small></div><div className="service-tags"><span className={cx(engineOnline && 'tag-active')}><span className="status-dot"/>Engine</span><span className={cx(ollamaOnline && 'tag-active')}><span className="status-dot"/>Ollama</span></div></div>
-  </div>;
-}
-function Stat({ icon: Icon, label, value, note, color }: { icon: typeof Activity; label: string; value: string; note: string; color: string }) { return <div className="stat-card"><div className="stat-top"><div className={`stat-icon ${color}`}><Icon size={17}/></div><span className="stat-more">···</span></div><div className="stat-value">{value}</div><div className="stat-label">{label}</div><div className="stat-note">{note}</div></div>; }
-
-function NewScan({ targets, refresh, onStarted, notify }: { targets: Target[]; refresh: () => Promise<void>; onStarted: (s: ScanRecord,t?: Target)=>void; notify: (s:string)=>void }) {
-  const [mode, setMode] = useState<ScanMode>('web'); const [targetId, setTargetId] = useState(''); const [name,setName]=useState(''); const [url,setUrl]=useState(''); const [category,setCategory]=useState('LLM07'); const [budget,setBudget]=useState(10); const [consent,setConsent]=useState(false); const [busy,setBusy]=useState(false); const [calibrating,setCalibrating]=useState(false); const [calibration,setCalibration]=useState<Target['calibration_config']>(); const [calibrationSession,setCalibrationSession]=useState<CalibrationSession|null>(null); const [calibrationMethod,setCalibrationMethod]=useState<'auto'|'click'|null>(null); const [error,setError]=useState(''); const [calibError,setCalibError]=useState(''); const consentRef=useRef<HTMLDivElement>(null);
-  const selected = targets.find(t=>t.id===targetId); const supported=category==='LLM07';
-  async function calibrate(interactive:boolean) {
-    setError(''); setCalibError(''); setCalibrationSession(null); setCalibrationMethod(interactive?'click':'auto');
-    if(!consent){const msg='Confirm authorization below before Aegis opens this local target.';setError(msg);setCalibError(msg);consentRef.current?.scrollIntoView({behavior:'smooth',block:'center'});return;}
-    let targetUrl='';try{targetUrl=normalizeTargetUrl(url);}catch(e){const msg=errorText(e);setError(msg);setCalibError(msg);return;}
-    setCalibrating(true);
-    try {
-      const target=selected||await api.createTarget({name:name.trim()||new URL(targetUrl).hostname,target_type:'web',url:targetUrl});
-      setTargetId(target.id); void refresh();
-      if(!interactive){
-        const result=await api.autoCalibrate(target.id);
-        setCalibration(result.calibration_config); setCalibrationSession(null); void refresh();
-        notify('Automatic calibration complete. Selectors saved to this target.');
-        return;
-      }
-      let progress=await api.beginInteractiveCalibration(target.id,90);
-      setCalibrationSession(progress);
-      const deadline=Date.now()+95000;
-      while(progress.status!=='completed'&&progress.status!=='failed'&&Date.now()<deadline){
-        await new Promise(resolve=>window.setTimeout(resolve,300));
-        progress=await api.calibrationStatus(target.id,progress.session_id);
-        setCalibrationSession(progress);
-      }
-      if(progress.status==='failed') throw new Error(progress.error||'Click calibration failed.');
-      let configWaits=0;
-      while(progress.status==='completed'&&!progress.calibration_config&&configWaits<20){await new Promise(resolve=>window.setTimeout(resolve,250));progress=await api.calibrationStatus(target.id,progress.session_id);setCalibrationSession(progress);configWaits++;}
-      if(progress.status==='failed') throw new Error(progress.error||'Click calibration failed.');
-      if(progress.status!=='completed'||!progress.calibration_config) throw new Error('Calibration timed out before both target controls were selected.');
-      setCalibration(progress.calibration_config); void refresh();
-      notify('Click calibration complete. Selectors saved to this target.');
-    }catch(e){const msg=errorText(e);setError(msg);setCalibError(msg);}finally{setCalibrating(false);}
-  }
-  async function start() { setError(''); setCalibError(''); if(!consent){setError('Confirm that you are authorized to assess this target.');return;} if(mode==='desktop'){setError('Desktop UI Automation is scaffolded but the engine adapter is not implemented yet.');return;} if(!supported){setError('The active assessment pipeline currently supports OWASP LLM07 only.');return;} if(!calibration){setError('Choose automatic or click calibration before starting the scan.');return;} let targetUrl='';try{targetUrl=normalizeTargetUrl(url);}catch(e){setError(errorText(e));return;} setBusy(true); try { let target=selected; if(!target) target=await api.createTarget({name:name.trim()||new URL(targetUrl).hostname,target_type:'web',url:targetUrl,calibration_config:calibration}); const scan=await api.startScan({target_id:target.id,category,budget,authorized:consent}); onStarted(scan,target); }catch(e){setError(errorText(e));}finally{setBusy(false);} }
-  return <div className="page-content"><Heading eyebrow="NEW ASSESSMENT" title="Configure a scan" sub="Set up an authorized target, calibrate its interface, and choose an OWASP category."/><div className="scan-layout"><div className="scan-form-column"><section className="panel form-panel"><div className="section-title"><span className="step-number">01</span><div><h3>Choose target type</h3><p>Select the application surface you want to assess.</p></div></div><div className="mode-switch"><button onClick={()=>setMode('web')} className={cx(mode==='web'&&'selected')}><Globe2 size={18}/><span><strong>Web application</strong><small>Browser-based chat interface</small></span><span className="radio-dot"/></button><button onClick={()=>setMode('desktop')} className={cx(mode==='desktop'&&'selected')}><Laptop size={18}/><span><strong>Desktop application</strong><small>Native UI automation</small></span><span className="radio-dot"/></button></div></section>
-  <section className="panel form-panel"><div className="section-title"><span className="step-number">02</span><div><h3>Configure target</h3><p>Register a target or pick one you have already added.</p></div></div>{targets.length>0&&<div className="field"><label>REGISTERED TARGETS</label><select value={targetId} onChange={e=>{setTargetId(e.target.value);const t=targets.find(x=>x.id===e.target.value);if(t){setUrl(t.url);setName(t.name);setCalibration(t.calibration_config);}}}><option value="">Add a new target…</option>{targets.map(t=><option key={t.id} value={t.id}>{t.name} · {t.url}</option>)}</select></div>}<div className="field-row"><div className="field"><label>TARGET NAME</label><input value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Internal support assistant"/></div><div className="field"><label>APPLICATION URL</label><input value={url} onChange={e=>{setUrl(e.target.value);setTargetId('');setCalibration(undefined);setCalibError('');}} placeholder="http://127.0.0.1:5173" disabled={mode==='desktop'}/></div></div>{mode==='web'&&<div className="calibration-box"><div className="calibration-info"><div className="calibration-icon"><MousePointer2 size={17}/></div><div><strong>Browser calibration</strong><p>{calibration?'Selectors are configured. You can recalibrate any time.':calibrating?calibrationMethod==='auto'?`Opening ${normalizeTargetUrlSafe(url)} in the Playwright browser — detecting the chat input, send button, and response area on its own.`:`Opening ${normalizeTargetUrlSafe(url)} in a visible browser. Open the chat if needed, then click its input area and its Enter / Send button.`:'Choose automatic calibration to detect the controls on its own, or click to calibrate and select the chatbot controls yourself.'}</p></div></div><div className="calibration-buttons"><button className="button secondary small" onClick={()=>void calibrate(false)} disabled={calibrating}>{calibrating?<LoaderCircle className="spin" size={15}/>:<Sparkles size={15}/>}Automatic calibration</button><button className="button secondary small" onClick={()=>void calibrate(true)} disabled={calibrating}>{calibrating?<LoaderCircle className="spin" size={15}/>:<MousePointer2 size={15}/>}Click to calibrate</button></div>{calibError&&<div className="calibration-error"><CircleHelp size={13}/>{calibError}</div>}{calibrationSession&&<div className="calibration-checklist"><div className={cx('checklist-item',calibrationSession.input_selected&&'done')}><span className="checklist-box">{calibrationSession.input_selected&&<Check size={11}/>}</span><span>Click on the input area</span></div><div className={cx('checklist-item',calibrationSession.enter_selected&&'done')}><span className="checklist-box">{calibrationSession.enter_selected&&<Check size={11}/>}</span><span>Click on the Enter / Send button</span></div><small className="checklist-status">{calibrationSession.status==='opening_browser'?'Opening the target in the Playwright browser…':calibrationSession.status==='saving_selectors'?'Both controls captured. Saving selectors…':calibrationSession.status==='capturing_controls'?calibrationSession.step===1?'Input captured. Now click the Enter / Send button in the browser.':'Waiting for you to click the input area in the browser…':calibrationSession.status==='completed'?'Both controls captured. Selectors saved to this target.':calibrationSession.status==='failed'?(calibrationSession.error||'Calibration failed. Try again.'):''}</small></div>}{calibration&&<div className="selector-list"><span><Check size={13}/>Input <code>{calibration.input_selector}</code></span><span><Check size={13}/>Send <code>{calibration.submit_selector}</code></span><span><Check size={13}/>Response <code>{calibration.response_selector}</code></span></div>}</div>}</section>
-  <section className="panel form-panel"><div className="section-title"><span className="step-number">03</span><div><h3>Assessment scope</h3><p>Choose the OWASP LLM Top 10 category and test budget.</p></div></div><div className="field-row"><div className="field"><label>OWASP CATEGORY</label><select value={category} onChange={e=>setCategory(e.target.value)}>{OWASP.map(([id,title])=><option key={id} value={id}>{id} · {title}{id!=='LLM07'?' (coming soon)':''}</option>)}</select></div><div className="field budget-field"><label>ATTEMPT BUDGET <span>{budget} prompts</span></label><input type="range" min="1" max="10" value={budget} onChange={e=>setBudget(Number(e.target.value))}/><div className="range-hints"><span>1</span><span>10</span></div></div></div><div className="scope-note"><Shield size={15}/><span><strong>LLM07 · System Prompt Leakage</strong> is the active scan module. Other categories are shown for planning and are not yet supported by the assessment pipeline.</span></div></section>
-  <div className={cx('consent-card',!consent&&Boolean(calibError)&&'attention')} ref={consentRef}><label className="consent-check"><input type="checkbox" checked={consent} onChange={e=>{setConsent(e.target.checked);if(e.target.checked&&calibError)setCalibError('');}}/><span className="custom-check"><Check size={13}/></span><span><strong>I confirm I own this target or have written permission to test it.</strong><small>Target interactions require your authorization. Scan request history is stored locally; orchestration is still in progress.</small></span></label></div>{error&&<div className="error-box"><CircleHelp size={16}/>{error}</div>}<div className="form-footer"><span><ShieldCheck size={14}/> Assessment requires explicit authorization</span><button className="button primary" onClick={()=>void start()} disabled={busy||calibrating||!consent}>{busy?<LoaderCircle className="spin" size={16}/>:<Play size={15} fill="currentColor"/>}Submit scan request <ArrowUpRight size={15}/></button></div></div><aside className="scan-side"><div className="panel side-summary"><div className="side-summary-head"><div className="summary-shield"><ShieldCheck size={18}/></div><div><strong>Assessment summary</strong><small>Review before you start</small></div></div><div className="summary-line"><span>Target type</span><strong>{mode==='web'?'Web application':'Desktop application'}</strong></div><div className="summary-line"><span>Target</span><strong className="truncate">{name||'Not configured'}</strong></div><div className="summary-line"><span>OWASP category</span><strong className="category-value">{category}</strong></div><div className="summary-line"><span>Prompt budget</span><strong>{budget} attempts</strong></div><div className="summary-line"><span>Browser connector</span><strong className="green-text"><span className="status-dot online"/>Playwright</strong></div><div className="summary-foot"><ShieldCheck size={15}/><span>Uses fabricated test content. No real secrets or jailbreak techniques.</span></div></div><div className="help-card"><div className="help-icon"><CircleHelp size={16}/></div><div><strong>Need a hand?</strong><p>The assistant can guide you through target setup and calibration.</p><button onClick={()=>notify('Open Aegis assistant from the left navigation.')}>View setup guide <ArrowUpRight size={13}/></button></div></div></aside></div></div>;
-}
 
 function HistoryPage({history,onRefresh}:{history:LocalScan[];onRefresh:()=>void}) {
   const [query,setQuery]=useState(''); const filtered=history.filter(x=>(x.targetName||'').toLowerCase().includes(query.toLowerCase())||x.category.toLowerCase().includes(query.toLowerCase()));
