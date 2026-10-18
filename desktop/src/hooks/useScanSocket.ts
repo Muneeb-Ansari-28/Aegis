@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface ScanEvent {
   scan_id: string;
@@ -15,23 +15,44 @@ export interface ScanEvent {
   verdict?: { exploited?: boolean; rationale?: string; confidence?: number };
 }
 
-export function useScanSocket(scanId: string): ScanEvent[] {
+export function useScanSocket(scanId: string, enabled = true) {
   const [events, setEvents] = useState<ScanEvent[]>([]);
+  const [connection, setConnection] = useState<'connecting' | 'connected' | 'disconnected' | 'closed'>('connecting');
+  const seen = useRef(new Set<string>());
+
+  useEffect(() => { setEvents([]); seen.current.clear(); }, [scanId]);
 
   useEffect(() => {
-    setEvents([]);
-    if (!scanId) return;
-    const ws = new WebSocket(`ws://127.0.0.1:8765/api/v1/ws/telemetry/${scanId}`);
-    ws.onmessage = (event: MessageEvent<string>) => {
-      try {
-        const item = JSON.parse(event.data) as ScanEvent;
-        setEvents(previous => [...previous, item].slice(-250));
-      } catch {
-        // Ignore malformed telemetry frames; the scan lifecycle API remains available.
-      }
+    if (!scanId || !enabled) { setConnection('closed'); return; }
+    let alive = true;
+    let socket: WebSocket;
+    let retry: number | undefined;
+    const connect = () => {
+      setConnection('connecting');
+      socket = new WebSocket(`ws://127.0.0.1:8765/api/v1/ws/telemetry/${encodeURIComponent(scanId)}`);
+      socket.onopen = () => { if (alive) setConnection('connected'); };
+      socket.onmessage = (event: MessageEvent<string>) => {
+        if (!alive) return;
+        try {
+          const item = JSON.parse(event.data) as ScanEvent;
+          if (!item || item.scan_id !== scanId || typeof item.event !== 'string') return;
+          const key = JSON.stringify(item);
+          if (seen.current.has(key)) return;
+          seen.current.add(key);
+          if (seen.current.size > 1000) seen.current.delete(seen.current.values().next().value!);
+          setEvents(previous => [...previous, item].slice(-250));
+        } catch { /* Malformed frames do not replace lifecycle polling. */ }
+      };
+      socket.onerror = () => { if (alive) setConnection('disconnected'); };
+      socket.onclose = () => {
+        if (!alive) return;
+        setConnection('disconnected');
+        retry = window.setTimeout(connect, 3000);
+      };
     };
-    return () => ws.close();
-  }, [scanId]);
+    connect();
+    return () => { alive = false; window.clearTimeout(retry); socket.close(); };
+  }, [scanId, enabled]);
 
-  return events;
+  return { events, connection };
 }

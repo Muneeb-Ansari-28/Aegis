@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { AlertTriangle, ArrowUpRight, Bot, Check, CircleHelp, Command, Globe2, History, LoaderCircle, Radio, Search, Settings2, Shield, ShieldCheck, SlidersHorizontal, Sparkles, Square, UserRound, X } from 'lucide-react';
-import { api, assist, type ScanRecord, type ScanTurn, type Target } from './api/client';
-import { useScanSocket, type ScanEvent } from './hooks/useScanSocket';
+import { ArrowUpRight, Bot, Check, CircleHelp, Command, Globe2, History, Radio, Search, Settings2, Shield, ShieldCheck, SlidersHorizontal, Sparkles, UserRound, X } from 'lucide-react';
+import { api, assist, type ScanRecord, type Target } from './api/client';
+import { useLiveScan } from './hooks/useLiveScan';
+import LiveScan from './components/LiveScan';
 import Overview from './components/Overview';
 import NewAssessment from './components/NewAssessment';
 import ApplicationShell, { type AppPage as Page } from './components/ApplicationShell';
@@ -10,20 +11,24 @@ type ChatMessage = { role: 'assistant' | 'user'; text: string };
 type LocalScan = ScanRecord & { targetName?: string; createdAt: string };
 const HISTORY_KEY = 'aegis.scan-history';
 const PROFILE_KEY = 'aegis.profile';
-const OWASP = [
-  ['LLM01', 'Prompt Injection'], ['LLM02', 'Sensitive Information Disclosure'], ['LLM03', 'Supply Chain'], ['LLM04', 'Data and Model Poisoning'], ['LLM05', 'Improper Output Handling'], ['LLM06', 'Excessive Agency'], ['LLM07', 'System Prompt Leakage'], ['LLM08', 'Vector and Embedding Weaknesses'], ['LLM09', 'Misinformation'], ['LLM10', 'Unbounded Consumption'],
-];
+type SelectedScan = ScanRecord & { targetName?: string; targetUrl?: string };
+const SELECTED_SCAN_KEY = 'aegis.selected-scan';
+function readSelectedScan(): SelectedScan | null {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(SELECTED_SCAN_KEY) || 'null') as SelectedScan | null;
+    return value && typeof value.scan_id === 'string' && typeof value.target_id === 'string' && typeof value.status === 'string' && typeof value.category === 'string' && Number.isFinite(value.budget) ? value : null;
+  } catch { return null; }
+}
 
 function readHistory(): LocalScan[] { try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]') as LocalScan[]; } catch { return []; } }
-function errorText(e: unknown): string { return e instanceof Error ? e.message : 'Something went wrong. Check that the Aegis engine is running.'; }
 function cx(...v: Array<string | false | null | undefined>): string { return v.filter(Boolean).join(' '); }
 export default function App() {
-  const [page, setPage] = useState<Page>('overview');
+  const [page, setPage] = useState<Page>(() => readSelectedScan() ? 'live' : 'overview');
   const [engineOnline, setEngineOnline] = useState<boolean | null>(null);
   const [ollamaOnline, setOllamaOnline] = useState<boolean | null>(null);
   const [targets, setTargets] = useState<Target[]>([]);
   const [history, setHistory] = useState<LocalScan[]>(readHistory);
-  const [activeScan, setActiveScan] = useState<ScanRecord | null>(null);
+  const [activeScan, setActiveScan] = useState<SelectedScan | null>(readSelectedScan);
   const [profileName, setProfileName] = useState(() => localStorage.getItem(PROFILE_KEY) || 'Security analyst');
   const [toast, setToast] = useState('');
 
@@ -35,25 +40,31 @@ export default function App() {
   useEffect(() => { void refresh(); const id = window.setInterval(() => { void refresh(); }, 12000); return () => window.clearInterval(id); }, []);
   useEffect(() => { if (!toast) return; const id = window.setTimeout(() => setToast(''), 4200); return () => window.clearTimeout(id); }, [toast]);
   const onScanStarted = (scan: ScanRecord, target?: Target) => {
-    setActiveScan(scan);
+    setActiveScan({ ...scan, targetName: target?.name, targetUrl: target?.url });
     const next = [{ ...scan, targetName: target?.name, createdAt: new Date().toISOString() }, ...readHistory()].slice(0, 100);
     setHistory(next); localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
-    setPage('live'); setToast('Scan started. The target is open in the Playwright browser.');
+    setPage('live'); setToast('Scan request acknowledged. Monitoring the selected assessment.');
   };
   const onScanStatus = useCallback((status: string) => {
-    setActiveScan(current => current ? { ...current, status } : current);
+    setActiveScan(current => current && current.status !== status ? { ...current, status } : current);
     setHistory(current => {
+      if (!current.some(item => item.scan_id === activeScan?.scan_id && item.status !== status)) return current;
       const updated = current.map(item => item.scan_id === activeScan?.scan_id ? { ...item, status } : item);
       localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
       return updated;
     });
   }, [activeScan?.scan_id]);
 
+  const live = useLiveScan(activeScan, onScanStatus);
+  useEffect(() => {
+    try { if (activeScan) sessionStorage.setItem(SELECTED_SCAN_KEY, JSON.stringify(activeScan)); } catch { /* Monitoring still works if browser storage is unavailable. */ }
+  }, [activeScan]);
+
   return <><ApplicationShell page={page} onNavigate={setPage} hasActiveScan={Boolean(activeScan)}
     profileName={profileName} engineOnline={engineOnline} ollamaOnline={ollamaOnline} onRefresh={refresh}>
       {page === 'overview' && <Overview history={history} activeScan={activeScan} onNavigate={setPage} engineOnline={engineOnline} ollamaOnline={ollamaOnline} profileName={profileName} onRefresh={refresh}/>}
       {page === 'scan' && <NewAssessment targets={targets} refresh={refresh} onStarted={onScanStarted} notify={setToast}/>}
-      {page === 'live' && activeScan && <LiveScanPage scan={activeScan} targetName={history.find(item => item.scan_id === activeScan.scan_id)?.targetName || 'Local target'} onStatus={onScanStatus}/>}
+      {page === 'live' && activeScan && <LiveScan key={activeScan.scan_id} scan={activeScan} targetName={activeScan.targetName || history.find(item => item.scan_id === activeScan.scan_id)?.targetName || 'Local target'} targetUrl={activeScan.targetUrl || targets.find(target => target.id === activeScan.target_id)?.url} state={live}/>}
       {page === 'history' && <HistoryPage history={history} onRefresh={() => { const h = readHistory(); setHistory(h); }} />}
       {page === 'assistant' && <Assistant history={history}/>}
       {page === 'profile' && <Profile onSaveName={setProfileName}/>}
@@ -79,58 +90,4 @@ function Profile({onSaveName}:{onSaveName:(name:string)=>void}) {
   const [name,setName]=useState(localStorage.getItem(PROFILE_KEY)||'Security analyst');const [saved,setSaved]=useState(false);
   function save(){const savedName=name.trim()||'Security analyst';localStorage.setItem(PROFILE_KEY,savedName);onSaveName(savedName);setSaved(true);window.setTimeout(()=>setSaved(false),2200);}
   return <div className="page-content"><Heading eyebrow="WORKSPACE SETTINGS" title="Profile & preferences" sub="Manage the local desktop profile and workspace preferences."/><div className="profile-layout"><section className="panel profile-panel"><div className="profile-panel-head"><div className="large-profile-avatar">{(name||'S').slice(0,1).toUpperCase()}</div><div><h3>Personal profile</h3><p>Your profile is stored on this device.</p></div></div><div className="field"><label>DISPLAY NAME</label><input value={name} onChange={e=>setName(e.target.value)} placeholder="Security analyst"/></div><div className="profile-detail"><div><UserRound size={16}/><span>Account type</span></div><strong>Local workspace</strong></div><div className="profile-detail"><div><Command size={16}/><span>Workspace</span></div><strong>Personal</strong></div><button className="button primary" onClick={save}>{saved?<Check size={15}/>:<Check size={15}/>} {saved?'Saved':'Save preferences'}</button></section><section className="panel preferences-panel"><div className="panel-head"><div><h3>Runtime preferences</h3><p>Local service connection details</p></div><Settings2 size={17} className="muted-icon"/></div><div className="preference-row"><div className="pref-icon"><Radio size={16}/></div><div><strong>Aegis Engine</strong><small>http://localhost:8765</small></div><span className={cx('scan-status', 'completed')}>LOCAL</span></div><div className="preference-row"><div className="pref-icon"><Bot size={16}/></div><div><strong>Ollama assistant</strong><small>Configured through the local engine</small></div><span className="scan-status">OPTIONAL</span></div><div className="preference-row"><div className="pref-icon"><History size={16}/></div><div><strong>Scan history</strong><small>Saved in this browser profile</small></div><span className="scan-status completed">ON DEVICE</span></div><div className="profile-note"><ShieldCheck size={16}/>Aegis keeps this profile and scan request history on your device.</div></section></div></div>;
-}
-
-function LiveScanPage({scan,targetName,onStatus}:{scan:ScanRecord;targetName:string;onStatus:(status:string)=>void}) {
-  const events=useScanSocket(scan.scan_id);
-  const [savedTurns,setSavedTurns]=useState<ScanTurn[]>([]);
-  const [status,setStatus]=useState(scan.status);
-  const [attempt,setAttempt]=useState(0);
-  const [stopBusy,setStopBusy]=useState(false);
-  const [error,setError]=useState('');
-  const finished=['COMPLETED','STOPPED','FAILED'].includes(status.toUpperCase());
-  useEffect(()=>{
-    let alive=true;
-    const poll=async()=>{try{
-      const next = await api.scanStatus(scan.scan_id);
-      if(!alive)return;
-      setStatus(next.status);
-      setAttempt(next.current_attempt);
-      onStatus(next.status);
-      try {
-        setSavedTurns(await api.scanTurns(scan.scan_id));
-      } catch (turnError) {
-        // Older engine processes may not have the replay route yet; live telemetry
-        // and status polling must continue working while that process is restarted.
-        if (alive && !/404|not found/i.test(errorText(turnError))) {
-          setError(errorText(turnError));
-        }
-      }
-    }catch(e){if(alive)setError(errorText(e));}};
-    void poll();
-    const timer=window.setInterval(()=>{if(!finished)void poll();},1000);
-    return()=>{alive=false;window.clearInterval(timer);};
-  },[scan.scan_id,finished,onStatus]);
-  useEffect(()=>{for(const event of events){if(event.event==='turn_started'||event.event==='turn_completed')setAttempt(current=>Math.max(current,event.attempt||0));if(event.status)setStatus(event.status);}},[events]);
-  async function stop(){setStopBusy(true);setError('');try{await api.stopScan(scan.scan_id);}catch(e){setError(errorText(e));}finally{setStopBusy(false);}}
-  const liveTurns=events.filter(event=>event.event==='turn_started'||event.event==='turn_completed').reduce<ScanEvent[]>((acc,event)=>{const index=acc.findIndex(item=>item.attempt===event.attempt);if(index<0)acc.push(event);else if(event.event==='turn_completed')acc[index]=event;return acc;},[]);
-  const persistedTurns = savedTurns.map((turn): ScanEvent => ({
-    scan_id: scan.scan_id,
-    event: 'turn_completed',
-    attempt: turn.turn_index,
-    prompt: turn.prompt,
-    response: turn.response,
-    latency_ms: turn.latency_ms,
-    strategy: turn.strategy || undefined,
-    verdict: turn.verdict || undefined,
-  }));
-  const savedAttempts = new Set(persistedTurns.map(turn => turn.attempt));
-  const turns = [...persistedTurns, ...liveTurns.filter(turn => !savedAttempts.has(turn.attempt))]
-    .sort((a,b)=>(b.attempt||0)-(a.attempt||0));
-  const progress=Math.min(100,Math.round((attempt/Math.max(scan.budget,1))*100));
-  return <div className="page-content live-page"><Heading eyebrow="LIVE ASSESSMENT" title="Scan activity" sub={`${targetName} · ${scan.category} · Playwright browser is open`} action={!finished&&<button className="button secondary" onClick={()=>void stop()} disabled={stopBusy}>{stopBusy?<LoaderCircle className="spin" size={15}/>:<Square size={14}/>}Stop scan</button>}/>
-    <div className="live-summary panel"><div className="live-state"><span className={cx('status-dot',finished?'':'online')}/><div><strong>{status.replace(/_/g,' ')}</strong><small>{targetName} · scan {scan.scan_id.slice(0,8)}</small></div></div><div className="live-progress"><div><span>Prompts sent</span><strong>{attempt} / {scan.budget}</strong></div><div className="progress-track"><i style={{width:`${progress}%`}}/></div></div><div className="live-category-badge"><ShieldCheck size={16}/><span>LLM07 active</span></div></div>
-    <div className="live-grid"><section className="panel live-feed"><div className="panel-head"><div><h3>Prompt activity</h3><p>Prompts and chatbot replies from this browser session</p></div><span className={cx('live-indicator',!finished&&'live')}>{!finished&&<i/>}{finished?'ENDED':'LIVE'}</span></div>{error&&<div className="error-box"><AlertTriangle size={15}/>{error}</div>}{turns.length?turns.map(event=><article className="turn-card" key={`${event.attempt}-${event.event}`}><div className="turn-heading"><span className="turn-number">Attempt {event.attempt||'—'}</span><span className={cx('scan-status',(event.event==='turn_completed'?'completed':'running'))}>{event.event==='turn_completed'?'Response received':'Sending prompt'}</span></div><div className="turn-section"><small>PROMPT · {event.strategy||'LLM07'}</small><p>{event.prompt||'Waiting for prompt details…'}</p></div>{event.event==='turn_completed'?<><div className="turn-section response"><small>CHATBOT RESPONSE {event.latency_ms!=null?`· ${event.latency_ms} ms`:''}</small><p>{event.response||'(No response text returned)'}</p></div>{event.verdict&&<div className="turn-verdict"><ShieldCheck size={14}/>{event.verdict.exploited?'Potential disclosure detected':'No disclosure detected'}{event.verdict.rationale&&<span>{event.verdict.rationale}</span>}</div>}</>:<div className="turn-wait"><LoaderCircle size={14} className="spin"/>Waiting for the chatbot response…</div>}</article>):<div className="live-empty"><LoaderCircle size={18} className="spin"/><strong>Waiting for the first prompt</strong><span>Prompts will appear here as the scan runs.</span></div>}</section>
-      <aside className="live-aside"><section className="panel category-panel"><div className="panel-head"><div><h3>OWASP categories</h3><p>Scan module progress</p></div></div>{OWASP.map(([id,title])=><div className={cx('category-row',id==='LLM07'&&'current')} key={id}><span className="category-check">{id==='LLM07'?(status.toUpperCase()==='COMPLETED'?<Check size={13}/>:finished?<X size={13}/>:<LoaderCircle size={13} className="spin"/>):<span/>}</span><div><strong>{id}</strong><small>{title}</small></div><em>{id==='LLM07'?status.toUpperCase()==='COMPLETED'?'Done':status.toUpperCase()==='FAILED'?'Failed':status.toUpperCase()==='STOPPED'?'Stopped':finished?'Ended':'Active':'Not enabled'}</em></div>)}</section><div className="panel browser-note"><div className="browser-note-icon"><Globe2 size={16}/></div><div><strong>Target browser</strong><p>Playwright is interacting with the local site in a separate visible browser window. Keep it open while the scan runs.</p></div></div></aside></div>
-  </div>;
 }

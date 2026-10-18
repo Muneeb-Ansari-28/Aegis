@@ -488,3 +488,44 @@ feature was updated = recorded approved frontend Milestones 1–3 and PR prepara
 **Removals**: None; all existing documentation and log history preserved.
 **Deviations from Plan**: Documentation-only commit because the relevant Milestone 3 frontend changes were already committed and pushed.
 **Gate Impact**: Build and fixture checks passed; existing Vite CJS warning remains. Live Playwright calibration and full LLM07 end-to-end testing remain pending, with full integration testing deferred until all frontend screens are complete. Backend functionality/API contracts/scanner logic preserved. No backend gate newly passed. No run_aegis.ps1 change, main modification, PR, merge or Milestone 4 work.
+
+
+feature was implemented = Milestone 4 Live Scan execution UI and selected-scan monitoring by "Shahzaman" at 19:43, 2026-10-18
+
+### Implementation Report
+**Date**: 2026-10-18
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/App.tsx` — modified — Mount monitoring independently of page selection, retain exact scan/target context on refresh, connect the new Live Scan component and preserve history status updates.
+- `desktop/src/hooks/useScanSocket.ts` — modified — Deduplicate/filter telemetry, expose connection state, reconnect while active and clean up after terminal status or identity changes.
+- `desktop/src/hooks/useLiveScan.ts` — created — Serial status/transcript polling, lifecycle guards, merged turn data, refresh coalescing and acknowledged stop handling.
+- `desktop/src/components/LiveScan.tsx` — created — Reference-led Live Scan UI, accessible tabs, actual telemetry/transcript/evidence, neutral phases and honest metrics.
+- `desktop/src/components/live-scan.css` — created — Scoped responsive execution layout, dark console and panel styling.
+- `Project-Context/Status.md` — modified — Append implementation/checks/limitations and pending visual approval.
+- `Project-Context/frontend-design.md` — modified — Append visual decisions, supported sources and reference adaptations.
+- `Project-Context/logs.md` — modified — Append this report without replacing history.
+**What Was Done**: Implemented the requested header, four tabs, activity console, Current Step, Test Case Progress, Target Information and Live Metrics. Reused unchanged scan status, turns, stop and telemetry contracts. Selected-scan monitoring continues across page navigation and restores the same identifier after refresh. Stream replay is deduplicated, per-turn status cannot override scan lifecycle, terminal telemetry cannot regress to an older running HTTP result, refreshes are serialized and automatic polling stops after terminal confirmation. Stop errors allow retry; stop_requested remains pending until confirmed. Unavailable fields and disconnected states remain explicit.
+**Why**: Deliver the approved Live Scan composition while preserving scanner behavior and preventing fabricated status, progress or evidence. Supports Module 7 frontend integration; no backend execution changes.
+**Removals**: Replaced the inline LiveScanPage in App.tsx with the dedicated component/hook; removed its now-unused error helper and OWASP label list. The sole old socket caller was replaced; no other component depends on the old return shape. No files were deleted and previous page implementations remain unchanged.
+**Deviations from Plan**: No backend/architecture changes. Reference-only Pause, ETA, named future test cases and findings/duration totals are unsupported and omitted or marked unavailable. Phase rows stay neutral. Agent Reasoning follows the latest explicit four-tab request with an unavailable explanation and available-evidence link. Temporary fixture scripts/captures are outside the repository; no frontend test runner or dependencies were introduced.
+**Gate Impact**: Final npm run build passed with the existing Vite CJS warning. Chromium fixtures passed state/status separation, replay/deduplication, reconnect, tabs, transcript/evidence, navigation/reload identity, stop acknowledgment/failure/retry/duplicate prevention, terminal polling shutdown and stale-response guard, offline/404 retention, empty response/zero latency, refresh serialization, console keyboard scrolling and compact navigation. Five Live Scan viewport widths passed overflow checks. Existing wizard fixture checks and 20 step/viewport combinations passed, including submission handoff. No JS runtime exceptions observed. Desktop/mobile captures were inspected against the reference and spacing refined. Live Playwright calibration, actual backend telemetry/stop and full LLM07 end-to-end scanning remain untested; full integration deferred until all screens are complete. No backend gate newly passed. User visual approval pending; Results not started. No run_aegis.ps1, main, backend, API-client, dependency, commit, push or PR changes.
+
+
+feature was updated = finalized visually approved Milestone 4 controls and panel spacing by "Shahzaman" at 19:52, 2026-10-18
+
+### Implementation Report
+**Date**: 2026-10-18
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/components/LiveScan.tsx` — modified — Add visible Refresh status label, retain accessible name and hide decorative icon from assistive technology.
+- `desktop/src/components/live-scan.css` — modified — Slightly increase Current Step vertical spacing without restructuring the panel.
+- `Project-Context/Status.md` — modified — Append visual approval, fresh verification and remaining integration limitations.
+- `Project-Context/frontend-design.md` — modified — Append the final approved refinements and verification checkpoint.
+- `Project-Context/logs.md` — modified — Append this finalization report; prior milestone implementation/file history remains above.
+**What Was Done**: Finalized the two requested refinements, reviewed all pending Milestone 4 source/document changes and confirmed shahzaman. The refresh control still invokes the existing serialized status/transcript refresh. All eight milestone files, including the previously documented App/socket/monitor changes, are included in the authorized milestone commit; no unrelated files are included.
+**Why**: Make the supported control understandable and improve the approved Current Step spacing before publishing Milestone 4.
+**Removals**: None in this refinement. The earlier inline LiveScanPage replacement remains documented above.
+**Deviations from Plan**: None. User visual approval supersedes historical pending-approval statements. Commit/push to origin/shahzaman explicitly authorized; no PR or merge.
+**Gate Impact**: Fresh frontend build and temporary Chromium Live Scan/wizard regression suites passed, with five Live Scan widths and 20 wizard step/width combinations. Desktop/mobile screenshots inspected; no JS runtime exceptions. Existing Vite CJS warning remains. Dashboard, wizard, shell, API client, backend and run_aegis.ps1 unchanged. Live Playwright calibration, actual engine telemetry/stop and full LLM07 scanning remain untested; integration deferred until all screens are complete. No backend gate newly passed. Results/Milestone 5 not started; main unchanged.
