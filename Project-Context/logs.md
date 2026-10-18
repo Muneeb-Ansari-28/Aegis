@@ -373,3 +373,62 @@ feature was updated = visually hid desktop sidebar native scrollbar while preser
 **Removals**: Native desktop sidebar scrollbar visuals only; no scrolling functionality removed.
 **Deviations from Plan**: None. No width, spacing, page content, scanner logic or unrelated styling changes.
 **Gate Impact**: Scoped Chromium visual/interaction checks and build pass. Firefox/WebKit, physical touchpad and Electron runtime not tested; native input handlers remain unchanged. No live scanner rerun or backend gate update. No commit, push or PR.
+
+
+feature was implemented = Design V1 Milestone 2 Overview redesign with truthful local metrics and responsive dashboard by "Shahzaman" at 20:40, 2026-10-17
+
+### Implementation Report
+**Date**: 2026-10-17
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/App.tsx` — modified — Replace inline Overview/Stat with imported Overview; pass existing profile/refresh callbacks and remove unused icons.
+- `desktop/src/components/Overview.tsx` — created — Compact dashboard header, local metrics, recent requests, actual health presentation and supported navigation actions.
+- `desktop/src/components/overview.css` — created — Dashboard-scoped responsive layout, table, cards, health and interaction styling.
+- `Project-Context/frontend-design.md` — modified — Append implemented dashboard decisions and limits.
+- `Project-Context/Status.md` — modified — Append verification and review state.
+- `Project-Context/logs.md` — modified — Append this report.
+**What Was Done**: Replaced the blue introductory banner with a compact greeting; added restrained metric cards, actual saved recent requests with last-known status, honest service states and supported quick actions. Preserved shell and other page components, App state/handlers, API client and telemetry. Build passes. Chromium fixture tests verified empty/offline/populated/connected/disconnected and loading presentation, local counts, quick actions, settings, View all, header start, refresh request and selected-scan navigation. Responsive bounds passed 320/390/768/1024/1280/1440px; table focus verified; desktop/mobile screenshots inspected. Corrected a mobile overflow in the table's hidden label and unused imports discovered by verification.
+**Why**: Implement approved Panel 1 visual hierarchy while distinguishing browser-local snapshots from live results and avoiding unsupported product claims.
+**Removals**: Removed Overview's oversized banner, old inline Stat helper, unsupported desktop-scan promotion and misleading broad coverage footer. Replaced target-count snapshot with last-known completed local count; target registration remains unchanged. Existing New Assessment modes and all other page functionality retained. Old global CSS retained to avoid unrelated shared-style changes.
+**Deviations from Plan**: No unsupported report/notification/results actions or decorative illustration added. Existing read-only profile preferences remain the destination for connection settings. Full live-status reconciliation and historical-result navigation are not introduced.
+**Gate Impact**: Frontend build and scoped Chromium checks pass; existing Vite CJS warning remains. Browser-only fixtures never enter production code/data. One test harness route-release error occurred after loading text verification; subsequent refresh and selected-scan checks passed with corrected fixtures. No live backend, real calibration/scan, Electron, other browser or full accessibility audit claimed. No backend gate change. Work remains on shahzaman without commit, push or PR; Milestone 2 awaits review.
+
+
+feature was updated = corrected Milestone 2 Dashboard composition against approved Panel 1 by "Shahzaman" at 20:51, 2026-10-17
+
+### Implementation Report
+**Date**: 2026-10-17
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/components/Overview.tsx` — modified — Compact header and service presentation, working-area wrapper, decorative shield/context rail and concise action copy.
+- `desktop/src/components/overview.css` — modified — Reference-proportioned desktop grid, compact cards/panels/table/empty state/actions, illustration and responsive adaptations.
+- `Project-Context/frontend-design.md` — modified — Append visual correction specification and evidence.
+- `Project-Context/Status.md` — modified — Record visual approval still pending.
+- `Project-Context/logs.md` — modified — Append this report.
+**What Was Done**: Compared the existing 1280x800 render with approved Panel 1 before editing; identified excessive width/height, missing context rail and below-fold Quick Actions. Reworked the dashboard composition and inspected corrected empty/offline and populated screenshots at 1280x800, plus mobile at 390px. Build passed; Chromium Quick Actions/history/settings/refresh, actual fixture rendering, and body/content overflow checks at six widths from 320 to 1440px passed without runtime exceptions. Milestone 1 shell and all scanner handlers retained.
+**Why**: The initial implementation passed functional checks but did not sufficiently match the approved visual composition. This is a correction to Milestone 2, not a new milestone.
+**Removals**: Removed oversized Overview eyebrow and redundant visual service explanations; explanations remain in accessible text/hover descriptions. No functionality or scanner integration removed.
+**Deviations from Plan**: Simplified CSS/icon shield illustration instead of exact reference art. Real local metrics, last-known labels, unchecked/unavailable states and supported setup guidance replace unsupported sample results and report actions. Approved shell preserved.
+**Gate Impact**: Build and scoped Chromium visual/interaction checks pass; user visual approval pending. Live engine scanning, Electron and other browsers not retested. No backend gate change, dependency, commit, push, merge or PR.
+
+
+feature was updated = refined Milestone 2 to the full-size Dashboard reference with layered local shield artwork by "Shahzaman" at 06:53, 2026-10-18
+
+### Implementation Report
+**Date**: 2026-10-18
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/components/Overview.tsx` — modified — Profile/time greeting, four reference-aligned truthful metrics, persistent five-column table, selected-scan target link, service descriptions, full-width Quick Actions placement and artwork reference.
+- `desktop/src/components/overview.css` — modified — Consolidated dashboard-scoped styles for full-size reference proportions, typography, service density, decoration and responsive behavior.
+- `desktop/src/assets/security-dashboard.svg` — created — Local decorative layered blue shield artwork, no external resources.
+- `Project-Context/frontend-design.md` — modified — Append full-size visual authority, actual behavior and verification limits.
+- `Project-Context/Status.md` — modified — Append progress awaiting approval.
+- `Project-Context/logs.md` — modified — Append this report.
+**What Was Done**: Compared original 1440x900 render with the full-size reference, replaced undersized presentation, expanded the bottom actions across both columns, retained empty table headings, restored visible service explanations and added layered vector artwork. Repeated screenshot comparison and reduced excess service/artwork height until the complete dashboard fit 1440x900. Visually inspected desktop and mobile captures. Chromium fixture checks passed empty/offline and populated states, truthful count/unavailable findings presentation, quick actions, settings/history, refresh requests, selected-scan link, table focus and six widths from 320 to 1440px. Final build passed. An initial build command used the repository root and failed for missing package.json; it was rerun in desktop. SVG module typing failure was fixed using a bundled asset URL; no configuration/dependency change.
+**Why**: Faithfully implement the user's full-size reference rather than the earlier compact interpretation, while preserving true data and supported functionality.
+**Removals**: Replaced the simple CSS shield and accumulated CSS overrides; removed the redundant greeting-level start button while retaining start actions in empty state and Quick Actions. Changed prior latest-request metric to explicitly last-known Running count. Selected-scan Open moved to the target-name control; no scanner integration removed.
+**Deviations from Plan**: The approved shell is preserved. Findings remain unavailable, running/completed are last-known local counts, unsupported report action remains setup guidance, and capability copy reflects LLM07. SVG is a vector recreation, not the original raster artwork.
+**Gate Impact**: Frontend build and scoped Chromium checks pass; visual approval still belongs to the user. No live engine scanning, Electron, non-Chromium or full accessibility audit rerun. Existing Vite CJS warning remains. No backend gate change or Git publication; work stopped for visual approval.

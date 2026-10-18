@@ -76,3 +76,24 @@ Removed redundant desktop sidebar spacing in `desktop/src/index.css` and prevent
 ### Sidebar scrollbar visibility correction — 2026-10-17
 
 Scoped native scrollbar hiding to the desktop sidebar only, retaining fixed width and automatic overflow scrolling. Build passed. Chromium desktop/short-window screenshots inspected (1366x768, 1366x400 top and bottom). Wheel/keyboard scrolling, bottom status/profile access, main scrolling and compact drawer checks passed. Firefox/WebKit, physical touchpad and Electron runtime not tested. Scanner code unchanged; no live scan rerun or backend gate update.
+
+
+## Frontend Design V1 — Milestone 2 (2026-10-17)
+
+**Module:** Module 7: Integration, UI, and Demo — Overview redesign.
+**State:** Implemented and locally verified; awaiting user visual review. Milestone 1 was approved and published as `75d4c570ca38227d5ae3dc036d65ccb67930e09a`; this milestone is uncommitted.
+
+- Compact profile-aware header, truthful local metrics, Recent Assessments table, System Health and supported Quick Actions. Scoped component/styles preserve the existing shell and other pages.
+- `npm run build` passes (existing Vite CJS warning). Chromium checks pass empty/offline/populated/connected/disconnected and initial loading presentation, existing dashboard actions, health refresh, local counts, selected-scan Open and table keyboard focus. Body/content widths checked at 320/390/768/1024/1280/1440px; desktop and mobile screenshots inspected.
+- A populated-table mobile overflow caused by the hidden action-column label was corrected by containing it in the table scroll region. Initial build unused imports were corrected. One loading-fixture cleanup failed in the test harness; loading text had passed, and refresh/scan navigation checks passed separately with corrected fixture handling.
+- Scanner and other page handlers unchanged by source comparison. Live backend/calibration/scans, Electron, non-Chromium and full accessibility audits not verified; no backend gate newly passed. Stop after this milestone for review.
+
+
+### Milestone 2 visual correction — 2026-10-17
+
+Initial Dashboard was not visually approved. Reworked only Overview presentation to reproduce Panel 1's compact left working area and right illustration/context rail, smaller metrics, integrated health panel, dense Recent Assessments and Quick Actions immediately below. Build passes. Chromium 1280x800 before/after empty/offline and populated screenshots compared visually; 390px screenshot inspected. Quick Actions/history/settings/refresh and six responsive widths passed with browser fixtures. Shell/scanner integrations unchanged. Exact illustration, unavailable findings/reporting and sample counts are not reproduced; actual data constraints remain explicit. Awaiting user visual approval; no commit/push/PR or next milestone.
+
+
+### Milestone 2 full-size reference refinement — 2026-10-18
+
+Still awaiting visual approval. Reworked Dashboard typography/proportions, full-width bottom Quick Actions, persistent five-column empty table header, visible service descriptions and local layered shield SVG. Kept shell and scanner code unchanged. Final Chromium 1440x900 screenshot visually inspected after successive proportion corrections; complete dashboard fits viewport. Empty/offline, populated, connected/disconnected, quick actions, refresh, history/settings and selected-scan target navigation checked using isolated fixtures. Six widths from 320 to 1440px and mobile screenshot verified without page overflow. Final frontend build passes (existing Vite CJS warning); no backend gate changed. No commit, push, merge or PR.
