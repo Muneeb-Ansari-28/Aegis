@@ -97,3 +97,19 @@ Initial Dashboard was not visually approved. Reworked only Overview presentation
 ### Milestone 2 full-size reference refinement — 2026-10-18
 
 Still awaiting visual approval. Reworked Dashboard typography/proportions, full-width bottom Quick Actions, persistent five-column empty table header, visible service descriptions and local layered shield SVG. Kept shell and scanner code unchanged. Final Chromium 1440x900 screenshot visually inspected after successive proportion corrections; complete dashboard fits viewport. Empty/offline, populated, connected/disconnected, quick actions, refresh, history/settings and selected-scan target navigation checked using isolated fixtures. Six widths from 320 to 1440px and mobile screenshot verified without page overflow. Final frontend build passes (existing Vite CJS warning); no backend gate changed. No commit, push, merge or PR.
+
+
+### Milestone 3 — New Assessment wizard — 2026-10-18
+
+Implemented and fixture-verified; awaiting user visual and functional approval. Milestones 1 and 2 are approved/published. Replaced only New Assessment with the four-step target/consent, calibration, LLM07 scope and review workflow. Preserved shell, Overview, shared scanner state and API client; no backend changes or dependencies.
+
+Final frontend build passed. Chromium fixtures covered registration, selection, consent/URL gates, both calibration methods, backend errors, accelerated timeout, selector reuse, target invalidation, stale-response guard, navigation persistence, budget keyboard input, exact scan payload/duplicate guard, and acknowledgment-driven Live Scan navigation. Twenty step/width combinations (320–1440px) passed horizontal-overflow checks; four desktop and one mobile capture inspected. Existing non-assessment App page implementations match HEAD. Live engine scans/calibration, Electron, other browsers and full accessibility certification are untested. No backend gate status changed. Work remains uncommitted on shahzaman; stop for approval.
+
+
+### Milestone 3 finalization and visual approval — 2026-10-18
+
+Milestone 3 implementation is complete and all four New Assessment wizard screens are visually approved by the user. This supersedes the pending-approval status above. The user authorized committing this milestone and pushing only to origin/shahzaman.
+
+Finalization verification: frontend `npm run build` passed; the existing Vite CJS deprecation warning remains. Chromium fixture checks passed for registration/selection, consent and URL validation, automatic/manual calibration, errors and accelerated timeout handling, selector reuse/invalidation, step persistence, budget keyboard input, exact submission payload and duplicate prevention, and acknowledgment-driven Live Scan navigation. All four steps passed responsive overflow checks at five widths (320–1440px). Dashboard empty state, health refresh, Quick Actions, settings/history and desktop/compact navigation passed additional fixture checks with no runtime errors. Corrected one invalid UTF-8 separator byte in the registered-target fallback option; no behavior or visual design changes.
+
+Live Playwright calibration and end-to-end scanning remain untested. Full integration testing is deferred until all frontend screens are complete. Fixture success is not live scanner verification. No backend/API/scanner changes, dependencies, or run_aegis.ps1 changes are included. No merge, PR, or Milestone 4 work is authorized by this finalization.

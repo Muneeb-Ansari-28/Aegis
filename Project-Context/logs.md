@@ -432,3 +432,42 @@ feature was updated = refined Milestone 2 to the full-size Dashboard reference w
 **Removals**: Replaced the simple CSS shield and accumulated CSS overrides; removed the redundant greeting-level start button while retaining start actions in empty state and Quick Actions. Changed prior latest-request metric to explicitly last-known Running count. Selected-scan Open moved to the target-name control; no scanner integration removed.
 **Deviations from Plan**: The approved shell is preserved. Findings remain unavailable, running/completed are last-known local counts, unsupported report action remains setup guidance, and capability copy reflects LLM07. SVG is a vector recreation, not the original raster artwork.
 **Gate Impact**: Frontend build and scoped Chromium checks pass; visual approval still belongs to the user. No live engine scanning, Electron, non-Chromium or full accessibility audit rerun. Existing Vite CJS warning remains. No backend gate change or Git publication; work stopped for visual approval.
+
+
+feature was implemented = Milestone 3 four-step New Assessment wizard by "Shahzaman" at 07:16, 2026-10-18
+
+### Implementation Report
+**Date**: 2026-10-18
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/App.tsx` — modified — Replace only the inline NewScan view with the extracted wizard; remove its unused imports/helpers.
+- `desktop/src/components/NewAssessment.tsx` — created — Four-step presentation, progress rail, labeled controls, authorization, calibration feedback and review.
+- `desktop/src/components/new-assessment.css` — created — Scoped graphite-neutral styling, geometric decoration, responsive stepper and form layouts.
+- `desktop/src/hooks/useAssessmentWizard.ts` — created — Existing registration/calibration/scan integration organized into wizard state with operation and stale-result guards.
+- `Project-Context/frontend-design.md` — modified — Append Milestone 3 design decisions and verification limits.
+- `Project-Context/Status.md` — modified — Append implementation status pending user approval.
+- `Project-Context/logs.md` — modified — Append this implementation report.
+**What Was Done**: Inspected the approved reference, design guidance and existing NewScan handlers before extraction. Implemented a responsive four-step wizard using the existing target, consent, calibration and scan contracts. Added target-specific invalidation, retained registered target snapshots, synchronous in-flight guards and stale-response checks. Preserved manual input/Send selection, polling/deadlines and selector saving/reuse. Reviewed four desktop captures and mobile; refined panel spacing and step focus. Final build and Chromium fixture checks passed as detailed in frontend-design.md. Initial build identified a History icon import removed during extraction; restored it. Initial browser harness used the wrong navigation-label case; corrected the fixture selector. Used port 3001 because 3000 was occupied. Temporary verification artifacts are outside the repository.
+**Why**: Implement the approved Milestone 3 workflow and visual hierarchy while retaining scanner behavior and real backend contracts.
+**Removals**: Replaced the inline NewScan presentation/helpers with NewAssessment and useAssessmentWizard. Removed unsupported selectable desktop/OWASP options from this form, presenting desktop as unavailable and only LLM07 as runnable. Removed its redundant summary/help aside; review is Step 4 and the existing Assistant remains accessible. History, Assistant, Profile, Live Scan, shell and Dashboard implementations are unchanged.
+**Deviations from Plan**: Calibration controls occupy Step 2 rather than the reference image's target panel; explicit consent occupies Step 1 before browser interaction, as required by the requested four-step workflow. CSS geometry approximates the reference decoration. No API or scanner contract deviation.
+**Gate Impact**: Frontend build, scoped Chromium fixture behavior, responsive checks and screenshot inspection pass. User visual/functional approval pending. Live engine calibration/scanning, Electron, other browsers and assistive technologies not tested; no backend gate newly passed. No dependencies, commit, push, merge or PR.
+
+
+feature was updated = finalized visually approved Milestone 3 for authorized publication by "Shahzaman" at 14:46, 2026-10-18
+
+### Implementation Report
+**Date**: 2026-10-18
+**Contributor**: Shahzaman
+**Module**: Module 7: Integration, UI, and Demo
+**Files Changed**:
+- `desktop/src/components/NewAssessment.tsx` — modified — Correct one invalid UTF-8 target-option separator byte found during final review.
+- `Project-Context/Status.md` — modified — Append completion, visual approval and integration-testing deferral.
+- `Project-Context/frontend-design.md` — modified — Append approval and final verification record.
+- `Project-Context/logs.md` — modified — Append finalization report; prior implementation report lists the complete seven-file milestone scope.
+**What Was Done**: Confirmed shahzaman and reviewed Milestone 3 changes. Re-ran frontend build and Chromium wizard fixtures, plus Dashboard refresh/actions and desktop/compact navigation checks. All passed; existing Vite CJS warning remains. Prepared only the four milestone frontend files and three associated context documents for the explicitly authorized commit/push to origin/shahzaman.
+**Why**: Record the user's visual approval and publish the completed milestone with accurate test limitations.
+**Removals**: None during finalization.
+**Deviations from Plan**: None; minor encoding correction only.
+**Gate Impact**: Milestone 3 implementation complete and visually approved. Frontend build and fixture checks passed. Live Playwright calibration and end-to-end scanning remain untested; full integration testing deferred until all frontend screens are complete. No backend gate newly passed. No unrelated files (including run_aegis.ps1), merge, PR or Milestone 4 work included.
