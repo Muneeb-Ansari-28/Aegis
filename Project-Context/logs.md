@@ -488,3 +488,21 @@ feature was updated = recorded approved frontend Milestones 1–3 and PR prepara
 **Removals**: None; all existing documentation and log history preserved.
 **Deviations from Plan**: Documentation-only commit because the relevant Milestone 3 frontend changes were already committed and pushed.
 **Gate Impact**: Build and fixture checks passed; existing Vite CJS warning remains. Live Playwright calibration and full LLM07 end-to-end testing remain pending, with full integration testing deferred until all frontend screens are complete. Backend functionality/API contracts/scanner logic preserved. No backend gate newly passed. No run_aegis.ps1 change, main modification, PR, merge or Milestone 4 work.
+
+
+feature was updated = integrated mandatory Coding Agent Skills Framework into rules and documentation by "Muneeb" at 20:12, 2026-10-18
+
+### Implementation Report
+**Date**: 2026-10-18
+**Contributor**: Muneeb
+**Module**: Documentation, Agent Rules & Skills Framework
+**Files Changed**:
+- `Project-Context/README.md` — modified — Expanded Agent Skills section with the 3-tier rating system and standard task lifecycle.
+- `Project-Context/rules.md` — modified — Added Section 14 (Mandatory Coding Agent Skills Framework), updated Table of Contents, and updated Quick Reference Checklist.
+- `Project-Context/logs.md` — modified — Appended this implementation report.
+**What Was Done**: Evaluated all 54 skills in `.agents/skills` against the Aegis Python/FastAPI/Playwright/React architecture. Codified Tier 1 (Excellent) and Tier 2 (Good) skills into `Project-Context/rules.md` as mandatory operational rules for AI coding agents and human contributors. Established the mandatory 4-step task execution lifecycle (Plan -> Build -> Verify -> Report) enforcing `verification-before-completion` before any task is declared done.
+**Why**: Ensure every coding agent operating on Aegis systematically employs the right testing, debugging, compliance, and quality skills without requiring manual prompting every turn.
+**Removals**: None. All existing rules and documentation preserved.
+**Deviations from Plan**: None.
+**Gate Impact**: Documentation and agent governance update only. No code or API contracts altered.
+
