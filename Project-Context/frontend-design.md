@@ -376,3 +376,22 @@ Milestone 3 implementation is complete and all four New Assessment wizard screen
 Finalization verification: frontend `npm run build` passed; the existing Vite CJS deprecation warning remains. Chromium fixture checks passed for registration/selection, consent and URL validation, automatic/manual calibration, errors and accelerated timeout handling, selector reuse/invalidation, step persistence, budget keyboard input, exact submission payload and duplicate prevention, and acknowledgment-driven Live Scan navigation. All four steps passed responsive overflow checks at five widths (320–1440px). Dashboard empty state, health refresh, Quick Actions, settings/history and desktop/compact navigation passed additional fixture checks with no runtime errors. Corrected one invalid UTF-8 separator byte in the registered-target fallback option; no behavior or visual design changes.
 
 Live Playwright calibration and end-to-end scanning remain untested. Full integration testing is deferred until all frontend screens are complete. Fixture success is not live scanner verification. No backend/API/scanner changes, dependencies, or run_aegis.ps1 changes are included. No merge, PR, or Milestone 4 work is authorized by this finalization.
+
+
+### Frontend PR preparation checkpoint — 2026-10-18
+
+This checkpoint supersedes historical pending-approval statements without removing the history.
+
+| Frontend milestone | Current state | Implementation commit |
+|---|---|---|
+| 1. Application Shell and Sidebar | Implemented and visually approved | `75d4c57` |
+| 2. Dashboard / Overview | Implemented and visually approved | `7113e39` |
+| 3. New Assessment Wizard (four steps) | Implemented and visually approved | `29610de` |
+
+Live Scan and Results redesigns are **not yet implemented**. The pre-existing Live Scan functionality remains available; it is not the Design V1 redesign. No Milestone 4 work is included.
+
+Verification for this checkpoint: `npm run build` in desktop passed (TypeScript and Vite; existing CJS deprecation warning). No frontend test script or checked-in frontend test suite is configured. Re-ran the existing temporary isolated Chromium fixture harness: target registration/selection, consent and URL checks, auto/manual calibration success/failure, accelerated timeout, selector reuse/invalidation, step persistence, keyboard budget, exact submission payload, duplicate guard, acknowledgment-driven Live Scan navigation, stale-result rejection, and 20 step/viewport overflow combinations passed with no JavaScript runtime errors. The fixture harness is outside the repository and is not a committed automated test suite.
+
+Live Playwright calibration and full LLM07 end-to-end testing remain pending for the redesigned frontend. Full integration testing is deferred until all frontend screens are complete. No backend acceptance gate is newly passed by these fixture results. Historical backend verification entries do not establish integration acceptance of this redesign.
+
+Scope review: shahzaman was active with a clean working tree and no untracked files at entry. Milestone 3 is already committed; this checkpoint adds documentation only. The reviewed branch diff against local main is limited to desktop frontend files and Project-Context documents. Backend functionality, scanner logic and API contracts are preserved; no changes to the API client, engine, agents or run_aegis.ps1 are included. No main modification, merge or PR creation. Push only to origin/shahzaman; PR creation still requires explicit authorization.
