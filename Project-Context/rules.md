@@ -19,6 +19,8 @@
 10. [Testing Gates](#10-testing-gates)
 11. [Dependency Rules](#11-dependency-rules)
 12. [Documentation Rules](#12-documentation-rules)
+13. [Implementation Completion Report](#13-implementation-completion-report)
+14. [Mandatory Coding Agent Skills Framework](#14-mandatory-coding-agent-skills-framework)
 
 ---
 
@@ -28,12 +30,12 @@ After **EVERY** implementation task — no matter how small — the agent or dev
 
 ### What Must Be Reported
 
-| Requirement | Description |
-|---|---|
-| **WHAT was done** | Precise description of every file created, modified, or deleted. Include paths relative to the project root. |
-| **WHY it was done** | The rationale behind the change. Which module or gate does it serve? Which section of the architecture does it implement or support? |
-| **IF anything was removed** | Explicit explanation of **WHY** it was removed, what it was replaced with (if anything), and **confirmation** that no other component depends on the removed code. If removal causes downstream impact, that impact must be documented. |
-| **IF anything was changed from the plan** | Explain the deviation. Justify why the original plan was not followed. Reference the specific section of the architecture document that was deviated from. |
+| Requirement                               | Description                                                                                                                                                                                                                             |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **WHAT was done**                         | Precise description of every file created, modified, or deleted. Include paths relative to the project root.                                                                                                                            |
+| **WHY it was done**                       | The rationale behind the change. Which module or gate does it serve? Which section of the architecture does it implement or support?                                                                                                    |
+| **IF anything was removed**               | Explicit explanation of **WHY** it was removed, what it was replaced with (if anything), and **confirmation** that no other component depends on the removed code. If removal causes downstream impact, that impact must be documented. |
+| **IF anything was changed from the plan** | Explain the deviation. Justify why the original plan was not followed. Reference the specific section of the architecture document that was deviated from.                                                                              |
 
 ### Reporting Format
 
@@ -148,13 +150,13 @@ The Aegis folder structure was designed intentionally and is considered **final 
 
 ### Hard Rules
 
-| Rule | Detail |
-|---|---|
-| **No new top-level directories** | The top-level directories (`engine/`, `desktop/`, `agents/`, `docs/`, `tests/`, `Coding-Agent-Guide/`, etc.) are fixed. Do **NOT** add new sibling directories at the project root. |
-| **No reorganizing existing packages** | Do not move, rename, or merge existing packages or modules without **explicit written approval** from the project owner. |
-| **New files within existing packages are allowed** | You may add new `.py`, `.md`, `.ts`, or other files inside existing directories as needed by the implementation plan. |
-| **Files marked `(later)` are stubs** | Some files in the architecture plan are marked `(later)` — they are placeholders for future modules. Do **NOT** implement them before their scheduled module. Creating empty stub files with a `# TODO: Module X` comment is acceptable. |
-| **All `__init__.py` files must exist** | Every Python package directory must contain an `__init__.py` file. Do **NOT** delete them, even if they are empty. They are required for Python's package resolution. |
+| Rule                                               | Detail                                                                                                                                                                                                                                   |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **No new top-level directories**                   | The top-level directories (`engine/`, `desktop/`, `agents/`, `docs/`, `tests/`, `Coding-Agent-Guide/`, etc.) are fixed. Do **NOT** add new sibling directories at the project root.                                                      |
+| **No reorganizing existing packages**              | Do not move, rename, or merge existing packages or modules without **explicit written approval** from the project owner.                                                                                                                 |
+| **New files within existing packages are allowed** | You may add new `.py`, `.md`, `.ts`, or other files inside existing directories as needed by the implementation plan.                                                                                                                    |
+| **Files marked `(later)` are stubs**               | Some files in the architecture plan are marked `(later)` — they are placeholders for future modules. Do **NOT** implement them before their scheduled module. Creating empty stub files with a `# TODO: Module X` comment is acceptable. |
+| **All `__init__.py` files must exist**             | Every Python package directory must contain an `__init__.py` file. Do **NOT** delete them, even if they are empty. They are required for Python's package resolution.                                                                    |
 
 ### Consequences of Violation
 
@@ -187,12 +189,12 @@ All code contributed to Aegis must meet the following quality bars. These are en
 
 Unit tests are **required** for the following components:
 
-| Component | Why |
-|---|---|
+| Component                          | Why                                                                                      |
+| ---------------------------------- | ---------------------------------------------------------------------------------------- |
 | **Risk Scorer** (`risk_scorer.py`) | Risk scores must be deterministic and verifiable. Every formula must have test coverage. |
-| **JSON Guard** (`json_guard.py`) | The parse-and-retry mechanism must be proven to handle malformed LLM outputs correctly. |
-| **Deterministic Detector** | Detection logic must be tested against known-good and known-bad inputs. |
-| **Any new pure-logic module** | If it contains business logic without external dependencies, it must have unit tests. |
+| **JSON Guard** (`json_guard.py`)   | The parse-and-retry mechanism must be proven to handle malformed LLM outputs correctly.  |
+| **Deterministic Detector**         | Detection logic must be tested against known-good and known-bad inputs.                  |
+| **Any new pure-logic module**      | If it contains business logic without external dependencies, it must have unit tests.    |
 
 ### 4.4 — Integration Tests
 
@@ -381,13 +383,13 @@ Module 5: Wrap aegis-target as MCP server with stdio transport
 
 The following must never appear in a commit:
 
-| Pattern | Reason |
-|---|---|
-| `__pycache__/` | Python bytecode cache — platform-specific, auto-generated |
-| `*.pyc` | Compiled Python files |
-| `.env` | Environment variables — may contain secrets (API keys, tokens) |
-| `node_modules/` | Node.js dependencies — installed via `npm install` |
-| `*.db`, `*.sqlite`, `*.sqlite3` | Database files — runtime data, not source code |
+| Pattern                         | Reason                                                         |
+| ------------------------------- | -------------------------------------------------------------- |
+| `__pycache__/`                  | Python bytecode cache — platform-specific, auto-generated      |
+| `*.pyc`                         | Compiled Python files                                          |
+| `.env`                          | Environment variables — may contain secrets (API keys, tokens) |
+| `node_modules/`                 | Node.js dependencies — installed via `npm install`             |
+| `*.db`, `*.sqlite`, `*.sqlite3` | Database files — runtime data, not source code                 |
 
 ### 9.3 — `.gitignore` Policy
 
@@ -403,39 +405,39 @@ Aegis development is organized into modules, each ending with a **gate** — a s
 
 ### Gate 1 — Foundation
 
-| Criterion | Pass Condition |
-|---|---|
-| Database created on start | Application creates the SQLite database in `%APPDATA%\Aegis` on first launch without errors. |
-| Turn Record frozen | The Unified Turn Record Pydantic schema is finalized and passes validation tests with sample data. |
-| Test bot runs locally | A minimal test chatbot runs locally and can be targeted by the scanner for integration testing. |
+| Criterion                 | Pass Condition                                                                                     |
+| ------------------------- | -------------------------------------------------------------------------------------------------- |
+| Database created on start | Application creates the SQLite database in `%APPDATA%\Aegis` on first launch without errors.       |
+| Turn Record frozen        | The Unified Turn Record Pydantic schema is finalized and passes validation tests with sample data. |
+| Test bot runs locally     | A minimal test chatbot runs locally and can be targeted by the scanner for integration testing.    |
 
 ### Gate 2 — Evaluation
 
-| Criterion | Pass Condition |
-|---|---|
+| Criterion                  | Pass Condition                                                                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 100% valid JSON from judge | The evaluation judge produces parseable JSON output on **every** invocation, enforced by `json_guard.py`. Zero parse failures in the test suite. |
-| Verdict accuracy ≥ 90% | On the labelled benchmark dataset, the judge's verdicts (exploited / not exploited / uncertain) match ground truth at least 90% of the time. |
+| Verdict accuracy ≥ 90%     | On the labelled benchmark dataset, the judge's verdicts (exploited / not exploited / uncertain) match ground truth at least 90% of the time.     |
 
 ### Gate 3 — Orchestration
 
-| Criterion | Pass Condition |
-|---|---|
-| Weak bot → exploit found and stopped | When scanning a deliberately weak bot, the orchestrator finds an exploit, logs it, and terminates the scan. |
+| Criterion                                   | Pass Condition                                                                                                          |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Weak bot → exploit found and stopped        | When scanning a deliberately weak bot, the orchestrator finds an exploit, logs it, and terminates the scan.             |
 | Hardened bot → 10 attempts, "not exploited" | When scanning a hardened bot, the orchestrator exhausts 10 attempts, concludes "not exploited", and terminates cleanly. |
-| Stop works mid-scan | A user-initiated stop command halts the scan gracefully at any point, preserving partial results. |
+| Stop works mid-scan                         | A user-initiated stop command halts the scan gracefully at any point, preserving partial results.                       |
 
 ### Gate 4 — Reporting
 
-| Criterion | Pass Condition |
-|---|---|
-| Styled PDF produced | The report generator outputs a properly formatted PDF with all required sections. |
+| Criterion                                   | Pass Condition                                                                                                             |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Styled PDF produced                         | The report generator outputs a properly formatted PDF with all required sections.                                          |
 | Every finding's evidence matches its DB row | Each finding in the PDF report has evidence text that exactly matches the corresponding database record. No data mismatch. |
 
 ### Gate 5b — MCP Integration
 
-| Criterion | Pass Condition |
-|---|---|
-| MCP scan results match direct version | A scan run through the MCP interface produces identical results to the same scan run via direct Python calls. |
+| Criterion                                         | Pass Condition                                                                                                                                                   |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MCP scan results match direct version             | A scan run through the MCP interface produces identical results to the same scan run via direct Python calls.                                                    |
 | Killed `aegis-target` server detected and handled | If the `aegis-target` MCP server is killed mid-scan, the orchestrator detects the failure, logs it, and handles it gracefully (retry or abort with clear error). |
 
 > [!NOTE]
@@ -518,10 +520,12 @@ Use this checklist before marking any task as complete:
 - [ ] Dependencies declared in requirements files (Section 11)
 - [ ] Status.md, logs.md, and api.md updated as needed (Section 12)
 - [ ] TypeScript types in sync with Pydantic schemas (Section 12)
+- [ ] Evidence provided via terminal command output per `verification-before-completion` (Section 14)
+- [ ] Appropriate domain skills executed during implementation (Section 14)
 
 ---
 
-*This document is the law of the Aegis project. When in doubt, follow the rules. When the rules are unclear, ask for clarification. Never assume an exception exists unless it is explicitly granted.*
+_This document is the law of the Aegis project. When in doubt, follow the rules. When the rules are unclear, ask for clarification. Never assume an exception exists unless it is explicitly granted._
 
 ---
 
@@ -537,3 +541,54 @@ After each implementation session, tell the user what changed and why. Keep the 
 - Update `Coding-Agent-Guide/Status.md` when implementation progress or gate evidence changes.
 
 Do not silently remove project files or features. Explain deletions in the log and user-facing completion report.
+
+---
+
+## 14. Mandatory Coding Agent Skills Framework
+
+When AI coding agents or developers implement features, fix bugs, or review code in Aegis, they **MUST** select and execute appropriate skills from `.agents/skills/`. The skills have been analyzed and rated for Aegis's architecture:
+
+### 14.1 — Rated Skills Tier List
+
+#### Tier 1: Excellent (Core & Mandatory)
+
+These skills directly govern Aegis's core architecture and must be actively followed:
+
+| Skill                                   | Mandatory Trigger / Context                                                                                                                     |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`verification-before-completion`**    | **MANDATORY FOR ALL TASKS.** Never claim a task, gate, or test passes without running fresh verification commands and checking terminal output. |
+| **`systematic-debugging`**              | Mandatory whenever diagnosing runtime errors, process crashes, calibration failures, or connection issues. Guesswork is forbidden.              |
+| **`spec-to-code-compliance`**           | Mandatory before and during feature work to confirm alignment with `Project-Context/architecture.md`, `design.md`, and `rules.md`.              |
+| **`modern-python`**                     | Mandatory for all `engine/` development — enforces typing, uv/pip dependency management, async best practices, and clean code.                  |
+| **`frontend-ui-engineering`**           | Mandatory for all `desktop/` development — ensures UI matches `Project-Context/frontend-design.md`, accessible, responsive, and robust.         |
+| **`test-driven-development`**           | Mandatory for pure-logic modules (risk scoring, json guard, attack generation, heuristics).                                                     |
+| **`security-and-hardening`**            | Mandatory when handling target inputs, prompt generation, credentials, and API routes.                                                          |
+| **`api-and-interface-design`**          | Mandatory when adding or modifying REST endpoints between engine (`:8765`) and desktop (`:3000`).                                               |
+| **`constraint-driven-development`**     | Enforces the quality bar; forbids silencing type errors (`# type: ignore`) or skipping failing tests.                                           |
+| **`debugging-and-error-recovery`**      | Root cause debugging when external services (Ollama, Playwright browsers, SQLite) misbehave.                                                    |
+| **`observability-and-instrumentation`** | Mandatory for adhering to Section 8 logging rules (structured logs, auditable turn records).                                                    |
+| **`git-workflow-and-versioning`**       | Mandatory for commit discipline and branch management across `main`, `muneeb`, `salman`, `shahzaman`.                                           |
+| **`differential-review`**               | Mandatory prior to opening pull requests or merging branches to assess blast radius.                                                            |
+| **`source-driven-development`**         | Grounds all library usage in verified official documentation rather than assumptions.                                                           |
+| **`browser-testing-with-devtools`**     | Used during target calibration and DOM selector verification.                                                                                   |
+| **`code-review-and-quality`**           | 5-axis code quality review prior to PR submission.                                                                                              |
+| **`playwright-skill`**                  | Playwright automation patterns, waiting strategies, and selector resilience for target calibration.                                             |
+| **`agentic-actions-auditor`**           | CI/CD pipeline auditing for AI prompt injection risks.                                                                                          |
+
+#### Tier 2: Good (High-Value Workflow & Quality Tools)
+
+These skills should be utilized for structured project workflows:
+
+- **Planning & Task Breakdown**: `writing-plans`, `planning-and-task-breakdown`, `executing-plans`, `incremental-implementation`, `subagent-driven-development`.
+- **Quality & Review Loops**: `review-pr`, `code-improver`, `pr-improver`, `code-simplification`, `second-opinion`, `receiving-code-review`, `requesting-code-review`, `panel-review`.
+- **Architecture & Architecture Decisions**: `spec-driven-development`, `doubt-driven-development`, `documentation-and-adrs`, `sharp-edges`, `deprecation-and-migration`.
+- **Branch & Performance**: `finishing-a-development-branch`, `using-git-worktrees`, `performance-optimization`, `context-engineering`, `dispatching-parallel-agents`.
+
+### 14.2 — Mandatory Task Execution Lifecycle
+
+Every coding agent addressing a task in Aegis must follow this sequence:
+
+1. **Plan & Spec Check**: Check `Project-Context/architecture.md` using `spec-to-code-compliance` and `writing-plans`.
+2. **Implement**: Apply `modern-python` (backend) or `frontend-ui-engineering` (frontend) guided by `test-driven-development`.
+3. **Verify**: Apply `verification-before-completion` by running actual terminal commands (`pytest`, `npm test`, `.\run_aegis.ps1` verification) and observing stdout/stderr. **Evidence before claims.**
+4. **Report**: Produce the Section 1 / Section 13 Post-Implementation Report with concrete evidence of verification.
