@@ -15,8 +15,8 @@ The repository contains the foundation and active implementation for the eight-w
 | 4. Evaluation Agent | Weeks 4ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“5 | RubricJudge calls Ollama and validates JudgeVerdict JSON; benchmark accuracy not verified | Gate 2 not passed |
 | 5. Orchestrator | Weeks 5Ã¢â‚¬â€œ6 | Scan start/status/stop dispatch, turn persistence, and prompt telemetry are connected to the visible Playwright adapter. Mock lifecycle tests pass. | Gate 3 not passed |
 | 5b. MCP tool layer | Week 6 | Client, schemas, and four server modules present; parity, timeout, and crash handling not verified | Gate 5b not passed |
-| 6. Risk, persistence, and report | Weeks 6Ã¢â‚¬â€œ7 | Startup database creation and target/calibration persistence are connected; target deletion now persists to the database (previously cache-only, so deleted targets reappeared). Report and full evidence gates remain pending. | Gate 4 not passed |
-| 7. Integration, UI, and demo | Weeks 7Ã¢â‚¬â€œ8 | UI connects calibration and scan lifecycle APIs and includes live prompt/response and category progress. Desktop scanning remains unavailable; integrated browser demo is pending. | Not passed |
+| 6. Risk, persistence, and report | Weeks 6–7 | Findings service and SQLite persistence verified; RiskScorer computes deterministic severity; ReportingAgent aggregates narrative; ReportService generates styled PDF via xhtml2pdf; Reports API delivers downloads; Gate 4 end-to-end evidence fidelity verified against weak-bot (39/39 tests pass). | Gate 4 verified |
+| 7. Integration, UI, and demo | Weeks 7–8 | UI connects calibration and scan lifecycle APIs, includes live prompt/response, FindingsInspector view with Overview/Findings/Evidence/Timeline tabs, and PDF export action. Desktop scanning remains unavailable; integrated browser demo is pending. | Not passed |
 
 ## Gate Evidence
 
@@ -25,7 +25,7 @@ The repository contains the foundation and active implementation for the eight-w
 | 1 | Startup database creation, frozen Turn Record contract, and locally running test bot | Frozen Turn Record contract is verified. Current availability of the test bots was not verified in this run; port 8001 serves an unrelated local application. Recheck target availability before claiming the live target gate. |
 | 2 | Judge returns valid JSON and reaches at least 90% accuracy on labelled benchmark | JSON guard and benchmark pairs test passing (`test_benchmark_pairs`). Complete LLM model run pending Ollama. **Not passed.** |
 | 3 | Weak bot exploit found; hardened bot exhausts budget without exploit; stop works mid-scan | Stop, turn persistence, finding creation, and telemetry behavior pass mock tests (`test_scan_flow.py`, 3 passed). Live weak/hardened target acceptance and database-backed end-to-end scan are unverified. **Not passed.** |
-| 4 | Styled PDF is produced and finding evidence matches persisted evidence | Report service stub exists. **Not passed.** |
+| 4 | Styled PDF is produced and finding evidence matches persisted evidence | **Verified.** Styled PDF report generated with xhtml2pdf and Jinja2 template (`engine/app/templates/report.html`). Text extracted from generated PDF verified with 100% fidelity against SQLite DB (scan_id, target name, LLM07 category, canary token `AEGIS-CANARY-7731`, trigger prompt, response evidence, severity, and risk grade). Verified via `test_report_generation.py` (2 passed) and `scripts/verify_gate4.py` (10/10 checks passed). |
 | 5b | MCP results match direct calls; killed server is handled without hanging | MCP modules scaffolded. Direct loop to be proven first per plan. **Not passed.** |
 
 ## Module 2 Verification Evidence

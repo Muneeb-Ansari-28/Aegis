@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Activity, ChevronRight, CircleHelp, History, Menu, MessageSquare, Radio, ScanLine, Settings2, Shield, X } from 'lucide-react';
+import { Activity, ChevronRight, CircleHelp, History, Menu, MessageSquare, Radio, ScanLine, Settings2, Shield, ShieldAlert, X } from 'lucide-react';
 
-export type AppPage = 'overview' | 'scan' | 'live' | 'history' | 'assistant' | 'profile';
+export type AppPage = 'overview' | 'scan' | 'live' | 'results' | 'history' | 'assistant' | 'profile';
 
 interface ApplicationShellProps {
   page: AppPage;
@@ -15,7 +15,7 @@ interface ApplicationShellProps {
 }
 
 const pageTitles: Record<AppPage, string> = {
-  overview: 'Overview', scan: 'New assessment', live: 'Live scan',
+  overview: 'Overview', scan: 'New assessment', live: 'Live scan', results: 'Results & findings',
   history: 'Scan history', assistant: 'Aegis assistant', profile: 'Profile & preferences',
 };
 
@@ -32,6 +32,7 @@ export default function ApplicationShell({ page, onNavigate, hasActiveScan, prof
     { id: 'overview' as const, icon: Activity },
     { id: 'scan' as const, icon: ScanLine },
     ...(hasActiveScan ? [{ id: 'live' as const, icon: Activity }] : []),
+    { id: 'results' as const, icon: ShieldAlert },
     { id: 'history' as const, icon: History },
     { id: 'assistant' as const, icon: MessageSquare },
     { id: 'profile' as const, icon: Settings2 },

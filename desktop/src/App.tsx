@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { AlertTriangle, ArrowUpRight, Bot, Check, CircleHelp, Command, Globe2, History, LoaderCircle, Radio, Search, Settings2, Shield, ShieldCheck, SlidersHorizontal, Sparkles, Square, UserRound, X } from 'lucide-react';
+import { AlertTriangle, ArrowUpRight, Bot, Check, CircleHelp, Command, Globe2, History, LoaderCircle, Radio, Search, Settings2, Shield, ShieldAlert, ShieldCheck, SlidersHorizontal, Sparkles, Square, UserRound, X } from 'lucide-react';
 import { api, assist, type ScanRecord, type ScanTurn, type Target } from './api/client';
 import { useScanSocket, type ScanEvent } from './hooks/useScanSocket';
 import Overview from './components/Overview';
 import NewAssessment from './components/NewAssessment';
 import ApplicationShell, { type AppPage as Page } from './components/ApplicationShell';
+import FindingsInspector from './views/FindingsInspector';
 
 type ChatMessage = { role: 'assistant' | 'user'; text: string };
 type LocalScan = ScanRecord & { targetName?: string; createdAt: string };
@@ -24,6 +25,7 @@ export default function App() {
   const [targets, setTargets] = useState<Target[]>([]);
   const [history, setHistory] = useState<LocalScan[]>(readHistory);
   const [activeScan, setActiveScan] = useState<ScanRecord | null>(null);
+  const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
   const [profileName, setProfileName] = useState(() => localStorage.getItem(PROFILE_KEY) || 'Security analyst');
   const [toast, setToast] = useState('');
 
@@ -36,6 +38,7 @@ export default function App() {
   useEffect(() => { if (!toast) return; const id = window.setTimeout(() => setToast(''), 4200); return () => window.clearTimeout(id); }, [toast]);
   const onScanStarted = (scan: ScanRecord, target?: Target) => {
     setActiveScan(scan);
+    setSelectedScanId(scan.scan_id);
     const next = [{ ...scan, targetName: target?.name, createdAt: new Date().toISOString() }, ...readHistory()].slice(0, 100);
     setHistory(next); localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
     setPage('live'); setToast('Scan started. The target is open in the Playwright browser.');
@@ -49,12 +52,18 @@ export default function App() {
     });
   }, [activeScan?.scan_id]);
 
+  const openResults = (scanId: string) => {
+    setSelectedScanId(scanId);
+    setPage('results');
+  };
+
   return <><ApplicationShell page={page} onNavigate={setPage} hasActiveScan={Boolean(activeScan)}
     profileName={profileName} engineOnline={engineOnline} ollamaOnline={ollamaOnline} onRefresh={refresh}>
-      {page === 'overview' && <Overview history={history} activeScan={activeScan} onNavigate={setPage} engineOnline={engineOnline} ollamaOnline={ollamaOnline} profileName={profileName} onRefresh={refresh}/>}
+      {page === 'overview' && <Overview history={history} activeScan={activeScan} onNavigate={setPage} engineOnline={engineOnline} ollamaOnline={ollamaOnline} profileName={profileName} onRefresh={refresh} onSelectScan={openResults}/>}
       {page === 'scan' && <NewAssessment targets={targets} refresh={refresh} onStarted={onScanStarted} notify={setToast}/>}
-      {page === 'live' && activeScan && <LiveScanPage scan={activeScan} targetName={history.find(item => item.scan_id === activeScan.scan_id)?.targetName || 'Local target'} onStatus={onScanStatus}/>}
-      {page === 'history' && <HistoryPage history={history} onRefresh={() => { const h = readHistory(); setHistory(h); }} />}
+      {page === 'live' && activeScan && <LiveScanPage scan={activeScan} targetName={history.find(item => item.scan_id === activeScan.scan_id)?.targetName || 'Local target'} onStatus={onScanStatus} onInspectResults={openResults}/>}
+      {page === 'results' && <FindingsInspector scanId={selectedScanId || activeScan?.scan_id || history[0]?.scan_id} history={history} onSelectScan={setSelectedScanId} onNavigate={setPage}/>}
+      {page === 'history' && <HistoryPage history={history} onRefresh={() => { const h = readHistory(); setHistory(h); }} onSelectScan={openResults}/>}
       {page === 'assistant' && <Assistant history={history}/>}
       {page === 'profile' && <Profile onSaveName={setProfileName}/>}
     </ApplicationShell>{toast && <div className="toast"><Check size={17}/>{toast}<button onClick={() => setToast('')}><X size={15}/></button></div>}
@@ -63,9 +72,10 @@ export default function App() {
 
 function Heading({ eyebrow, title, sub, action }: { eyebrow: string; title: string; sub: string; action?: ReactNode }) { return <div className="page-heading"><div><div className="eyebrow">{eyebrow}</div><h1>{title}</h1><p>{sub}</p></div>{action}</div>; }
 
-function HistoryPage({history,onRefresh}:{history:LocalScan[];onRefresh:()=>void}) {
-  const [query,setQuery]=useState(''); const filtered=history.filter(x=>(x.targetName||'').toLowerCase().includes(query.toLowerCase())||x.category.toLowerCase().includes(query.toLowerCase()));
-  return <div className="page-content"><Heading eyebrow="ASSESSMENT RECORDS" title="Scan history" sub="Review scan requests started from this desktop workspace." action={<button className="button secondary" onClick={onRefresh}><Radio size={15}/>Refresh</button>}/><section className="panel history-panel"><div className="history-toolbar"><div className="history-count"><strong>{history.length}</strong> assessment{history.length===1?'':'s'}</div><div className="search-box"><Search size={15}/><input placeholder="Search target or category" value={query} onChange={e=>setQuery(e.target.value)}/><SlidersHorizontal size={15}/></div></div>{filtered.length?<div className="history-table-wrap"><table className="history-table"><thead><tr><th>TARGET</th><th>CATEGORY</th><th>STATUS</th><th>ATTEMPTS</th><th>STARTED</th></tr></thead><tbody>{filtered.map(s=><tr key={s.scan_id}><td><div className="table-target"><span className="table-icon"><Globe2 size={15}/></span><span><strong>{s.targetName||'Target'}</strong><small title={s.target_id}>{s.scan_id.slice(0,8)}…</small></span></div></td><td><span className="table-category">{s.category}</span></td><td><span className={cx('scan-status',s.status.toLowerCase())}>{s.status}</span></td><td>{s.budget}</td><td>{new Date(s.createdAt).toLocaleString()}</td></tr>)}</tbody></table></div>:<div className="history-empty"><div className="empty-icon"><History size={18}/></div><strong>{query?'No matching assessments':'No scans in your history yet'}</strong><p>{query?'Try a different search term.':'Once you start an assessment, its request will be listed here.'}</p></div>}<div className="history-note"><CircleHelp size={14}/>History is stored locally on this device. Engine-backed scan retrieval will be available when lifecycle persistence is connected.</div></section></div>;
+function HistoryPage({history, onRefresh, onSelectScan}: {history: LocalScan[]; onRefresh: () => void; onSelectScan?: (scanId: string) => void}) {
+  const [query, setQuery] = useState('');
+  const filtered = history.filter(x => (x.targetName || '').toLowerCase().includes(query.toLowerCase()) || x.category.toLowerCase().includes(query.toLowerCase()));
+  return <div className="page-content"><Heading eyebrow="ASSESSMENT RECORDS" title="Scan history" sub="Review scan requests started from this desktop workspace." action={<button className="button secondary" onClick={onRefresh}><Radio size={15}/>Refresh</button>}/><section className="panel history-panel"><div className="history-toolbar"><div className="history-count"><strong>{history.length}</strong> assessment{history.length===1?'':'s'}</div><div className="search-box"><Search size={15}/><input placeholder="Search target or category" value={query} onChange={e=>setQuery(e.target.value)}/><SlidersHorizontal size={15}/></div></div>{filtered.length?<div className="history-table-wrap"><table className="history-table"><thead><tr><th>TARGET</th><th>CATEGORY</th><th>STATUS</th><th>ATTEMPTS</th><th>STARTED</th><th>FINDINGS</th></tr></thead><tbody>{filtered.map(s=><tr key={s.scan_id}><td><div className="table-target"><span className="table-icon"><Globe2 size={15}/></span><span><strong>{s.targetName||'Target'}</strong><small title={s.target_id}>{s.scan_id.slice(0,8)}…</small></span></div></td><td><span className="table-category">{s.category}</span></td><td><span className={cx('scan-status',s.status.toLowerCase())}>{s.status}</span></td><td>{s.budget}</td><td>{new Date(s.createdAt).toLocaleString()}</td><td><button className="dashboard-link" onClick={() => onSelectScan?.(s.scan_id)}>Inspect <ArrowUpRight size={13}/></button></td></tr>)}</tbody></table></div>:<div className="history-empty"><div className="empty-icon"><History size={18}/></div><strong>{query?'No matching assessments':'No scans in your history yet'}</strong><p>{query?'Try a different search term.':'Once you start an assessment, its request will be listed here.'}</p></div>}<div className="history-note"><CircleHelp size={14}/>History is stored locally on this device. Engine-backed scan retrieval will be available when lifecycle persistence is connected.</div></section></div>;
 }
 
 function Assistant({history}:{history:LocalScan[]}) {
@@ -81,7 +91,7 @@ function Profile({onSaveName}:{onSaveName:(name:string)=>void}) {
   return <div className="page-content"><Heading eyebrow="WORKSPACE SETTINGS" title="Profile & preferences" sub="Manage the local desktop profile and workspace preferences."/><div className="profile-layout"><section className="panel profile-panel"><div className="profile-panel-head"><div className="large-profile-avatar">{(name||'S').slice(0,1).toUpperCase()}</div><div><h3>Personal profile</h3><p>Your profile is stored on this device.</p></div></div><div className="field"><label>DISPLAY NAME</label><input value={name} onChange={e=>setName(e.target.value)} placeholder="Security analyst"/></div><div className="profile-detail"><div><UserRound size={16}/><span>Account type</span></div><strong>Local workspace</strong></div><div className="profile-detail"><div><Command size={16}/><span>Workspace</span></div><strong>Personal</strong></div><button className="button primary" onClick={save}>{saved?<Check size={15}/>:<Check size={15}/>} {saved?'Saved':'Save preferences'}</button></section><section className="panel preferences-panel"><div className="panel-head"><div><h3>Runtime preferences</h3><p>Local service connection details</p></div><Settings2 size={17} className="muted-icon"/></div><div className="preference-row"><div className="pref-icon"><Radio size={16}/></div><div><strong>Aegis Engine</strong><small>http://localhost:8765</small></div><span className={cx('scan-status', 'completed')}>LOCAL</span></div><div className="preference-row"><div className="pref-icon"><Bot size={16}/></div><div><strong>Ollama assistant</strong><small>Configured through the local engine</small></div><span className="scan-status">OPTIONAL</span></div><div className="preference-row"><div className="pref-icon"><History size={16}/></div><div><strong>Scan history</strong><small>Saved in this browser profile</small></div><span className="scan-status completed">ON DEVICE</span></div><div className="profile-note"><ShieldCheck size={16}/>Aegis keeps this profile and scan request history on your device.</div></section></div></div>;
 }
 
-function LiveScanPage({scan,targetName,onStatus}:{scan:ScanRecord;targetName:string;onStatus:(status:string)=>void}) {
+function LiveScanPage({scan,targetName,onStatus,onInspectResults}:{scan:ScanRecord;targetName:string;onStatus:(status:string)=>void;onInspectResults?:(scanId:string)=>void}) {
   const events=useScanSocket(scan.scan_id);
   const [savedTurns,setSavedTurns]=useState<ScanTurn[]>([]);
   const [status,setStatus]=useState(scan.status);
@@ -128,7 +138,7 @@ function LiveScanPage({scan,targetName,onStatus}:{scan:ScanRecord;targetName:str
   const turns = [...persistedTurns, ...liveTurns.filter(turn => !savedAttempts.has(turn.attempt))]
     .sort((a,b)=>(b.attempt||0)-(a.attempt||0));
   const progress=Math.min(100,Math.round((attempt/Math.max(scan.budget,1))*100));
-  return <div className="page-content live-page"><Heading eyebrow="LIVE ASSESSMENT" title="Scan activity" sub={`${targetName} · ${scan.category} · Playwright browser is open`} action={!finished&&<button className="button secondary" onClick={()=>void stop()} disabled={stopBusy}>{stopBusy?<LoaderCircle className="spin" size={15}/>:<Square size={14}/>}Stop scan</button>}/>
+  return <div className="page-content live-page"><Heading eyebrow="LIVE ASSESSMENT" title="Scan activity" sub={`${targetName} · ${scan.category} · Playwright browser is open`} action={finished ? <button className="button primary" onClick={()=>onInspectResults?.(scan.scan_id)}><ShieldAlert size={15}/>Inspect findings</button> : <button className="button secondary" onClick={()=>void stop()} disabled={stopBusy}>{stopBusy?<LoaderCircle className="spin" size={15}/>:<Square size={14}/>}Stop scan</button>}/>
     <div className="live-summary panel"><div className="live-state"><span className={cx('status-dot',finished?'':'online')}/><div><strong>{status.replace(/_/g,' ')}</strong><small>{targetName} · scan {scan.scan_id.slice(0,8)}</small></div></div><div className="live-progress"><div><span>Prompts sent</span><strong>{attempt} / {scan.budget}</strong></div><div className="progress-track"><i style={{width:`${progress}%`}}/></div></div><div className="live-category-badge"><ShieldCheck size={16}/><span>LLM07 active</span></div></div>
     <div className="live-grid"><section className="panel live-feed"><div className="panel-head"><div><h3>Prompt activity</h3><p>Prompts and chatbot replies from this browser session</p></div><span className={cx('live-indicator',!finished&&'live')}>{!finished&&<i/>}{finished?'ENDED':'LIVE'}</span></div>{error&&<div className="error-box"><AlertTriangle size={15}/>{error}</div>}{turns.length?turns.map(event=><article className="turn-card" key={`${event.attempt}-${event.event}`}><div className="turn-heading"><span className="turn-number">Attempt {event.attempt||'—'}</span><span className={cx('scan-status',(event.event==='turn_completed'?'completed':'running'))}>{event.event==='turn_completed'?'Response received':'Sending prompt'}</span></div><div className="turn-section"><small>PROMPT · {event.strategy||'LLM07'}</small><p>{event.prompt||'Waiting for prompt details…'}</p></div>{event.event==='turn_completed'?<><div className="turn-section response"><small>CHATBOT RESPONSE {event.latency_ms!=null?`· ${event.latency_ms} ms`:''}</small><p>{event.response||'(No response text returned)'}</p></div>{event.verdict&&<div className="turn-verdict"><ShieldCheck size={14}/>{event.verdict.exploited?'Potential disclosure detected':'No disclosure detected'}{event.verdict.rationale&&<span>{event.verdict.rationale}</span>}</div>}</>:<div className="turn-wait"><LoaderCircle size={14} className="spin"/>Waiting for the chatbot response…</div>}</article>):<div className="live-empty"><LoaderCircle size={18} className="spin"/><strong>Waiting for the first prompt</strong><span>Prompts will appear here as the scan runs.</span></div>}</section>
       <aside className="live-aside"><section className="panel category-panel"><div className="panel-head"><div><h3>OWASP categories</h3><p>Scan module progress</p></div></div>{OWASP.map(([id,title])=><div className={cx('category-row',id==='LLM07'&&'current')} key={id}><span className="category-check">{id==='LLM07'?(status.toUpperCase()==='COMPLETED'?<Check size={13}/>:finished?<X size={13}/>:<LoaderCircle size={13} className="spin"/>):<span/>}</span><div><strong>{id}</strong><small>{title}</small></div><em>{id==='LLM07'?status.toUpperCase()==='COMPLETED'?'Done':status.toUpperCase()==='FAILED'?'Failed':status.toUpperCase()==='STOPPED'?'Stopped':finished?'Ended':'Active':'Not enabled'}</em></div>)}</section><div className="panel browser-note"><div className="browser-note-icon"><Globe2 size={16}/></div><div><strong>Target browser</strong><p>Playwright is interacting with the local site in a separate visible browser window. Keep it open while the scan runs.</p></div></div></aside></div>

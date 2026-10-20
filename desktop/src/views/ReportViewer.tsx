@@ -1,9 +1,11 @@
+import FindingsInspector from './FindingsInspector';
 
+/**
+ * ReportViewer view component.
+ * In accordance with the Findings and Export PDF implementation plan,
+ * this delegates to the unified FindingsInspector view which integrates
+ * vulnerability inspection, turn evidence, and executive PDF reporting.
+ */
 export default function ReportViewer() {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Executive Report Viewer</h2>
-      <p className="text-slate-400">Download and preview generated PDF security assessments.</p>
-    </div>
-  );
+  return <FindingsInspector />;
 }

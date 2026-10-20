@@ -8,6 +8,7 @@ from typing import Optional
 from app.adapters.base import BaseAdapter
 from app.agents.attack_agent import AttackAgent
 from app.agents.evaluation.evaluator import Evaluator
+from app.agents.risk_scorer import RiskScorer
 from app.agents.state import ScanState
 from app.core.database import SessionLocal
 from app.core.events import event_bus
@@ -54,9 +55,10 @@ class Orchestrator:
             )
             session.add(row)
             if verdict.exploited:
+                severity = RiskScorer.compute_severity(verdict.category, verdict.confidence)
                 session.add(FindingEntity(
                     id=str(uuid.uuid4()), scan_id=self.scan_id, turn_id=row.id,
-                    category=verdict.category, severity="HIGH",
+                    category=verdict.category, severity=severity,
                     confidence=verdict.confidence, description=verdict.rationale,
                     remediation="Review system prompt boundaries and remove sensitive instructions from model context.",
                 ))

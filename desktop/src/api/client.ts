@@ -1,3 +1,5 @@
+import type { FindingDetail, FindingResponse, FindingsSummary, ReportMeta } from '../types';
+
 const BASE_URL = 'http://localhost:8765/api/v1';
 
 export interface TargetCalibration {
@@ -71,7 +73,27 @@ export const api = {
   scanStatus: (id: string) => request<{ scan_id: string; status: string; current_attempt: number; budget: number; exploited: boolean }>(`/scans/${id}`),
   scanTurns: (id: string) => request<ScanTurn[]>(`/scans/${id}/turns`),
   stopScan: (id: string) => request<{ status: string; scan_id: string }>(`/scans/${id}/stop`, { method: 'POST' }),
-  findings: (id: string) => request<Array<{ id: string; scan_id: string; turn_id: string; category: string; severity: string; confidence: number; description: string; remediation?: string }>>(`/findings/${id}`),
+  findings: (scanId: string) => request<FindingResponse[]>(`/findings/${scanId}`),
+  findingsSummary: (scanId: string) => request<FindingsSummary>(`/findings/${scanId}/summary`),
+  findingDetail: (findingId: string) => request<FindingDetail>(`/findings/detail/${findingId}`),
+  reportMeta: (scanId: string) => request<ReportMeta>(`/reports/${scanId}/meta`),
+  generateReport: (scanId: string) => request<ReportMeta>(`/reports/${scanId}/generate`, { method: 'POST' }),
+  downloadReport: async (scanId: string): Promise<void> => {
+    const response = await fetch(`${BASE_URL}/reports/${scanId}/pdf`);
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ detail: 'Report download failed' }));
+      throw new Error(err.detail || 'Report download failed');
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `aegis-report-${scanId.slice(0, 8)}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  },
 };
 
 // Lightweight local guidance keeps the assistant useful without sending target data to a model.
