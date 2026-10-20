@@ -14,6 +14,7 @@ interface OverviewProps {
   ollamaOnline: boolean | null;
   profileName: string;
   onRefresh: () => Promise<void>;
+  onSelectScan?: (scanId: string) => void;
 }
 
 /** Format recorded request dates without manufacturing missing timestamps. */
@@ -25,7 +26,7 @@ function recordedDate(value?: string, compact = false) {
 }
 
 /** Present existing local history and health signals; never initiate scanner operations. */
-export default function Overview({ history, activeScan, onNavigate, engineOnline, ollamaOnline, profileName, onRefresh }: OverviewProps) {
+export default function Overview({ history, activeScan, onNavigate, engineOnline, ollamaOnline, profileName, onRefresh, onSelectScan }: OverviewProps) {
   const [refreshing, setRefreshing] = useState(false);
   const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening';
   const checking = engineOnline === null;
@@ -69,7 +70,7 @@ export default function Overview({ history, activeScan, onNavigate, engineOnline
               <tbody>{history.slice(0, 4).map(scan => {
                 const status = scan.status.toUpperCase();
                 const tone = status === 'COMPLETED' ? 'success' : status === 'FAILED' ? 'danger' : ['RUNNING', 'SCANNING', 'QUEUED'].includes(status) ? 'accent' : 'neutral';
-                return <tr key={scan.scan_id}><th scope="row">{activeScan?.scan_id === scan.scan_id ? <button className="dashboard-link dashboard-target" aria-label={`Open selected scan for ${scan.targetName || 'unnamed target'}`} onClick={() => onNavigate('live')}>{scan.targetName || 'Unnamed target'}</button> : <span className="dashboard-target" title={scan.targetName || scan.target_id}>{scan.targetName || 'Unnamed target'}</span>}</th><td>{scan.category}</td><td><span className={`dashboard-badge ${tone}`}>{scan.status.replace(/_/g, ' ') || 'Unknown'}</span></td><td>{recordedDate(scan.createdAt)}</td><td><span className="dashboard-muted" title="Aggregate findings unavailable" aria-label="Findings unavailable">—</span></td></tr>;
+                return <tr key={scan.scan_id}><th scope="row">{activeScan?.scan_id === scan.scan_id && !['COMPLETED', 'FAILED', 'STOPPED'].includes(status) ? <button className="dashboard-link dashboard-target" aria-label={`Open selected scan for ${scan.targetName || 'unnamed target'}`} onClick={() => onNavigate('live')}>{scan.targetName || 'Unnamed target'}</button> : <button className="dashboard-link dashboard-target" aria-label={`Inspect results for ${scan.targetName || 'unnamed target'}`} onClick={() => { onSelectScan ? onSelectScan(scan.scan_id) : onNavigate('results'); }}>{scan.targetName || 'Unnamed target'}</button>}</th><td>{scan.category}</td><td><span className={`dashboard-badge ${tone}`}>{scan.status.replace(/_/g, ' ') || 'Unknown'}</span></td><td>{recordedDate(scan.createdAt)}</td><td><button className="dashboard-link" onClick={() => { onSelectScan ? onSelectScan(scan.scan_id) : onNavigate('results'); }} title="Inspect findings">View <ArrowRight size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /></button></td></tr>;
               })}</tbody>
             </table>
           </div>

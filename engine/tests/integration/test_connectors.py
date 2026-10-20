@@ -10,9 +10,19 @@ from app.schemas.turn_record import TurnRecord
 from app.schemas.target import TargetCalibrationConfig
 
 
+import socket
+
+
+def find_free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
 @pytest.fixture(scope="module")
 def weak_bot_server():
     """Starts local weak-bot server in background thread for live connector integration testing."""
+    port = find_free_port()
     spec = importlib.util.spec_from_file_location(
         "weak_bot_app",
         r"d:\vs_code_files\Aegis\test-targets\weak-bot\app.py"
@@ -21,12 +31,12 @@ def weak_bot_server():
     spec.loader.exec_module(mod)
 
     server_thread = threading.Thread(
-        target=lambda: uvicorn.run(mod.app, host="127.0.0.1", port=8001, log_level="warning"),
+        target=lambda: uvicorn.run(mod.app, host="127.0.0.1", port=port, log_level="warning"),
         daemon=True,
     )
     server_thread.start()
     time.sleep(1.5)
-    yield "http://127.0.0.1:8001"
+    yield f"http://127.0.0.1:{port}"
 
 
 @pytest.mark.asyncio

@@ -1,12 +1,376 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Aegis Security Assessment Report</title>
-  <link rel="stylesheet" href="assets/style.css">
+  <meta charset="utf-8">
+  <title>Aegis Security Assessment Report — {{ report.scan_id }}</title>
+  <style>
+    @page {
+      size: letter portrait;
+      margin: 1.8cm 1.5cm 1.8cm 1.5cm;
+      @bottom-right {
+        content: "Page " counter(page);
+        font-size: 8pt;
+        color: #6b7280;
+        font-family: Helvetica, Arial, sans-serif;
+      }
+      @bottom-left {
+        content: "CONFIDENTIAL — Aegis Security Assessment";
+        font-size: 8pt;
+        color: #6b7280;
+        font-family: Helvetica, Arial, sans-serif;
+      }
+    }
+
+    body {
+      font-family: Helvetica, Arial, sans-serif;
+      color: #1f2937;
+      font-size: 9.5pt;
+      line-height: 1.45;
+      margin: 0;
+      padding: 0;
+    }
+
+    .report-header {
+      border-bottom: 2px solid #1f2937;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    .report-header-table {
+      width: 100%;
+    }
+
+    .brand-title {
+      font-size: 20pt;
+      font-weight: bold;
+      color: #1f2937;
+      letter-spacing: 0.05em;
+      margin: 0;
+    }
+
+    .brand-subtitle {
+      font-size: 9pt;
+      color: #4f6bed;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 3px;
+    }
+
+    .report-meta-right {
+      text-align: right;
+      font-size: 8.5pt;
+      color: #4b5563;
+    }
+
+    h2 {
+      font-size: 12pt;
+      color: #1f2937;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 4px;
+      margin-top: 18px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    table.meta-table {
+      width: 100%;
+      margin-bottom: 16px;
+    }
+
+    table.meta-table th {
+      background-color: #f9fafb;
+      color: #4b5563;
+      font-weight: bold;
+      font-size: 8.5pt;
+      text-align: left;
+      padding: 5px 8px;
+      border: 1px solid #e5e7eb;
+      width: 22%;
+    }
+
+    table.meta-table td {
+      padding: 5px 8px;
+      border: 1px solid #e5e7eb;
+      font-size: 8.5pt;
+      color: #111827;
+      width: 28%;
+    }
+
+    .meta-value-mono {
+      font-family: Courier, monospace;
+      font-size: 8pt;
+      color: #111827;
+    }
+
+    table.summary-table {
+      width: 100%;
+      margin-bottom: 18px;
+    }
+
+    table.summary-table th {
+      background-color: #1f2937;
+      color: #ffffff;
+      font-size: 8.5pt;
+      font-weight: bold;
+      padding: 6px 8px;
+      text-align: center;
+    }
+
+    table.summary-table td {
+      border: 1px solid #e5e7eb;
+      padding: 8px;
+      text-align: center;
+      font-size: 11pt;
+      font-weight: bold;
+    }
+
+    .badge-critical { color: #991b1b; background-color: #fee2e2; }
+    .badge-high { color: #b91c1c; background-color: #fef2f2; }
+    .badge-medium { color: #92400e; background-color: #fffbeb; }
+    .badge-low { color: #1e40af; background-color: #eff6ff; }
+    .badge-clean { color: #166534; background-color: #ecfdf3; }
+
+    .finding-item {
+      border: 1px solid #e5e7eb;
+      margin-bottom: 16px;
+      background-color: #ffffff;
+    }
+
+    .finding-item-header {
+      background-color: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 8px 10px;
+    }
+
+    .finding-title {
+      font-size: 10.5pt;
+      font-weight: bold;
+      color: #111827;
+    }
+
+    .finding-description {
+      margin: 6px 0 10px 0;
+      font-size: 9pt;
+      color: #374151;
+    }
+
+    .evidence-box {
+      margin: 6px 0 10px 0;
+    }
+
+    .evidence-label {
+      font-size: 8pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 3px;
+    }
+
+    .evidence-content {
+      background-color: #18212b;
+      color: #e5e7eb;
+      font-family: Courier, monospace;
+      font-size: 8pt;
+      padding: 8px;
+      border: 1px solid #2d3748;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .remediation-box {
+      background-color: #f0fdf4;
+      border-left: 3px solid #16a34a;
+      padding: 8px 10px;
+      font-size: 8.5pt;
+      color: #14532d;
+      margin-top: 8px;
+    }
+
+    .clean-box {
+      background-color: #ecfdf3;
+      border: 1px solid #bbf7d0;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      font-size: 9.5pt;
+      color: #14532d;
+    }
+
+    .disclaimer-text {
+      font-size: 7.5pt;
+      color: #6b7280;
+      line-height: 1.35;
+      margin-top: 24px;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 8px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Aegis Red-Teaming Report</h1>
-  <p>Scan ID: {{ scan_id }}</p>
-  <p>Category: {{ category }}</p>
+
+  <!-- Timestamp Formatting Macro -->
+  {% macro format_ts(ts) -%}
+    {%- if ts and ts|length >= 19 and 'T' in ts -%}
+      {{ ts[:10] }} {{ ts[11:19] }} UTC
+    {%- elif ts -%}
+      {{ ts }}
+    {%- else -%}
+      N/A
+    {%- endif -%}
+  {%- endmacro %}
+
+  <!-- Report Header -->
+  <div class="report-header">
+    <table class="report-header-table">
+      <tr>
+        <td style="vertical-align: top;">
+          <div class="brand-title">AEGIS</div>
+          <div class="brand-subtitle">Automated Red-Teaming &amp; Security Assessment</div>
+        </td>
+        <td class="report-meta-right" style="vertical-align: top;">
+          <strong>Date Generated:</strong> {{ report.generated_at[:10] }}<br>
+          <strong>Scan ID:</strong> {{ report.scan_id }}<br>
+          <strong>Report Version:</strong> 1.0
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Executive Summary -->
+  <h2>1. Executive Summary</h2>
+  <p>{{ report.executive_summary }}</p>
+
+  <!-- Assessment Metadata -->
+  <h2>2. Assessment Metadata</h2>
+  <table class="meta-table">
+    <tr>
+      <th style="width: 22%;">Assessment ID</th>
+      <td colspan="3" class="meta-value-mono" style="width: 78%;">{{ report.scan_id }}</td>
+    </tr>
+    <tr>
+      <th style="width: 22%;">Target Name</th>
+      <td style="width: 28%;">{{ report.target_name }}</td>
+      <th style="width: 22%;">Vulnerability Scope</th>
+      <td style="width: 28%;">OWASP {{ report.category }} (System Prompt Leakage)</td>
+    </tr>
+    <tr>
+      <th>Target URL</th>
+      <td colspan="3" class="meta-value-mono">{{ report.target_url }}</td>
+    </tr>
+    <tr>
+      <th>Lifecycle Status</th>
+      <td>{{ report.scan_status }}</td>
+      <th>Total Interactions</th>
+      <td>{{ report.total_turns }} interaction turn(s)</td>
+    </tr>
+    <tr>
+      <th>Risk Resilience Grade</th>
+      <td><strong>{{ "%.1f"|format(report.risk_grade) }} / 100</strong></td>
+      <th>Generated At</th>
+      <td>{{ format_ts(report.generated_at) }}</td>
+    </tr>
+    <tr>
+      <th>Assessment Started</th>
+      <td>{{ format_ts(report.started_at) }}</td>
+      <th>Assessment Completed</th>
+      <td>{{ format_ts(report.completed_at) }}</td>
+    </tr>
+  </table>
+
+  <!-- Severity Breakdown -->
+  <h2>3. Vulnerability Distribution</h2>
+  <table class="summary-table">
+    <thead>
+      <tr>
+        <th style="width: 20%;">CRITICAL</th>
+        <th style="width: 20%;">HIGH</th>
+        <th style="width: 20%;">MEDIUM</th>
+        <th style="width: 20%;">LOW</th>
+        <th style="width: 20%;">TOTAL FINDINGS</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="{% if report.severity_breakdown['CRITICAL'] > 0 %}badge-critical{% endif %}">
+          {{ report.severity_breakdown['CRITICAL'] }}
+        </td>
+        <td class="{% if report.severity_breakdown['HIGH'] > 0 %}badge-high{% endif %}">
+          {{ report.severity_breakdown['HIGH'] }}
+        </td>
+        <td class="{% if report.severity_breakdown['MEDIUM'] > 0 %}badge-medium{% endif %}">
+          {{ report.severity_breakdown['MEDIUM'] }}
+        </td>
+        <td class="{% if report.severity_breakdown['LOW'] > 0 %}badge-low{% endif %}">
+          {{ report.severity_breakdown['LOW'] }}
+        </td>
+        <td class="{% if report.total_findings > 0 %}badge-critical{% else %}badge-clean{% endif %}">
+          {{ report.total_findings }}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Detailed Findings -->
+  <h2>4. Detailed Findings &amp; Evidence</h2>
+
+  {% if report.findings|length == 0 %}
+    <div class="clean-box">
+      <strong>No prompt leakage vulnerabilities identified.</strong><br>
+      The target chatbot model successfully maintained system prompt confidentiality across all probe iterations. No canary tokens or internal system instructions were detected in the returned model outputs.
+    </div>
+  {% else %}
+    {% for finding in report.findings %}
+      <div class="finding-item">
+        <div class="finding-item-header">
+          <table style="width: 100%;">
+            <tr>
+              <td style="text-align: left;">
+                <span class="finding-title">Finding #{{ loop.index }}: OWASP {{ finding.category }}</span>
+              </td>
+              <td style="text-align: right;">
+                <span class="{% if finding.severity == 'CRITICAL' %}badge-critical{% elif finding.severity == 'HIGH' %}badge-high{% elif finding.severity == 'MEDIUM' %}badge-medium{% else %}badge-low{% endif %}" style="padding: 2px 6px; font-size: 8pt;">
+                  {{ finding.severity }} (Confidence: {{ (finding.confidence * 100)|round|int }}%)
+                </span>
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div style="padding: 10px;">
+          <div class="finding-description">
+            <strong>Description:</strong> {{ finding.description }}
+          </div>
+
+          <div class="evidence-box">
+            <div class="evidence-label">Trigger Prompt (Turn #{{ finding.turn_index }}):</div>
+            <pre class="evidence-content">{{ finding.prompt }}</pre>
+          </div>
+
+          <div class="evidence-box">
+            <div class="evidence-label">Chatbot Response Evidence:</div>
+            <pre class="evidence-content">{{ finding.response }}</pre>
+          </div>
+
+          {% if finding.remediation %}
+            <div class="remediation-box">
+              <strong>Remediation Recommendation:</strong> {{ finding.remediation }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Methodology -->
+  <h2>5. Assessment Methodology</h2>
+  <p>{{ report.methodology }}</p>
+
+  <!-- Scope Notice & Disclaimer -->
+  <div class="disclaimer-text">
+    <strong>DISCLAIMER &amp; SCOPE NOTICE:</strong> This report is confidential and was produced automatically by the Aegis Security Workbench.
+    Testing was performed strictly against OWASP LLM07 (System Prompt Leakage) using authorized test protocols.
+    Clean assessment results do not guarantee absolute protection against non-tested threat categories, novel evasion techniques, or broader OWASP LLM Top 10 vulnerabilities.
+  </div>
+
 </body>
 </html>

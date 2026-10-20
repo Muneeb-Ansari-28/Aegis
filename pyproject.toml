@@ -1,0 +1,11 @@
+[tool.pyrefly]
+search-path = [
+    "engine"
+]
+
+[tool.pyright]
+extraPaths = [
+    "engine"
+]
+venvPath = "."
+venv = ".venv"

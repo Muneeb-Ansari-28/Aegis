@@ -506,3 +506,162 @@ feature was updated = integrated mandatory Coding Agent Skills Framework into ru
 **Deviations from Plan**: None.
 **Gate Impact**: Documentation and agent governance update only. No code or API contracts altered.
 
+
+feature was implemented = Findings Backend Service, expanded schemas, API endpoints, and RiskScorer integration by "Muneeb" at 20:32, 2026-10-20
+
+### Implementation Report
+**Date**: 2026-10-20
+**Contributor**: Muneeb
+**Module**: Module 6: Risk, persistence, and report (Findings Backend & API)
+**Files Changed**:
+- `engine/app/services/findings_service.py` — created — Implemented FindingsService with get_findings_by_scan, get_finding_detail (including turn prompt/response evidence), and get_findings_summary (severity distribution and deterministic risk grade calculation via RiskScorer).
+- `engine/app/schemas/finding.py` — modified — Added FindingDetail and FindingsSummary Pydantic schemas alongside FindingResponse.
+- `engine/app/api/v1/findings.py` — modified — Replaced empty list stub with real GET /{scan_id}, GET /{scan_id}/summary, and GET /detail/{finding_id} endpoints with 404 handling.
+- `engine/app/agents/orchestrator.py` — modified — Replaced hardcoded "HIGH" severity on finding persistence with deterministic computation via RiskScorer.compute_severity().
+- `engine/tests/unit/test_findings_service.py` — created — 10 unit and API tests covering empty scans, seeded findings, linked turn detail extraction, severity aggregation, risk grade calculation, and FastAPI router endpoints via TestClient.
+- `desktop/src/types/index.ts` — modified — Synchronized TypeScript types with backend Pydantic schemas (FindingResponse, FindingDetail, FindingsSummary).
+- `desktop/src/api/client.ts` — modified — Added typed findings, findingsSummary, and findingDetail API methods; restored stopScan.
+- `Project-Context/logs.md` — modified — Appended this implementation report.
+**What Was Done**: Executed Phase 1 of the Findings and Export as PDF plan. Replaced the findings stub with a fully tested SQLite-backed service that correlates findings with turn evidence and calculates deterministic risk grades. Connected Orchestrator finding persistence to RiskScorer per rules.md Section 2.2. Synchronized frontend TypeScript types with backend schemas per rules.md Section 12.4. Ran all 21 unit/integration pytest tests (all passed) and verified clean TypeScript/Vite frontend build.
+**Why**: Fulfill the backend prerequisites for Gate 4 and the Section 9 Results/Findings frontend view by exposing real persisted findings from SQLite.
+**Removals**: Replaced empty-list stub in `engine/app/api/v1/findings.py` and hardcoded severity in `engine/app/agents/orchestrator.py`.
+**Gate Impact**: Gate 4 backend findings retrieval and correlation is verified. 21/21 backend tests pass; frontend build passes. Full Gate 4 (styled PDF and report persistence) remains in progress pending PDF generator implementation.
+
+
+feature was implemented = FindingsInspector results view, scoped styling, and shell navigation by "Muneeb" at 20:50, 2026-10-20
+
+### Implementation Report
+**Date**: 2026-10-20
+**Contributor**: Muneeb
+**Module**: Module 7: Integration, UI, and Demo (Findings & Results Frontend)
+**Files Changed**:
+- `desktop/src/views/FindingsInspector.tsx` — modified — Implemented full findings inspector view with Overview, Findings (expandable rows with severity badges and trigger prompt/response evidence), Evidence (turn-by-turn replay), and Timeline tabs per frontend-design.md Section 9.
+- `desktop/src/views/findings-inspector.css` — created — Scoped stylesheet with graphite-neutral tokens, severity badge colors (CRITICAL, HIGH, MEDIUM, LOW, INFO), monospace dark evidence console, and responsive layouts.
+- `desktop/src/views/ReportViewer.tsx` — modified — Integrated to delegate to the unified FindingsInspector view.
+- `desktop/src/components/ApplicationShell.tsx` — modified — Added 'results' page to AppPage type, pageTitles, and navigation rail with ShieldAlert icon.
+- `desktop/src/components/Overview.tsx` — modified — Linked recent assessment table rows to navigate directly to results for that scan.
+- `desktop/src/App.tsx` — modified — Wired FindingsInspector into main application shell, added selectedScanId state, added Inspect findings action when a live scan completes, and linked scan history inspection.
+- `Project-Context/logs.md` — modified — Appended this implementation report.
+**What Was Done**: Executed Phase 2 of the Findings and Export as PDF plan. Replaced the 10-line FindingsInspector placeholder with a complete, accessible findings investigation workbench adhering strictly to frontend-design.md Section 9 (truthful outcome reporting, no fabricated clean assertions, expandable monospace evidence consoles, and keyboard accessibility). Verified clean production build with Vite/TypeScript and 21/21 passing backend tests.
+**Why**: Provide the security analyst with an interactive interface to inspect confirmed disclosures, analyze turn transcripts, and export assessment reports.
+**Removals**: Replaced placeholder view text in `FindingsInspector.tsx` and `ReportViewer.tsx`.
+**Deviations from Plan**: None.
+**Gate Impact**: Frontend findings inspection capability is verified. TypeScript production build passed (0 errors); 21/21 backend tests pass.
+
+
+feature was implemented = ReportingAgent executive narrative, ReportData compilation, and report schemas by "Muneeb" at 20:53, 2026-10-20
+
+### Implementation Report
+**Date**: 2026-10-20
+**Contributor**: Muneeb
+**Module**: Module 4: Evaluation & Reporting (Reporting Agent)
+**Files Changed**:
+- `engine/app/schemas/report.py` — created — Defined ReportFinding, ReportMeta, and ReportData Pydantic schemas.
+- `engine/app/agents/reporting_agent.py` — modified — Replaced 5-line hardcoded string stub with full ReportingAgent implementing deterministic executive summary narratives, risk grade ratings, and structured ReportData compilation.
+- `engine/tests/unit/test_reporting_agent.py` — created — 4 unit tests covering clean scan summaries, exploited summaries with breakdown, complete ReportData compilation, and backward compatibility.
+- `desktop/src/types/index.ts` — modified — Synchronized TypeScript types with backend Pydantic report schemas (ReportFinding, ReportMeta, ReportData).
+- `Project-Context/logs.md` — modified — Appended this implementation report.
+**What Was Done**: Executed Phase 3 of the Findings and Export as PDF plan. Replaced the reporting agent stub with a deterministic generator that constructs comprehensive executive summaries and structures all scan metadata and finding evidence for PDF rendering, adhering to rules.md Section 2.2 (pure Python math, no generative AI risk scores).
+**Why**: Provide structured data and professional vulnerability narratives to feed the Gate 4 PDF generation pipeline.
+**Removals**: Replaced 5-line stub in `engine/app/agents/reporting_agent.py`.
+**Deviations from Plan**: None.
+**Gate Impact**: Reporting data aggregation and narrative generation verified. 25/25 backend tests pass; frontend build passes.
+
+
+feature was implemented = PDF Report Service, print-ready CSS, Jinja2 template, and xhtml2pdf generation by "Muneeb" at 20:58, 2026-10-20
+
+### Implementation Report
+**Date**: 2026-10-20
+**Contributor**: Muneeb
+**Module**: Module 6: Risk, Persistence, and Report (PDF Generation Service)
+**Files Changed**:
+- `engine/app/templates/assets/style.css` — created — Print-friendly CSS with page layout, header/footer page counters, typography, severity badges, and dark monospace code blocks.
+- `engine/app/templates/report.html` — modified — Jinja2 template rendering Gate 4 required sections: Assessment Overview, Executive Summary, Scope & Target, Findings Summary table, Detailed Findings with prompt/response evidence, Methodology & Limitations, and Scan Audit Log.
+- `engine/app/services/report_service.py` — modified — Implemented ReportService with compile_report_data, generate_report (rendering Jinja2 template and generating PDF via xhtml2pdf into reports/{scan_id}.pdf), and get_report_metadata.
+- `engine/app/requirements.txt` / `engine/requirements.txt` — modified — Added xhtml2pdf>=0.2.16.
+- `engine/tests/unit/test_report_service.py` — created — 6 unit tests covering report compilation, clean scan handling, valid PDF magic number (%PDF-) emission, metadata retrieval, and 404 behavior.
+- `Project-Context/logs.md` — modified — Appended this implementation report.
+**What Was Done**: Executed Phase 4 of the Findings and Export as PDF plan. Built the PDF generation engine using Jinja2 and xhtml2pdf. Inlined CSS for robust cross-platform rendering. Verified valid %PDF- header output and structured data compilation. All 31 backend tests passed.
+**Why**: Satisfies the core PDF generation requirement for Gate 4: producing styled PDF reports directly from scan records and finding evidence.
+**Removals**: Replaced the 10-line stub in `engine/app/services/report_service.py`.
+**Deviations from Plan**: Inlined stylesheet within report.html to guarantee reliable asset resolution across operating systems.
+**Gate Impact**: Gate 4 PDF generation verified at service level. 31/31 unit tests pass.
+
+
+feature was implemented = Reports API endpoints (PDF download, metadata, and on-demand generation) with conflict validation by "Muneeb" at 21:03, 2026-10-20
+
+### Implementation Report
+**Date**: 2026-10-20
+**Contributor**: Muneeb
+**Module**: Module 6: Risk, Persistence, and Report (Reports API)
+**Files Changed**:
+- `engine/app/api/v1/reports.py` — modified — Implemented GET /{scan_id}/pdf (FileResponse stream with auto-generation fallback), GET /{scan_id}/meta (ReportMeta lookup), and POST /{scan_id}/generate (on-demand report generation).
+- `engine/app/services/report_service.py` — modified — Added scan status guard rejecting running/queued scans with ValueError (mapped to 409 Conflict in API).
+- `engine/tests/unit/test_reports_api.py` — created — 5 unit tests verifying 404 on ungenerated meta, 409 Conflict on running scans, 404 on non-existent scan generation, full generate-meta-download lifecycle with %PDF- header check, and auto-generation on direct PDF request.
+- `Project-Context/logs.md` — modified — Appended this implementation report.
+**What Was Done**: Executed Phase 5 of the Findings and Export as PDF plan. Replaced the 12-line reports router with fully validated API endpoints returning styled PDF streams, JSON metadata with SHA-256 hashes, and 409 Conflict protection for in-flight scans. Tested all endpoints via FastAPI TestClient (5/5 passed). Full test suite passed (36/36).
+**Why**: Provide the HTTP API bridge enabling the desktop frontend and automated verification scripts to generate and download PDF assessment reports.
+**Removals**: Replaced basic stub endpoint in `engine/app/api/v1/reports.py`.
+**Deviations from Plan**: None.
+**Gate Impact**: Gate 4 PDF delivery via API is verified. 36/36 backend tests pass.
+
+
+feature was implemented = Export PDF frontend integration with full button states, API download client, and overview dashboard linking by "Muneeb" at 21:08, 2026-10-20
+
+### Implementation Report
+**Date**: 2026-10-20
+**Contributor**: Muneeb
+**Module**: Module 7: Integration, UI, and Demo (Export PDF Frontend)
+**Files Changed**:
+- `desktop/src/api/client.ts` — modified — Added reportMeta, generateReport, and downloadReport methods utilizing browser Blob URL creation and download trigger.
+- `desktop/src/views/FindingsInspector.tsx` — modified — Wired Export PDF action to api.downloadReport with full button states (disabled while scan running with tooltip, spinner + "Exporting...", checkmark + "Downloaded", error notice with retry option).
+- `desktop/src/components/Overview.tsx` — modified — Added onSelectScan prop and wired recent assessment row target and findings clicks directly to inspect the selected scan.
+- `desktop/src/App.tsx` — modified — Passed openResults handler to Overview onSelectScan prop.
+- `Project-Context/logs.md` — modified — Appended this implementation report.
+**What Was Done**: Executed Phase 6 of the Findings and Export as PDF plan. Connected the desktop UI directly to the report generation and download pipeline. Added comprehensive lifecycle button states respecting scan status, preventing premature report generation on active scans, and providing instant feedback upon download. Verified TypeScript build (`npm run build`) succeeded with 0 errors.
+**Why**: Provide the security analyst with an intuitive, one-click PDF export experience directly from assessment findings and dashboard screens.
+**Removals**: Replaced window.open placeholder in `FindingsInspector.tsx`.
+**Deviations from Plan**: None.
+**Gate Impact**: Gate 4 frontend integration is verified. TypeScript/Vite production build passes; 36/36 backend tests pass.
+
+
+feature was implemented = Gate 4 Integration Testing, end-to-end evidence fidelity verification, and verify_gate4.py script by "Muneeb" at 21:15, 2026-10-20
+
+### Implementation Report
+**Date**: 2026-10-20
+**Contributor**: Muneeb
+**Module**: Module 6: Risk, Persistence, and Report (Gate 4 Verification)
+**Files Changed**:
+- `engine/tests/integration/test_findings_persistence.py` — created — End-to-end test against live weak-bot asserting orchestrator exploit detection, SQLite finding and turn persistence, severity calculation, and findings service retrieval.
+- `engine/tests/integration/test_report_generation.py` — created — End-to-end test executing weak-bot scan, generating PDF report via ReportService, extracting text via pypdf, and verifying 100% evidence fidelity with SQLite ground truth (scan_id, target name, LLM07 category, canary token, prompt, response evidence, severity, risk grade).
+- `scripts/verify_gate4.py` — created — Standalone automated verification script running weak-bot, executing orchestrator, checking SQLite persistence, generating PDF, and running 10/10 evidence fidelity assertions.
+- `Project-Context/Status.md` — modified — Updated Module 6 and Gate 4 status to "Verified".
+- `Project-Context/logs.md` — modified — Appended this implementation report.
+**What Was Done**: Executed Phase 7 (final phase) of the Findings and Export as PDF plan. Verified Gate 4 criteria end-to-end: "Styled PDF produced, evidence matches DB". All 39 backend tests passed (100%). Script `scripts/verify_gate4.py` executed cleanly with 10/10 checks passing. Frontend production build succeeded with 0 errors.
+**Why**: Formally satisfy Gate 4 milestone criteria with reproducible automated evidence as required by rules.md Section 14 (verification-before-completion).
+**Removals**: None.
+**Deviations from Plan**: None.
+**Gate Impact**: Gate 4 is formally verified. All 39 backend tests pass; frontend production build passes.
+
+
+feature was implemented = PDF Report layout and table cell wrapping fix (eliminated text overflow on Assessment ID and UTC timestamp formatting) by "Muneeb" at 22:33, 2026-10-20
+
+### Implementation Report
+**Date**: 2026-10-20
+**Contributor**: Muneeb
+**Module**: Module 6: Risk, Persistence, and Report (PDF Layout Optimization)
+**Files Changed**:
+- `engine/app/templates/report.html` — modified — Fixed cell overlap by spanning Assessment ID and Target URL across 3 columns (`colspan="3"`), setting explicit table column widths, and applying clean UTC datetime formatting filter.
+- `engine/app/templates/assets/style.css` — modified — Synchronized meta-table and code block styling with report.html.
+- `engine/app/services/report_service.py` — modified — Registered Jinja2 `format_timestamp` filter and helper for clean ISO timestamp display without microsecond or timezone clutter.
+- `engine/tests/integration/test_connectors.py` — modified — Updated test fixture to use dynamic free port (`find_free_port()`).
+- `engine/tests/integration/test_findings_persistence.py` — modified — Updated test fixture to use dynamic free port (`find_free_port()`).
+- `engine/tests/integration/test_report_generation.py` — modified — Updated test fixture to use dynamic free port (`find_free_port()`).
+- `scripts/verify_gate4.py` — modified — Updated weak-bot runner to bind to dynamic free port.
+- `Project-Context/logs.md` — modified — Appended this implementation report.
+**What Was Done**: Resolved text overflow issues reported in the exported PDF where unbroken UUID strings ("Assessment ID") and long unspaced ISO timestamps ("Generated At") collided with adjacent table cells. Increased cell horizontal budget for UUIDs and URLs using `colspan="3"` with monospace font, and formatted timestamps to clean `YYYY-MM-DD HH:MM:SS UTC`. Updated test fixtures to use dynamic ports to prevent socket collisions. Verified all 39 tests pass and Gate 4 verification passes 10/10 checks.
+**Why**: Ensures exported PDF assessment reports are visually pristine and professional without text collision or cell clipping when rendered by ReportLab/xhtml2pdf.
+**Removals**: Removed `border-collapse: collapse` which caused rendering warnings in xhtml2pdf.
+**Deviations from Plan**: None.
+**Gate Impact**: Gate 4 PDF styling and layout verified. All 39 backend tests pass; frontend build passes.
+
