@@ -131,7 +131,7 @@ class TargetService:
         with SessionLocal() as session:
             entity = session.get(TargetEntity, target_id)
             if entity:
-                entity.calibration_config = config.model_dump(mode="json")
+                entity.calibration_config = config.model_dump(mode="json")  # type: ignore # pyrefly: ignore[read-only]
                 session.commit()
         logger.info(f"Calibrated target {target_id}: input={config.input_selector}")
         return {"status": "calibrated", "target_id": target_id}

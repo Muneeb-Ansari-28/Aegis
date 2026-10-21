@@ -149,7 +149,7 @@ class ReportService:
             autoescape=select_autoescape(["html", "xml"]),
         )
         env.filters["format_timestamp"] = format_timestamp
-        env.globals["format_timestamp"] = format_timestamp
+        env.globals["format_timestamp"] = format_timestamp  # type: ignore # pyrefly: ignore[unsupported-operation]
         template = env.get_template("report.html")
         rendered_html = template.render(report=report_data)
 
