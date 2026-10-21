@@ -1,13 +1,13 @@
 # Aegis Frontend Design Foundation — Design V1
 
 > **Date:** 2026-10-17
-> **Status:** Approved by the user as Design V1; Milestone 1 shell implemented and verified on 2026-10-17. Individual page redesigns await separate approval.
+> **Status:** Design V1 is approved. Milestones 1-3 were implemented and visually approved. Milestone 5 Results UI is implemented with build/fixture evidence, awaiting visual approval and live integration acceptance. See Status.md for the current checkout and historical milestone records.
 > **Scope:** Frontend presentation and interaction design for the existing React application in `desktop/`.
 > **Primary reference:** User-approved AEGIS Design V1 image, supplied as `codex-clipboard-e87b2120-8324-4ef5-896d-d43442c58027.png` in the project conversation. The image contains Dashboard, New Assessment, Live Scan, Results, palette, and interaction panels. It has not been copied into the repository.
 
 ## Authority, evidence, and scope
 
-The user has approved this Design V1 foundation and separately authorized Milestone 1 (application shell and design system). This contract does not authorize unsupported features, backend changes, or later implementation milestones.
+The user approved this Design V1 foundation and separately authorized milestone implementations, including the current Results redesign. This contract does not authorize unsupported features, backend changes, or later implementation milestones.
 
 - **Reference-defined:** Visual relationships and the explicitly printed palette values in Design V1.
 - **Provisional:** Measurements, additional tokens, interaction timings, responsive thresholds, and adaptations not explicitly specified by the image. These were accepted with foundation approval as starting values and remain subject to rendered verification; they are not measurements extracted from the image.
@@ -28,7 +28,7 @@ AEGIS should feel like a calm, precise cybersecurity workbench. Help the analyst
 - Follow the reference's graphite-neutral light surfaces, restrained blue accents, compact navigation, fine borders, and clear hierarchy.
 - Use graphite primary action buttons; use blue for selection, links, active navigation, and progress.
 - Retain the dark activity console as a deliberate local contrast within the light application.
-- Use the reference's pale geometric/shield artwork only as subordinate decoration. It must not displace evidence, convey status, or imply broader scan coverage. Asset production is deferred; no asset or dependency is introduced here.
+- Use the reference's pale geometric/shield artwork only as subordinate decoration. It must not displace evidence, convey status, or imply broader scan coverage. The Dashboard now uses its existing local SVG asset; no new Results artwork or dependency is required.
 - Use actual profile names and data. The image's names, counts, findings, timestamps, percentages, and durations are illustrative, not production defaults.
 - Avoid hacker-style neon, excessive gradients, oversized card grids, and continuous decorative animation. Keep the reference's subtle accent treatment without reproducing its small composite-image text sizes.
 
@@ -117,8 +117,8 @@ Proposed navigation maps existing behavior to the reference:
 | New Assessment | Existing registration/calibration/configuration workflow |
 | Live Scan | Preserve access while a scan is selected; do not lose this entry merely because the reference omits it |
 | Scan History | Existing browser-local request history; retain search and disclose its scope |
-| Results / Findings | Deferred or explicitly unavailable until an honest results view is implemented against existing data |
-| Reports | Unavailable while report generation is a stub |
+| Results / Findings | Implemented through FindingsInspector; selected scan, persisted findings/evidence and PDF export |
+| Reports | PDF export is integrated into Results; no separate report-preview route |
 | Assistant | Existing local setup guidance, explicitly not a model chat |
 | Settings | Existing local profile/preferences; preserve display-name editing |
 
@@ -137,10 +137,10 @@ The reference's global search and notification bell are deferred: there is no im
 - Use the greeting and compact metrics without copying sample counts or growth claims.
 - Current safe metrics include locally recorded assessment requests and registered targets. Label local counts “In this browser profile”; local history is capped and is not an engine-wide total.
 - Running/completed counts require fresh status reconciliation. Cached history cannot support an unqualified real-time count. Show “Last known” with freshness context or omit these metrics until reliable.
-- Findings totals and severity distributions are unavailable. Use an explicit unavailable state or substitute a useful supported metric; do not show zero vulnerabilities by default.
-- Recent assessments should preserve target name, category, timestamp, and known status. Distinguish actual attempts from configured budget. Opening a historical run is a proposed frontend refinement, not an existing capability to claim complete.
+- Dashboard-wide findings totals and severity distributions are not integrated; per-scan Results provides them through the findings APIs. Use an explicit unavailable state or substitute a useful supported metric; do not show zero vulnerabilities by default.
+- Recent assessments should preserve target name, category, timestamp, and known status. Distinguish actual attempts from configured budget. Opening a historical run is implemented through the selected scan ID and Results view; live integration acceptance remains pending.
 - Show engine/Ollama health with checking, connected, offline, and retry states. Avoid a permanently green Playwright status.
-- Quick actions should be real: New assessment, Scan history, Setup guidance. Defer “Generate report”.
+- Quick actions should be real: New assessment, Scan history, Setup guidance. The Dashboard retains setup guidance as its third action; PDF export is available inside Results.
 - Decorative shield art belongs in a secondary area only at wide widths. Its copy must describe current LLM07 scope, not all-category coverage.
 
 Required states: initial loading, no assessments, populated history, unavailable/stale data, and engine offline. Keep cached history readable offline with clear labeling.
@@ -189,19 +189,17 @@ Required states: queued, running, waiting for first event, awaiting response/eva
 
 **Reference structure:** Outcome heading, overview/findings/evidence/timeline tabs, compact summary cards, severity badges, and expandable finding rows. The composition is approved visual direction; its depicted data and actions are not implemented functionality.
 
-Current constraints: `src/views/FindingsInspector.tsx` and `ReportViewer.tsx` are placeholders. The findings API returns an empty list regardless of persisted findings, and the PDF service writes sample stub bytes. The current client does expose scan status and persisted turns with verdict details. These limitations were inspected, not changed.
+**Current implementation (2026-10-21; awaiting visual approval):** `desktop/src/views/FindingsInspector.tsx` is the active Results view, styled by `findings-inspector.css`. Findings and PDF APIs are implemented, not stubs. The later full-size approved Results image is `codex-clipboard-954bc550-a3a1-42b7-a6e8-064be50a4bf5.png`, supplied in the conversation and not stored in the repository. The reference is the visual specification; actual rendering has been compared in Chromium but is not declared pixel-identical or user-approved.
 
-- A future frontend-only results view may present real scan status, replayed turns, and available verdict rationale/confidence. Label these as turn-level evaluation results, not a complete findings inventory.
-- Do not turn an empty findings response into “No vulnerabilities found”. Explain that aggregate findings retrieval is unavailable while retaining access to actual transcript evidence.
-- Do not infer severity from confidence or assign the reference's High/Medium labels. Display severity/remediation only when supplied by a supported, verified source.
-- Distinguish completed, stopped, failed, and incomplete-data outcomes. Completed does not mean secure; stopped/failed scans retain partial results.
-- Show actual returned prompt/response counts with precise labels. Duration requires reliable timestamps; omit it when unavailable.
-- Future finding rows may contain supplied title/category/severity, rationale, linked prompt and response, and supplied remediation. Expand with a keyboard-operable control and preserve raw evidence.
-- Evidence/timeline views can use existing turn data, but must disclose incomplete event history. Do not imply a complete audit trail from the bounded live event buffer.
-- Full PDF reports and export actions are deferred. Even a local transcript export is a separate feature decision, not authorization inferred from the reference.
-- Other OWASP categories remain “Not tested”; no all-category compliance score or clean bill of health is implied.
+- Six cards: Prompts Evaluated (successful turns with verdicts), Vulnerabilities (returned findings), Critical, High, Medium, and Low (backend summary). Missing/loading values are not displayed as successful zero counts. Backend Risk Grade appears separately in Assessment Metrics, without frontend letter-grade thresholds or a security guarantee.
+- Wide overview: Key Findings and Test Case Summary on the left; Assessment Information and Assessment Metrics on the right. Key Findings shows the first three returned findings in API order, not a severity-ranked selection. Test Case Summary shows the first five persisted turns; its action opens the complete Evidence view. No unused budget is rendered as pending cases.
+- Assessment Information shows target, category, start/completion timestamps, duration when valid, URL as text, and outcome. It does not infer interface type. Metrics show recorded turns, average latency over successful turns, positive evaluations, findings count and backend grade.
+- Findings retains expandable prompt/response/remediation detail. Evidence retains exact escaped text and available verdict rationale; error/timeout responses are labeled connector diagnostics. Detail failures provide close/reopen retry guidance. No findings filtering, sorting, or copy control is currently implemented.
+- Timeline presents persisted turns, timestamps, outcomes and current assessment status; it is not a complete event audit trail. Results refreshes on selection/manual refresh, not continuous polling. Stopped/failed and unavailable outcomes must not be interpreted as secure.
+- Existing Export PDF downloads the existing backend report and provides busy/success/error/retry states. It is disabled without loaded metadata or a recognized terminal status. Report preview and explicit regeneration are not exposed in the UI. Fixture download success is not live PDF-generation verification.
+- At 900px and below, main panels stack; secondary panels use two columns until 600px. At 600px and below, metrics use three columns, secondary panels stack, and the test table scrolls locally. Controls use the existing tokens and focus styles; some inherited Inspector styles retain hardcoded colors. Full accessibility and future dark-mode compatibility are not certified.
 
-Required states: available turn evidence, no turns yet, partial evidence, unavailable findings, loading, fetch error with retry, and unknown outcome. Backend-dependent reporting or findings completion must be raised with the user, not implemented automatically.
+**Required acceptance still pending:** user visual approval; live engine/database navigation and evidence/PDF integration; broader keyboard, screen-reader and zoom verification. See Status.md for executed checks and known backend/history limitations. Changes to backend reporting/scoring require separate authorization.
 
 ## 10. Reusable component principles
 
@@ -268,7 +266,7 @@ Light mode is the approved implementation direction. Dark mode is a future capab
 
 ## 14. Compatibility and verification gate
 
-Source baseline: [App.tsx](../desktop/src/App.tsx), [index.css](../desktop/src/index.css), [API client](../desktop/src/api/client.ts), [telemetry hook](../desktop/src/hooks/useScanSocket.ts), [types](../desktop/src/types/index.ts), and [package scripts](../desktop/package.json). Active views currently live within `App.tsx`; the separate view files are largely placeholders. Styling is primarily global CSS with partial color variables. Tailwind is declared, but its processing setup must be verified before relying on it for new components.
+Source baseline: [App.tsx](../desktop/src/App.tsx), [index.css](../desktop/src/index.css), [API client](../desktop/src/api/client.ts), [telemetry hook](../desktop/src/hooks/useScanSocket.ts), [types](../desktop/src/types/index.ts), and [package scripts](../desktop/package.json). The shell, Overview and NewAssessment use components under `desktop/src/components/`; Results uses `desktop/src/views/FindingsInspector.tsx`. Live activity, history, profile and assistant remain in `App.tsx`. Semantic tokens live in `index.css`; Results adds scoped CSS. Do not infer runtime verification from this source inventory.
 
 Before every implementation task, identify exact intended files and risks. Preserve and verify the relevant parts of this matrix after significant changes:
 
@@ -287,7 +285,9 @@ Run `npm run build` from `desktop/` after significant frontend changes; the curr
 
 No build or live scanner test is required to validate this documentation-only change; no runtime compatibility or project gate is newly claimed passed. Later verified milestones follow existing documentation conventions. The user alone decides when a PR is appropriate.
 
-## 15. Approved foundation decisions (page implementation deferred)
+## 15. Approved foundation decisions (historical, 2026-10-17)
+
+This records the initial approval, not current implementation status. Section 9 and Status.md supersede its findings/PDF deferrals; historical decisions remain below.
 
 1. Provisional typography, spacing, widths, radii, additional semantic colors, elevation, and motion timings; retain reference palette values while using readable darker status text aliases.
 2. Four-step assessment structure with authorization before calibration, rather than waiting until final review; confirm target-specific authorization handling.
@@ -395,3 +395,13 @@ Verification for this checkpoint: `npm run build` in desktop passed (TypeScript 
 Live Playwright calibration and full LLM07 end-to-end testing remain pending for the redesigned frontend. Full integration testing is deferred until all frontend screens are complete. No backend acceptance gate is newly passed by these fixture results. Historical backend verification entries do not establish integration acceptance of this redesign.
 
 Scope review: shahzaman was active with a clean working tree and no untracked files at entry. Milestone 3 is already committed; this checkpoint adds documentation only. The reviewed branch diff against local main is limited to desktop frontend files and Project-Context documents. Backend functionality, scanner logic and API contracts are preserved; no changes to the API client, engine, agents or run_aegis.ps1 are included. No main modification, merge or PR creation. Push only to origin/shahzaman; PR creation still requires explicit authorization.
+
+## Results UI implementation update - 2026-10-21
+
+This update supersedes Section 9's historical statements that findings retrieval and PDF generation are stubs. Both are implemented by the existing backend; Milestone 5 reuses their contracts without changing backend behavior.
+
+- Reference: approved Results image supplied as `codex-clipboard-954bc550-a3a1-42b7-a6e8-064be50a4bf5.png`. The frontend retains the existing shell and uses a six-card summary above Key Findings / Test Case Summary on the left and Assessment Information / Assessment Metrics on the right. Narrow windows stack the panels; the test table scrolls locally.
+- Counts use persisted findings and backend severity summaries. Prompts Evaluated counts successful turns with verdicts, not requested budget. Recorded turns, successful-turn average latency, backend grade, and timestamp-based duration are separately labeled. No pending tests, interface type, named scenarios, or report-preview action are fabricated.
+- Existing Findings, Evidence, Timeline, scan selection, refresh, linked evidence and PDF download remain. Missing requests show unavailable states rather than successful zero-result claims. Connector diagnostics and missing verdicts are not presented as successful evaluations. Backend grade is displayed without frontend letter-grade thresholds.
+- PDF download is supported; a separate full-report preview is not implemented. Backend narrative correctness and legacy findings inconsistencies identified during the audit remain separate backend follow-up work.
+- Current implementation is pending visual approval. Browser fixture checks do not establish live scanner or PDF-generation integration correctness.

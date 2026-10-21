@@ -38,3 +38,12 @@ The Playwright web connector (`engine/app/adapters/playwright_web.py`) bridges t
    - **Interactive Calibration:** Visible browser session injecting `CALIBRATION_OVERLAY_SCRIPT`, enabling user click-to-capture on input and Send. The response selector is detected automatically. The user still controls opening the chatbot during interactive capture. Both modes retain the existing saved selector format.
 
 The complete planned folder layout and module gates are in the eight-week plan. Broader application scanning and packaging tracks are later work.
+
+
+## Results, findings, and reporting data flow
+
+`desktop/src/App.tsx` uses local view selection, not a URL router. Dashboard and History actions set the selected scan ID and open `desktop/src/views/FindingsInspector.tsx`. History discovery remains browser-local (up to 100 entries); backend persistence does not currently supply an engine-wide history list to this UI. `ReportViewer.tsx` is a delegating wrapper, not the active Results route.
+
+The orchestrator persists turns/verdicts and linked findings in `ScanTurnEntity` / `FindingEntity`. Backend `RiskScorer` supplies severity. `FindingsService` reads these records and exposes list/detail/summary models from `schemas/finding.py`. `ScanService` exposes persisted turn replay, including connector status and nullable verdicts. The Inspector loads summary, findings, and turns through the existing API client on selection or manual refresh; it does not continuously poll Results. A request-version guard rejects stale aggregate loads. The timeline is a presentation of persisted turns, not a complete lifecycle event log.
+
+PDF download uses `GET /reports/{scan_id}/pdf`: an existing file is reused, otherwise `ReportService` compiles database records through `ReportingAgent`, Jinja2 and xhtml2pdf and stores the PDF under the application-data reports directory. Metadata and explicit regeneration endpoints also exist; the current UI does not expose regeneration or report preview. See [API reference](../docs/api.md) for contracts and [Status.md](Status.md) for verification limits. These backend capabilities predate Milestone 5; no backend contracts changed in the redesign.

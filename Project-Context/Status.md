@@ -1,5 +1,32 @@
 # Aegis Project Status
 
+## Current review snapshot - 2026-10-21
+
+Documentation checked against the current `shahzaman` checkout. This snapshot takes precedence over dated checkpoints below; those records describe the evidence and state at their original time.
+
+| Frontend milestone | Current assessment |
+|---|---|
+| 1. Application Shell and Sidebar | Implemented; prior user visual approval recorded. No changes in Milestone 5. |
+| 2. Dashboard / Overview | Implemented; prior user visual approval recorded. Results navigation retained. |
+| 3. New Assessment Wizard | Four steps implemented; prior user visual approval recorded. No changes in Milestone 5. |
+| 4. Live Scan redesign | Earlier conversation approval does not prove retention in this checkout. Current `App.tsx` contains the existing `LiveScanPage` / Scan activity UI, not the approved tabbed/current-step redesign. Reconcile the reverted work separately; no restoration was attempted. |
+| 5. Results & Findings redesign | Implemented, awaiting visual approval and required live integration acceptance. Not fully completed or approved. |
+
+Milestone 5 feature scope and executed build/browser checks are recorded in the dated Milestone 5 entry below. Its source changes remain uncommitted. This documentation-only review reran no builds, browser checks, backend tests, calibration, scans, or PDF generation. Earlier build/fixture outcomes are historical evidence, not fresh results from this review. Existing backend report/evidence tests establish their documented service/fixture coverage, not full desktop acceptance.
+
+### Remaining gaps and next steps
+
+1. Obtain visual review of the Results layout; exact visual parity has not been claimed or approved.
+2. Verify Results navigation, selected-scan changes, evidence, and PDF download against real persisted scans in a working engine environment; then complete the desktop-to-engine scan/calibration acceptance flow. Earlier service-path scanning and automatic-calibration evidence does not replace this.
+3. Extend checks for loading transitions, delayed scan-switch responses, evidence-detail retry, all terminal statuses, keyboard/zoom/screen-reader behavior, Electron and other browsers. Those cases are not all covered by the recorded Milestone 5 fixtures.
+4. Findings filtering/sorting, evidence copy, report preview/regeneration controls, continuous Results refresh and engine-wide history discovery remain unimplemented. History is a browser-local index capped at 100 entries.
+5. Backend follow-up requires separate authorization: zero-finding PDF narratives can overstate stopped/failed assessments; legacy connector-error findings can remain in summaries/PDFs although replay suppresses their verdicts; cached PDFs are reused; findings-summary lifecycle status may lag the live status endpoint. Frontend TypeScript/Pydantic nullable detail-latency alignment also remains an audit issue. No fix is implied by documenting these limitations.
+6. Reconcile the current Live Scan implementation with the previously approved Milestone 4 before declaring all frontend screens complete. No next milestone, commit or push is authorized by this review.
+
+## Historical baseline and dated checkpoints
+
+The older overall/gate/next-work assessments below are preserved for history. The current snapshot and later dated evidence supersede obsolete port-conflict blockers, blanket statements that persistence/reporting are unverified, and old pending-review statuses. Backend benchmark/MCP and full integration acceptance still require their own evidence.
+
 > **Last reviewed:** 2026-10-14 by Muneeb
 > **Evidence basis:** Frontend TypeScript/Vite production build passed; scan lifecycle mock tests (3/3) passed; connector initialization and unreachable-target checks (2/2 selected) passed. Calibration verified against the user-provided local test site at 127.0.0.1:5173. Desktop calibration UI end-to-end run passes 17/17 automated checks (consent gate, automatic calibration, click-calibration tick checklist, URL normalization) against a local fixture target; the click-calibration session race and target-deletion persistence were fixed. Connector initialization/unreachable checks and scan lifecycle mock tests pass; port 8001 currently serves an unrelated site.
 
@@ -147,3 +174,15 @@ Implemented on `shahzaman`, pending user review; no commit, push, or PR. No Resu
 - Real scan: `3efe998a-fba0-4db4-aef5-c987f607c6ef` used the existing saved Aegis Electronics target/configuration and the real ScanService/Orchestrator in-process. One fixed KB prompt was submitted with no manual click. Target API returned HTTP 200, generated=true, model smollm:360m; AEGIS's configured llama3.2:latest judge returned HTTP 200 and a genuine verdict. Scan COMPLETED with one success turn and no disclosure detected; response capture took 7079ms. No judge fallback or connector error was used. This verifies the scan service path, not a desktop-to-engine end-to-end run.
 - Real automatic calibration succeeded and returned the saved selector values. A later attempt to repeat both calibration modes after the generic-selector refinement was blocked by port 5173 refusing connections, before interactive calibration began. Interactive mode is verified with actual Chromium fixture clicks and subsequent fresh scans, not claimed as verified on the real site in this run.
 - Limits: other laptops/monitors, Electron, arbitrary launchers and iframe-specific controls remain unverified. Legacy replay relies on reserved connector text markers and does not repair historical scan states or findings. Startup failures before a turn emit diagnostics but have no turn row. Broader acceptance gates are not newly declared passed.
+
+## Milestone 5 - Results & Findings UI redesign - 2026-10-21
+
+Implemented on `shahzaman`, pending visual review. No commit, push, or PR.
+
+- Modified only `desktop/src/views/FindingsInspector.tsx`, `desktop/src/views/findings-inspector.css` and associated Project-Context documents. Shell, Dashboard, wizard, backend, scanner, calibration, API client, and `run_aegis.ps1` are unchanged.
+- Approved-reference layout implemented: compact results header, six summary cards, Key Findings, Assessment Information, Test Case Summary, and Assessment Metrics. Existing finding expansion, persisted evidence, timeline, refresh, scan selection and PDF downloading retained.
+- Corrected unavailable/empty presentation, stale aggregate-request handling, zero-grade presentation, connector-diagnostic labels, and detail-fetch error feedback. Scope and coverage remain explicit.
+- Verification: `npm.cmd run build` passed (TypeScript and Vite; existing Vite CJS deprecation warning). Initial sandbox build failed on esbuild filesystem access; approved unrestricted rerun passed. No dependencies installed.
+- Isolated Chromium API fixtures passed Dashboard-to-Results and History-to-Results navigation, populated results, expandable finding evidence, PDF error and successful download/filename, offline and partial API failures, failed-empty results, zero risk grade, connector-error evidence and timeline. No JavaScript runtime exceptions. Screenshots inspected at 1280x800, 1280x600, and 390x800; document reflow checked at 320px. Fixture script/screenshots reside in OS temporary storage, not the repository.
+- PDF success used a generated test PDF supplied by the fixture, not the live report endpoint. Live engine/database results, real PDF generation, scanner execution/calibration, Electron, and full end-to-end integration were not exercised in this milestone. No claim of screen-reader certification or exhaustive keyboard testing.
+- Remaining differences: existing shell is preserved; no unsupported report preview, fabricated pending cases, or inferred interface type. Assessment metrics are explicitly persisted-result metrics. Historical backend reporting/legacy findings limitations from the audit remain unresolved and require separate authorization.

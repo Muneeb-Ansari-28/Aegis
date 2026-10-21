@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AlertCircle,
   AlertTriangle,
@@ -48,6 +48,10 @@ export default function FindingsInspector({
     initialScanId || history[0]?.scan_id || null
   );
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const requestVersion = useRef(0);
+  const [findingsAvailable, setFindingsAvailable] = useState(false);
+  const [turnsAvailable, setTurnsAvailable] = useState(false);
+  const [detailErrors, setDetailErrors] = useState<Record<string, string>>({});
   const [summary, setSummary] = useState<FindingsSummary | null>(null);
   const [findings, setFindings] = useState<FindingResponse[]>([]);
   const [turns, setTurns] = useState<ScanTurn[]>([]);
@@ -67,7 +71,11 @@ export default function FindingsInspector({
   }, [initialScanId]);
 
   const loadScanData = useCallback(async (id: string) => {
+    const version = ++requestVersion.current;
     setLoading(true);
+    setSummary(null); setFindings([]); setTurns([]);
+    setFindingsAvailable(false); setTurnsAvailable(false);
+    setExpandedFindingIds(new Set()); setExportSuccess(false); setExportError(null);
     setError(null);
     try {
       const [summaryRes, findingsRes, turnsRes] = await Promise.allSettled([
@@ -76,6 +84,9 @@ export default function FindingsInspector({
         api.scanTurns(id),
       ]);
 
+      if (version !== requestVersion.current) return;
+      setFindingsAvailable(findingsRes.status === 'fulfilled');
+      setTurnsAvailable(turnsRes.status === 'fulfilled');
       if (summaryRes.status === 'fulfilled') {
         setSummary(summaryRes.value);
       } else {
@@ -101,23 +112,23 @@ export default function FindingsInspector({
         setTurns([]);
       }
 
-      if (summaryRes.status === 'rejected' && findingsRes.status === 'rejected') {
-        setError('Findings data could not be retrieved from the Aegis engine. Verify the engine is running.');
-      }
+      const unavailable = [summaryRes.status === 'rejected' && 'assessment metadata', findingsRes.status === 'rejected' && 'findings', turnsRes.status === 'rejected' && 'turn evidence'].filter(Boolean);
+      if (unavailable.length) setError(`Unable to load ${unavailable.join(', ')}. Available results are shown; refresh to retry.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load assessment findings.');
     } finally {
-      setLoading(false);
+      if (version === requestVersion.current) setLoading(false);
     }
   }, []);
 
   const loadFindingDetail = async (findingId: string) => {
     if (findingDetails[findingId]) return;
+    setDetailErrors(prev => ({ ...prev, [findingId]: "" }));
     try {
       const detail = await api.findingDetail(findingId);
       setFindingDetails(prev => ({ ...prev, [findingId]: detail }));
     } catch {
-      // Gracefully fall back to base finding row
+      setDetailErrors(prev => ({ ...prev, [findingId]: "Evidence could not be loaded. Close and reopen this finding to retry." }));
     }
   };
 
@@ -125,6 +136,7 @@ export default function FindingsInspector({
     if (selectedScanId) {
       void loadScanData(selectedScanId);
     }
+    return () => { requestVersion.current += 1; };
   }, [selectedScanId, loadScanData]);
 
   const toggleExpand = (findingId: string) => {
@@ -201,9 +213,19 @@ export default function FindingsInspector({
 
   const currentScanHistory = history.find(h => h.scan_id === selectedScanId);
   const targetName = summary?.target_name || currentScanHistory?.targetName || 'Local target';
-  const scanStatus = (summary?.scan_status || currentScanHistory?.status || 'COMPLETED').toUpperCase();
+  const scanStatus = (summary?.scan_status || currentScanHistory?.status || 'UNKNOWN').toUpperCase();
   const riskGrade = summary ? Math.round(summary.risk_grade) : null;
-  const isClean = scanStatus === 'COMPLETED' && findings.length === 0;
+  const evaluatedTurns = turns.filter(turn => turn.verdict && (!turn.status || turn.status === 'success'));
+  const durationMs = summary?.started_at && summary?.completed_at ? Date.parse(summary.completed_at) - Date.parse(summary.started_at) : NaN;
+  const duration = Number.isFinite(durationMs) && durationMs >= 0 ? `${Math.floor(durationMs / 60000)} min ${Math.floor(durationMs / 1000) % 60} sec` : 'Unavailable';
+  const formatDate = (value?: string | null) => {
+    if (!value) return 'Unavailable';
+    const date = new Date(/(?:Z|[+-]\d{2}:\d{2})$/.test(value) ? value : `${value}Z`);
+    return Number.isNaN(date.getTime()) ? 'Unavailable' : date.toLocaleString();
+  };
+  const turnOutcome = (turn: ScanTurn) => turn.status === 'error' || turn.status === 'timeout' ? 'Not evaluated' : !turn.verdict ? 'Not evaluated' : turn.verdict.exploited ? 'Disclosure detected' : 'No disclosure detected';
+  const successfulTurns = turns.filter(turn => !turn.status || turn.status === 'success');
+  const averageLatency = successfulTurns.length ? `${(successfulTurns.reduce((sum, turn) => sum + turn.latency_ms, 0) / successfulTurns.length / 1000).toFixed(1)}s` : 'Unavailable';
   const isScanRunning = ['RUNNING', 'SCANNING', 'QUEUED'].includes(scanStatus);
 
   return (
@@ -211,19 +233,15 @@ export default function FindingsInspector({
       {/* Top Header */}
       <div className="findings-topbar">
         <div>
-          <div className="eyebrow">ASSESSMENT RESULTS</div>
-          <h1>{targetName}</h1>
+          <div className="results-breadcrumb">Assessment <ChevronRight size={14} /> {targetName} <ChevronRight size={14} /> <strong>Results</strong></div>
+          <h1>Assessment Results</h1>
           <div className="findings-meta-badges">
             <span className={`scan-status ${scanStatus.toLowerCase()}`}>
               {scanStatus.replace(/_/g, ' ')}
             </span>
-            <span className="table-category">LLM07 System Prompt Leakage</span>
-            {summary?.target_url && (
-              <span className="dashboard-muted" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                <Globe2 size={13} />
-                {summary.target_url}
-              </span>
-            )}
+            <span>{targetName} · {summary?.scan_category || currentScanHistory?.category || "Category unavailable"} - System Prompt Leakage</span>
+            <span>{turnsAvailable ? `${turns.length} recorded turns` : "Turn count unavailable"} · {duration}</span>
+
           </div>
         </div>
 
@@ -246,7 +264,7 @@ export default function FindingsInspector({
           <button
             className="button primary"
             onClick={handleExport}
-            disabled={exporting || loading || isScanRunning}
+            disabled={exporting || loading || isScanRunning || !summary || !['COMPLETED', 'STOPPED', 'FAILED'].includes(scanStatus)}
             title={isScanRunning ? "Report available after scan completes" : "Export assessment report as PDF"}
             aria-label="Export assessment report as PDF"
           >
@@ -308,8 +326,7 @@ export default function FindingsInspector({
         <button
           className={`findings-tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
           onClick={() => setActiveTab('overview')}
-          aria-selected={activeTab === 'overview'}
-          role="tab"
+          aria-pressed={activeTab === 'overview'}
         >
           <Shield size={16} />
           <span>Overview</span>
@@ -318,30 +335,27 @@ export default function FindingsInspector({
         <button
           className={`findings-tab-btn ${activeTab === 'findings' ? 'active' : ''}`}
           onClick={() => setActiveTab('findings')}
-          aria-selected={activeTab === 'findings'}
-          role="tab"
+          aria-pressed={activeTab === 'findings'}
         >
           <ShieldAlert size={16} />
           <span>Findings</span>
-          <span className="findings-tab-badge">{findings.length}</span>
+          <span className="findings-tab-badge">{findingsAvailable ? findings.length : "Unavailable"}</span>
         </button>
 
         <button
           className={`findings-tab-btn ${activeTab === 'evidence' ? 'active' : ''}`}
           onClick={() => setActiveTab('evidence')}
-          aria-selected={activeTab === 'evidence'}
-          role="tab"
+          aria-pressed={activeTab === 'evidence'}
         >
           <Terminal size={16} />
           <span>Evidence</span>
-          <span className="findings-tab-badge">{turns.length}</span>
+          <span className="findings-tab-badge">{turnsAvailable ? turns.length : "Unavailable"}</span>
         </button>
 
         <button
           className={`findings-tab-btn ${activeTab === 'timeline' ? 'active' : ''}`}
           onClick={() => setActiveTab('timeline')}
-          aria-selected={activeTab === 'timeline'}
-          role="tab"
+          aria-pressed={activeTab === 'timeline'}
         >
           <Clock size={16} />
           <span>Timeline</span>
@@ -356,85 +370,60 @@ export default function FindingsInspector({
         </div>
       )}
 
-      {/* Tab 1: Overview */}
+      {/* Overview follows the approved Results composition; all values come from persisted APIs. */}
       {activeTab === 'overview' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-          {/* Summary Metric Cards */}
-          <div className="findings-summary-grid">
-            <div className="summary-card">
-              <div className="summary-card-header">
-                <span>Total Findings</span>
-                <ShieldAlert size={16} />
-              </div>
-              <div className="summary-card-value">{findings.length}</div>
-              <div className="summary-card-sub">
-                {findings.length === 1 ? '1 vulnerability confirmed' : `${findings.length} vulnerabilities confirmed`}
-              </div>
-            </div>
-
-            <div className="summary-card">
-              <div className="summary-card-header">
-                <span>Critical & High</span>
-                <AlertTriangle size={16} style={{ color: 'var(--color-danger)' }} />
-              </div>
-              <div className="summary-card-value" style={{ color: (summary?.by_severity['CRITICAL'] || 0) + (summary?.by_severity['HIGH'] || 0) > 0 ? 'var(--color-danger)' : 'inherit' }}>
-                {(summary?.by_severity['CRITICAL'] || 0) + (summary?.by_severity['HIGH'] || 0)}
-              </div>
-              <div className="summary-card-sub">
-                {summary?.by_severity['CRITICAL'] || 0} Critical · {summary?.by_severity['HIGH'] || 0} High
-              </div>
-            </div>
-
-            <div className="summary-card">
-              <div className="summary-card-header">
-                <span>Risk Grade</span>
-                <ShieldCheck size={16} style={{ color: (riskGrade || 100) >= 80 ? 'var(--color-success)' : 'var(--color-danger)' }} />
-              </div>
-              <div className="summary-card-value" style={{ color: (riskGrade || 100) >= 80 ? 'var(--color-success)' : 'var(--color-danger)' }}>
-                {riskGrade != null ? `${riskGrade} / 100` : '—'}
-              </div>
-              <div className="summary-card-sub">
-                {(riskGrade || 100) >= 90 ? 'Grade A · Resilient' : (riskGrade || 100) >= 70 ? 'Grade B · Vulnerable' : 'Grade C · Compromised'}
-              </div>
-            </div>
-
-            <div className="summary-card">
-              <div className="summary-card-header">
-                <span>Tested Scope</span>
-                <Info size={16} />
-              </div>
-              <div className="summary-card-value" style={{ fontSize: '1.25rem', paddingTop: '0.25rem' }}>
-                OWASP LLM07
-              </div>
-              <div className="summary-card-sub">
-                {turns.length} prompt interaction{turns.length === 1 ? '' : 's'}
-              </div>
-            </div>
+        <>
+          <div className="results-statistics" aria-label="Assessment summary" aria-busy={loading}>
+            {[
+              ['Prompts Evaluated', turnsAvailable ? evaluatedTurns.length : '—', 'success'],
+              ['Vulnerabilities', findingsAvailable ? findings.length : '—', 'danger'],
+              ['Critical', summary?.by_severity.CRITICAL ?? '—', 'danger'],
+              ['High', summary?.by_severity.HIGH ?? '—', 'danger'],
+              ['Medium', summary?.by_severity.MEDIUM ?? '—', 'warning'],
+              ['Low', summary?.by_severity.LOW ?? '—', 'muted'],
+            ].map(([label, value, tone]) => <div className="results-statistic" key={label}><strong className={`results-${tone}`}>{loading ? '—' : value}</strong><span>{label}</span></div>)}
           </div>
-
-          {/* Clean Scan Outcome State */}
-          {isClean && (
-            <div className="clean-scan-banner">
-              <CheckCircle2 size={24} className="banner-icon" />
-              <div>
-                <h3>No vulnerabilities detected for tested extraction requests</h3>
-                <p>
-                  The target model successfully refused or contained all prompt leakage attempts during this assessment run.
-                  No canary tokens or internal prompt signatures were disclosed across {turns.length} tested turns.
-                </p>
-              </div>
+          <div className="results-columns">
+            <div className="results-primary">
+              <section className="results-panel">
+                <div className="results-panel-heading"><h2>Key Findings</h2><button className="dashboard-link" onClick={() => setActiveTab('findings')}>View all <ChevronRight size={14}/></button></div>
+                {findingsAvailable && findings.length ? findings.slice(0, 3).map(finding => (
+                  <button className="results-finding" key={finding.id} onClick={() => { setActiveTab('findings'); setExpandedFindingIds(new Set([finding.id])); void loadFindingDetail(finding.id); }}>
+                    <AlertCircle size={22} className={finding.severity === 'MEDIUM' ? 'results-warning' : 'results-danger'} />
+                    <span className="results-finding-text"><strong>{finding.description}</strong><small>Confidence: {Math.round(finding.confidence * 100)}% - Inspect linked evidence</small></span>
+                    <span className={severityClass(finding.severity)}>{finding.severity}</span><span className="table-category">{finding.category}</span><ChevronRight size={16}/>
+                  </button>
+                )) : <div className="results-empty"><ShieldCheck size={24}/><strong>{loading ? 'Loading findings...' : findingsAvailable ? 'No findings recorded' : 'Findings unavailable'}</strong><p>{scanStatus === 'COMPLETED' ? 'Results apply only to evaluated turns within this assessment scope.' : 'This assessment may be incomplete. No findings does not establish that the target is secure.'}</p></div>}
+              </section>
+              <section className="results-panel">
+                <div className="results-panel-heading"><h2>Test Case Summary</h2><button className="dashboard-link" onClick={() => setActiveTab('evidence')}>View all recorded turns</button></div>
+                <div className="results-table-scroll" tabIndex={0} aria-label="Recorded test cases">
+                  <table className="results-table"><thead><tr><th>#</th><th>Test Case</th><th>Status</th><th>Response Time</th><th>Result</th></tr></thead><tbody>
+                    {turns.slice(0, 5).map(turn => <tr key={turn.turn_index}><td>{turn.turn_index}</td><td><span className="results-test-name" title={turn.prompt}>{turn.strategy || `Prompt ${turn.turn_index}`}</span></td><td>{turn.status === 'error' || turn.status === 'timeout' ? turn.status : turn.verdict ? 'Evaluated' : 'Not evaluated'}</td><td>{(turn.latency_ms / 1000).toFixed(1)}s</td><td className={turn.verdict?.exploited ? 'results-danger' : turn.verdict ? 'results-success' : ''}>{turnOutcome(turn)}</td></tr>)}
+                  </tbody></table>
+                  {!turns.length && <p className="results-empty-line">{loading ? 'Loading recorded turns...' : turnsAvailable ? 'No turns recorded for this assessment.' : 'Turn evidence unavailable.'}</p>}
+                </div>
+                <button className="results-evidence-link" onClick={() => setActiveTab('evidence')}><FileText size={18}/>View requests & responses<ChevronRight size={16}/></button>
+              </section>
             </div>
-          )}
-
-          {/* Scope notice per Section 9 */}
-          <div className="scope-disclosure-notice">
-            <Info size={16} />
-            <span>
-              <strong>Scope Notice:</strong> Assessment is currently scoped to OWASP LLM07 (System Prompt Leakage).
-              Other OWASP LLM Top 10 categories were not evaluated in this scan.
-            </span>
+            <aside className="results-secondary">
+              <section className="results-panel"><h2>Assessment Information</h2><dl className="results-details">
+                {[[Globe2, 'Target', targetName], [Shield, 'Assessment Type', summary?.scan_category || currentScanHistory?.category || 'Unavailable'], [Clock, 'Started At', formatDate(summary?.started_at)], [Clock, 'Completed At', formatDate(summary?.completed_at)], [Clock, 'Duration', duration], [Globe2, 'Application URL', summary?.target_url || 'Unavailable'], [Info, 'Outcome', scanStatus.replace(/_/g, ' ')]].map(([Icon, label, value]) => {
+                  const RowIcon = Icon as typeof Globe2;
+                  return <div key={String(label)}><dt><RowIcon size={17}/>{String(label)}</dt><dd>{String(value)}</dd></div>;
+                })}
+              </dl></section>
+              <section className="results-panel"><h2>Assessment Metrics</h2><dl className="results-details">
+                <div><dt><Terminal size={17}/>Recorded Turns</dt><dd>{turnsAvailable ? turns.length : 'Unavailable'}</dd></div>
+                <div><dt><Clock size={17}/>Average Response Time</dt><dd>{averageLatency}</dd></div>
+                <div><dt><ShieldAlert size={17}/>Positive Evaluations</dt><dd>{turnsAvailable ? evaluatedTurns.filter(turn => turn.verdict?.exploited).length : 'Unavailable'}</dd></div>
+                <div><dt><FileText size={17}/>Findings Recorded</dt><dd>{findingsAvailable ? findings.length : 'Unavailable'}</dd></div>
+                <div><dt><Shield size={17}/>Backend Risk Grade</dt><dd>{riskGrade !== null ? `${riskGrade} / 100` : 'Unavailable'}</dd></div>
+              </dl><p className="results-note">Grade reflects recorded findings, not proof of security or complete coverage.</p></section>
+            </aside>
           </div>
-        </div>
+          <p className="results-note">Scope: OWASP LLM07 - System Prompt Leakage. Other categories were not tested. Only persisted turns are shown; unused budget is not a pending test case.</p>
+        </>
       )}
 
       {/* Tab 2: Findings List */}
@@ -442,10 +431,10 @@ export default function FindingsInspector({
         <div className="findings-list">
           {findings.length === 0 ? (
             <div className="dashboard-panel" style={{ textAlign: 'center', padding: '3rem' }}>
-              <ShieldCheck size={36} style={{ color: 'var(--color-success)', margin: '0 auto 1rem' }} />
-              <h3 style={{ marginBottom: '0.5rem' }}>No findings recorded for this scan</h3>
+              <ShieldCheck size={36} style={{ color: 'var(--color-text-secondary)', margin: '0 auto 1rem' }} />
+              <h3 style={{ marginBottom: '0.5rem' }}>{loading ? "Loading findings..." : findingsAvailable ? "No findings recorded for this scan" : "Findings unavailable"}</h3>
               <p style={{ color: 'var(--color-text-secondary)', maxWidth: '520px', margin: '0 auto' }}>
-                All prompts evaluated during this run were successfully defended without prompt disclosure.
+                No findings are available in this view. Check the assessment outcome and evidence before drawing conclusions.
               </p>
             </div>
           ) : (
@@ -458,7 +447,7 @@ export default function FindingsInspector({
                   <div
                     className="finding-card-header"
                     onClick={() => toggleExpand(finding.id)}
-                    onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && toggleExpand(finding.id)}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(finding.id); } }}
                     tabIndex={0}
                     role="button"
                     aria-expanded={isExpanded}
@@ -505,8 +494,8 @@ export default function FindingsInspector({
                         </>
                       ) : (
                         <div style={{ padding: '1rem', textAlign: 'center' }}>
-                          <LoaderCircle size={18} className="spin" style={{ margin: '0 auto' }} />
-                          <small>Loading evidence details…</small>
+                          {!detailErrors[finding.id] && <LoaderCircle size={18} className="spin" style={{ margin: '0 auto' }} />}
+                          <small>{detailErrors[finding.id] || "Loading evidence details..."}</small>
                         </div>
                       )}
                     </div>
@@ -523,7 +512,7 @@ export default function FindingsInspector({
         <div className="transcript-flow">
           {turns.length === 0 ? (
             <div className="dashboard-panel" style={{ textAlign: 'center', padding: '3rem' }}>
-              <p>No turns recorded for this assessment.</p>
+              <p>{loading ? "Loading evidence..." : turnsAvailable ? "No turns recorded for this assessment." : "Turn evidence unavailable. Refresh to retry."}</p>
             </div>
           ) : (
             turns.map(turn => (
@@ -539,11 +528,11 @@ export default function FindingsInspector({
                 </div>
 
                 <div className="evidence-section">
-                  <span className="evidence-section-label">Chatbot Response</span>
+                  <span className="evidence-section-label">{turn.status === "error" || turn.status === "timeout" ? "Connector diagnostic - not evaluated" : "Chatbot Response"}</span>
                   <pre className="evidence-console">{turn.response || '(No response text returned)'}</pre>
                 </div>
 
-                {turn.verdict && (
+                {turn.verdict && (!turn.status || turn.status === "success") && (
                   <div
                     style={{
                       display: 'flex',
@@ -575,7 +564,7 @@ export default function FindingsInspector({
           <div className="timeline-node">
             <span className="timeline-marker" />
             <div className="timeline-node-content">
-              <strong>Assessment Initiated</strong>
+              <strong>Assessment record</strong>
               <p style={{ margin: '0.25rem 0 0', fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
                 Target: {targetName} · Category: OWASP LLM07
               </p>
@@ -590,7 +579,7 @@ export default function FindingsInspector({
                 <div className="timeline-node-content">
                   <strong>Turn #{turn.turn_index}: {turn.strategy || 'Extraction attempt'}</strong>
                   <p style={{ margin: '0.25rem 0 0', fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-                    {exploited ? 'Triggered prompt leakage detection' : 'Completed without disclosure'} ({turn.latency_ms} ms)
+                    {turnOutcome(turn)} · {formatDate(turn.created_at)} ({turn.latency_ms} ms)
                   </p>
                 </div>
               </div>
@@ -600,9 +589,9 @@ export default function FindingsInspector({
           <div className="timeline-node">
             <span className="timeline-marker" style={{ backgroundColor: scanStatus === 'COMPLETED' ? 'var(--color-success)' : 'var(--color-border-control)' }} />
             <div className="timeline-node-content">
-              <strong>Assessment Concluded ({scanStatus})</strong>
+              <strong>Assessment status: {scanStatus}</strong>
               <p style={{ margin: '0.25rem 0 0', fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-                Total findings: {findings.length} · Risk Grade: {riskGrade != null ? `${riskGrade}/100` : '—'}
+                Total findings: {findingsAvailable ? findings.length : "Unavailable"} · Risk Grade: {riskGrade != null ? `${riskGrade}/100` : '—'}
               </p>
             </div>
           </div>

@@ -6,8 +6,8 @@ This reference compares the repository layout with `Aegis_8-Week_Plan_with_MCP.m
 
 | Area | Assessment |
 |---|---|
-| Python engine, APIs, schemas, adapters, agents, KB, RAG, MCP, tests | Present; runtime behavior and plan gates remain unverified. |
-| Electron/React desktop shell | Source files are present; integration remains unverified. |
+| Python engine, APIs, schemas, adapters, agents, KB, RAG, MCP, tests | Implemented in part, including persisted findings and PDF services. Historical test/gate evidence and pending integration limits are recorded in [Status.md](Status.md). |
+| Electron/React desktop shell | Shell, Overview, four-step assessment wizard, and Results Inspector are implemented. Milestone 5 visual approval and full desktop-to-engine acceptance remain pending. |
 | Weak and hardened targets | Present and now use a fake system prompt/canary for LLM07 checks. |
 | Database migrations | Alembic scaffolding exists; migration versions remain to be added. |
 | Proxy/UI application-scanning tracks | Broader architecture tracks; outside this eight-week delivery. |
