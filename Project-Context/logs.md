@@ -737,3 +737,20 @@ feature was documented = Milestone 5 documentation verification by "Shahzaman" a
 **Gate Impact**: No new build, browser, backend, PDF or scanner tests were executed in this documentation review. The preceding Milestone 5 build and isolated Chromium fixture results remain the recorded evidence; they do not prove live integration. Visual approval, live Results/evidence/PDF integration and full desktop acceptance remain pending. Static review also identifies that the current LiveScanPage is not the earlier approved Milestone 4 redesign; reconciliation is separate work.
 
 **Correction to the preceding Milestone 5 entry (history preserved):** The responsible project contributor is Shahzaman; the previous `Contributor: Codex` field identifies AI assistance rather than the project's contributor convention. Its removal description was imprecise: the removed overview clean banner was gated on COMPLETED plus zero returned findings, but did not require successful findings retrieval. Findings-tab empty copy was unconditional. No historical entry has been rewritten. Recorded UI checks used temporary representative API fixtures, not real persisted engine records; PDF download success used a fixture PDF. No exact visual parity, exhaustive accessibility coverage, delayed-request-race verification or live acceptance is asserted.
+
+- `FIXED` Resolved static type-checking issues in `engine/app/services/scan_service.py`, `engine/tests/integration/test_findings_persistence.py`, `engine/app/services/target_service.py`, and `engine/app/services/report_service.py`. Suppressed SQLAlchemy/Pyrefly read-only descriptor false positives via standard ignore comments, added explicit null-check in `_run_scan`, and guarded `importlib` spec/loader resolution in `weak_bot_server` fixture — by "Muneeb" at 21:55, 2026-10-21
+
+### Implementation Report
+**Date**: 2026-10-21
+**Contributor**: Muneeb
+**Module**: Module 2 & 5: Engine Services and Integration Testing
+**Files Changed**:
+- `engine/app/services/scan_service.py` — modified — Changed `if entity:` to explicit `if entity is not None:`, added `# type: ignore # pyrefly: ignore[read-only]` for SQLAlchemy Column attribute assignments.
+- `engine/app/services/target_service.py` — modified — Added `# type: ignore # pyrefly: ignore[read-only]` for `entity.calibration_config` assignment.
+- `engine/app/services/report_service.py` — modified — Added `# type: ignore # pyrefly: ignore[unsupported-operation]` for Jinja2 `env.globals` assignment.
+- `engine/tests/integration/test_findings_persistence.py` — modified — Added runtime null-guard for dynamic module specification and loader in `weak_bot_server` fixture.
+**What Was Done**: Fixed the type-checking diagnostics reported by Pyrefly in Antigravity IDE across all service files and tests without modifying the underlying database models or runtime behavior.
+**Why**: Ensure compliance with strict type-checking and eliminate IDE diagnostic errors in scan lifecycle, report generation, and persistence fixtures.
+**Removals**: None.
+**Deviations from Plan**: None.
+**Gate Impact**: `pyrefly check` reports 0 errors across all services, models, and tests. All 29 engine unit tests and `test_findings_persistence_weak_bot` pass.

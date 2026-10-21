@@ -99,11 +99,11 @@ class ScanService:
             response.status = orchestrator.state.value
             with SessionLocal() as session:
                 entity = session.get(ScanEntity, scan_id)
-                if entity:
-                    entity.status = orchestrator.state.value
-                    entity.current_attempt = orchestrator.current_attempt
+                if entity is not None:
+                    entity.status = orchestrator.state.value  # type: ignore # pyrefly: ignore[read-only]
+                    entity.current_attempt = orchestrator.current_attempt  # type: ignore # pyrefly: ignore[read-only]
                     if orchestrator.state.value in {"COMPLETED", "STOPPED", "FAILED"}:
-                        entity.completed_at = datetime.utcnow()
+                        entity.completed_at = datetime.utcnow()  # type: ignore # pyrefly: ignore[read-only]
                     session.commit()
             cls._tasks.pop(scan_id, None)
 
