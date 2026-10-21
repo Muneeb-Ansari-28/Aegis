@@ -177,9 +177,14 @@ class ScanService:
                     turn_index=row.turn_index,
                     prompt=row.prompt,
                     response=row.response,
+                    status=("timeout" if row.response.startswith("[CONNECTOR_TIMEOUT]")
+                            else "error" if row.response.startswith("[CONNECTOR_ERROR]")
+                            else "success"),
                     latency_ms=row.latency_ms or 0,
                     strategy=row.strategy,
-                    verdict=row.verdict,
+                    # Old versions evaluated connector diagnostics. Do not
+                    # replay those legacy verdicts as genuine assessments.
+                    verdict=None if row.response.startswith(("[CONNECTOR_ERROR]", "[CONNECTOR_TIMEOUT]")) else row.verdict,
                     created_at=(
                         row.created_at.isoformat() if row.created_at else None
                     ),

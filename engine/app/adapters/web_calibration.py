@@ -9,6 +9,7 @@ from playwright.async_api import async_playwright
 from app.adapters.playwright_web import (
     CANDIDATE_RESPONSE_SELECTORS,
     PlaywrightWebAdapter,
+    open_chat_surface,
 )
 from app.core.errors import TargetCalibrationError
 from app.schemas.target import TargetCalibrationConfig
@@ -185,7 +186,7 @@ class WebCalibration:
         logger.info("Starting interactive calibration for local target %s", target_url)
         async with async_playwright() as playwright:
             browser = await playwright.chromium.launch(headless=False)
-            context = await browser.new_context(viewport={"width": 1280, "height": 800})
+            context = await browser.new_context(no_viewport=True)
             page = await context.new_page()
             try:
                 await page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
@@ -243,37 +244,8 @@ class WebCalibration:
 
     @staticmethod
     async def _open_chat_surface(page) -> bool:
-        """Open a recognizable collapsed chat launcher before detecting its controls."""
-        visible_chat_input = page.locator(
-            "#assistant-question, textarea[placeholder*='ask' i], "
-            "[contenteditable='true'][role='textbox'], [role='textbox']"
-        ).first
-        try:
-            if await visible_chat_input.count() and await visible_chat_input.is_visible():
-                return False
-        except Exception:
-            pass
-
-        launchers = (
-            "button.assistant-launch",
-            "button[aria-label*='open assistant' i]",
-            "button[aria-label*='open chat' i]",
-            "button:has-text('Ask Aegis')",
-            "button:has-text('Open chat')",
-        )
-        for selector in launchers:
-            try:
-                launcher = page.locator(selector).first
-                if await launcher.count() and await launcher.is_visible():
-                    await launcher.click(timeout=2000)
-                    try:
-                        await visible_chat_input.wait_for(state="visible", timeout=3000)
-                    except Exception:
-                        pass
-                    return True
-            except Exception:
-                continue
-        return False
+        """Use the same bounded chat readiness check as the scan connector."""
+        return await open_chat_surface(page)
 
     @staticmethod
     async def _find_response_selector(page) -> Optional[str]:

@@ -2,6 +2,7 @@ import asyncio
 import importlib.util
 import threading
 import time
+from pathlib import Path
 import pytest
 import uvicorn
 from app.adapters.playwright_web import PlaywrightWebAdapter
@@ -25,7 +26,7 @@ def weak_bot_server():
     port = find_free_port()
     spec = importlib.util.spec_from_file_location(
         "weak_bot_app",
-        r"d:\vs_code_files\Aegis\test-targets\weak-bot\app.py"
+        str(Path(__file__).resolve().parents[3] / "test-targets" / "weak-bot" / "app.py")
     )
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)

@@ -4,6 +4,7 @@ export interface ScanEvent {
   scan_id: string;
   event: string;
   status?: string;
+  error?: string;
   timestamp?: string;
   category?: string;
   attempt?: number;
