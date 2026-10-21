@@ -1,5 +1,6 @@
 import uuid
 import pytest
+from unittest.mock import AsyncMock
 from app.agents.orchestrator import Orchestrator
 from app.adapters.base import BaseAdapter
 from app.schemas.turn_record import TurnRecord
@@ -81,6 +82,70 @@ class StaticEvaluator:
             rationale="Canary disclosed" if self.exploited else "No disclosure",
             indicators_found=["canary"] if self.exploited else [],
         )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", ["error", "timeout"])
+async def test_connector_failure_is_persisted_without_evaluation(status):
+    rows = []
+    adapter = MockAdapter()
+    adapter.send_prompt = AsyncMock(return_value=TurnRecord(
+        turn_id="failed-turn", scan_id="failure", turn_index=1,
+        prompt="Question", response="unavailable",
+        status=status, metadata={"error": "unavailable"},
+    ))
+    scan_id = str(uuid.uuid4())
+    orchestrator = Orchestrator(scan_id, adapter, 2, lambda: MemorySession(rows))
+    orchestrator.attack_agent = StaticAttackAgent()
+    orchestrator.evaluator = AsyncMock()
+    queue = event_bus.subscribe(scan_id)
+    try:
+        assert await orchestrator.run() is None
+        orchestrator.evaluator.evaluate.assert_not_awaited()
+        assert orchestrator.state.value == "FAILED"
+        assert adapter.closed
+        assert len(rows) == 1 and rows[0].verdict is None
+        assert rows[0].response.startswith("[CONNECTOR_")
+        events = []
+        while not queue.empty():
+            events.append(queue.get_nowait())
+        assert events[-1]["event"] == "scan_failed"
+        assert events[-2]["status"] == status
+        assert events[-2]["verdict"] is None
+        assert "unavailable" in events[-1]["error"]
+    finally:
+        event_bus.unsubscribe(scan_id, queue)
+
+
+@pytest.mark.asyncio
+async def test_replay_preserves_success_and_marks_legacy_connector_errors():
+    """Old misleading verdicts are suppressed without rewriting existing rows."""
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from app.core.database import Base
+    from app.models.entities import ScanEntity, ScanTurnEntity
+    from app.services.scan_service import ScanService
+
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    sessions = sessionmaker(bind=engine)
+    with sessions() as session:
+        session.add(ScanEntity(id="replay", target_id="test", status="FAILED"))
+        for index, response in enumerate([
+            "Genuine answer", "[CONNECTOR_ERROR] hidden", "[CONNECTOR_TIMEOUT] no reply",
+        ], 1):
+            session.add(ScanTurnEntity(
+                id=str(index), scan_id="replay", turn_index=index, prompt="Question",
+                response=response, verdict={"exploited": False},
+            ))
+        session.commit()
+    turns = await ScanService.get_scan_turns("replay", sessions)
+    assert [turn.status for turn in turns] == ["success", "error", "timeout"]
+    assert turns[0].verdict == {"exploited": False}
+    assert turns[1].verdict is None and turns[2].verdict is None
+    with sessions() as session:
+        assert session.get(ScanTurnEntity, "2").verdict == {"exploited": False}
+    engine.dispose()
 
 
 @pytest.mark.asyncio

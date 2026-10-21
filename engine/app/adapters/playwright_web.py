@@ -11,7 +11,9 @@ from playwright.async_api import (
     Browser,
     BrowserContext,
     Page,
+    Locator,
     TimeoutError as PlaywrightTimeoutError,
+    expect,
 )
 
 from app.adapters.base import BaseAdapter
@@ -80,6 +82,75 @@ CANDIDATE_RESPONSE_SELECTORS: List[str] = [
 ]
 
 
+async def open_chat_surface(
+    page: Page, input_selector: Optional[str] = None, timeout_ms: int = 5000,
+) -> bool:
+    """Wait for a usable composer, clicking a supported launcher at most once.
+
+    Calibration and scanning share this bounded readiness check. A configured
+    selector remains authoritative; generic candidates are used only without it.
+    Failures include the opening/actionability error instead of being swallowed.
+    """
+    deadline = time.monotonic() + timeout_ms / 1000
+
+    def remaining() -> int:
+        """Keep render, click and composer checks within one readiness budget."""
+        return max(1, int((deadline - time.monotonic()) * 1000))
+
+    async def find_input() -> Locator:
+        """Prefer chat composers; a launcher takes priority over generic search."""
+        if input_selector:
+            return page.locator(input_selector).first
+        specific = [selector for selector in CANDIDATE_INPUT_SELECTORS
+                    if selector not in {"textarea", "input[type='text']"}]
+        for selector in specific:
+            locator = page.locator(selector).first
+            if await locator.is_visible():
+                return locator
+        for selector in specific:
+            locator = page.locator(selector).first
+            if await locator.count():
+                return locator
+        # A lazy-mounted chat has no composer yet. Wait for it after opening,
+        # rather than treating the website's search box as a visible chatbot.
+        candidates = (specific + ["textarea"] if await launchers.is_visible()
+                      else CANDIDATE_INPUT_SELECTORS)
+        return page.locator(
+            ", ".join(f"{selector}:visible" for selector in candidates)
+        ).first
+
+    launchers = page.locator(
+        "button.assistant-launch:visible, "
+        "button[aria-label*='open assistant' i]:visible, "
+        "button[aria-label*='open chat' i]:visible, "
+        "button:has-text('Ask Aegis'):visible, "
+        "button:has-text('Open chat'):visible"
+    ).first
+    clicked = False
+    try:
+        inputs = await find_input()
+        if not await inputs.is_visible():
+            # Wait for client rendering without a sleep or repeated blind clicks.
+            await inputs.and_(page.locator(":visible")).or_(launchers).first.wait_for(
+                state="visible", timeout=remaining(),
+            )
+            inputs = await find_input()
+            if not await inputs.is_visible():
+                await launchers.click(timeout=remaining())
+                clicked = True
+                inputs = await find_input()
+        await inputs.wait_for(state="visible", timeout=remaining())
+        await expect(inputs).to_be_editable(timeout=remaining())
+        await inputs.click(trial=True, timeout=remaining())
+        return clicked
+    except Exception as exc:
+        raise TargetCalibrationError(
+            f"Chat input is not ready ({input_selector or 'auto-detected input'}); "
+            f"launcher {'clicked' if clicked else 'not clicked'}. "
+            f"Check the input selector and supported chat launcher. {exc}"
+        ) from exc
+
+
 class PlaywrightWebAdapter(BaseAdapter):
     """
     Playwright Web Connector.
@@ -132,6 +203,7 @@ class PlaywrightWebAdapter(BaseAdapter):
                 user_data_dir=self.profile_dir,
                 headless=self.headless,
                 timeout=self.browser_timeout_ms,
+                **({"no_viewport": True} if not self.headless else {}),
             )
             self.page = self._context.pages[0] if self._context.pages else await self._context.new_page()
         else:
@@ -140,7 +212,8 @@ class PlaywrightWebAdapter(BaseAdapter):
                 timeout=self.browser_timeout_ms,
             )
             self._context = await self._browser.new_context(
-                viewport={"width": 1280, "height": 800},
+                **({"viewport": {"width": 1280, "height": 800}} if self.headless
+                   else {"no_viewport": True}),
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Aegis/0.1.0",
             )
             self.page = await self._context.new_page()
@@ -321,6 +394,19 @@ class PlaywrightWebAdapter(BaseAdapter):
         submit_sel = self.selectors.get("submit_selector")
         resp_sel = self.selectors.get("response_selector") or "#chat-box > *:last-child"
 
+        try:
+            await open_chat_surface(
+                self.page, input_sel, timeout_ms=min(self.browser_timeout_ms, 5000),
+            )
+        except TargetCalibrationError as exc:
+            logger.error("Could not prepare chat input: %s", exc)
+            return TurnRecord(
+                turn_id=turn_id, scan_id=scan_id, turn_index=attempt,
+                prompt=prompt, response=f"[CONNECTOR_ERROR] {exc}", status="error",
+                latency_ms=int((time.time() - start_time) * 1000), strategy=strategy,
+                metadata={"error": str(exc), "target_url": self.target_url},
+            )
+
         if not input_sel:
             detected = await self.detect_chat_interface()
             input_sel = detected.get("input_selector")
@@ -368,8 +454,8 @@ class PlaywrightWebAdapter(BaseAdapter):
         try:
             input_locator = self.page.locator(input_sel).first
             await input_locator.wait_for(state="visible", timeout=self.browser_timeout_ms)
-            await input_locator.click()
-            await input_locator.fill(prompt)
+            await input_locator.click(timeout=self.browser_timeout_ms)
+            await input_locator.fill(prompt, timeout=self.browser_timeout_ms)
         except Exception as e:
             latency_ms = int((time.time() - start_time) * 1000)
             logger.error(f"Failed to enter prompt into {input_sel}: {e}")

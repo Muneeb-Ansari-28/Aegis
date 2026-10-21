@@ -36,6 +36,7 @@ export interface ScanTurn {
   turn_index: number;
   prompt: string;
   response: string;
+  status?: string;
   latency_ms: number;
   strategy?: string | null;
   verdict?: { exploited?: boolean; rationale?: string; confidence?: number } | null;

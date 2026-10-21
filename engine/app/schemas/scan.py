@@ -28,6 +28,7 @@ class ScanTurnResponse(BaseModel):
     turn_index: int
     prompt: str
     response: str
+    status: str = "success"
     latency_ms: int = 0
     strategy: Optional[str] = None
     verdict: Optional[dict] = None

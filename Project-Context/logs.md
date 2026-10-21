@@ -665,3 +665,33 @@ feature was implemented = PDF Report layout and table cell wrapping fix (elimina
 **Deviations from Plan**: None.
 **Gate Impact**: Gate 4 PDF styling and layout verified. All 39 backend tests pass; frontend build passes.
 
+
+
+feature was implemented = native headed browser sizing, shared chatbot readiness, and truthful connector failures by "Shahzaman" at 09:52, 2026-10-21
+
+### Implementation Report
+**Date**: 2026-10-21
+**Contributor**: Shahzaman
+**Module**: Modules 2, 5, 7: Playwright connector/calibration, scan orchestration, existing scan activity
+**Files Changed**:
+- `engine/app/adapters/playwright_web.py` - modified - Native headed contexts and shared bounded launcher/input readiness checks; explicit typing timeouts.
+- `engine/app/adapters/web_calibration.py` - modified - Reuse shared opening logic and native headed interactive context; retain automatic and two-control interactive calibration.
+- `engine/app/agents/orchestrator.py` - modified - Persist failed connector turns with null verdict, skip evaluation, fail scan, emit diagnostics.
+- `engine/app/services/scan_service.py` - modified - Replay connector status and suppress misleading legacy error verdicts.
+- `engine/app/schemas/scan.py` - modified - Add backward-compatible turn replay status; no ORM/schema migration.
+- `desktop/src/App.tsx` - modified - Distinguish connector errors from chatbot responses, show not evaluated, preserve lifecycle status, label attempt count accurately.
+- `desktop/src/api/client.ts` - modified - Optional turn status for compatibility with older engines.
+- `desktop/src/hooks/useScanSocket.ts` - modified - Type failure-event diagnostic text.
+- `engine/tests/integration/test_chat_readiness.py` - created - Chromium calibration/readiness/native resize and selector-persistence regressions.
+- `engine/tests/integration/test_scan_flow.py` - modified - Failed-turn evaluator bypass, persistence, and legacy replay tests.
+- `engine/tests/integration/test_connectors.py` - modified - Replace developer-specific absolute fixture path with repository-relative path.
+- `Project-Context/architecture.md` - modified - Describe shared readiness, native headed sizing, calibration and error contracts.
+- `Project-Context/design.md` - modified - Record confirmed causes, bounded behavior, compatibility and limitations.
+- `Project-Context/Status.md` - modified - Append verification evidence and remaining limits.
+- `Project-Context/logs.md` - modified - Append this report.
+- `docs/api.md` - modified - Document turn replay status, nullable verdict, and failure telemetry.
+**What Was Done**: Corrected the fixed viewport/native-window mismatch and missing scan chatbot-opening step. Preserved calibration formats and both workflows. Connector errors/timeouts no longer enter vulnerability evaluation. Added focused regression coverage and checked the existing activity UI without redesign. Backend suite passed 57/57 using an existing external pytest installation and an in-memory asyncio test hook because this .venv lacks the test runner/plugins. Frontend build and three isolated browser UI cases passed. Real one-attempt ScanService scan 3efe998a-fba0-4db4-aef5-c987f607c6ef completed with a generated target response and configured Ollama judge, no manual interaction. A later real-site calibration repeat was unavailable (connection refused); fixture interactive calibration passed.
+**Why**: A maximized native content area of about 730px was displaying an 800px fixed page; calibration opened the chatbot but scanning did not; failed connector diagnostics were treated as chatbot evidence. These independent defects require separate corrections.
+**Removals**: Removed duplicated calibration launcher code and its silent exception handling in favor of shared explicit readiness checks. Neither calibration mode nor any vulnerability strategy was removed.
+**Deviations from Plan**: No dependency installation; used existing pytest packages and a temporary async runner. Corrected the existing connector test's nonportable path so it could run on this laptop. The real scan was executed through ScanService in-process while the HTTP engine was offline; desktop/API transport was fixture-tested separately. No DB migration; legacy status inference uses reserved error markers and leaves historical rows unchanged.
+**Gate Impact**: Focused reliability and regression checks pass. Other-machine coverage, full desktop-to-engine integration, arbitrary launcher/iframe coverage, and broader acceptance gates remain unverified. No Milestone 5 UI work, commit, push, or PR.

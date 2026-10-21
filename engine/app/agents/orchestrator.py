@@ -51,10 +51,11 @@ class Orchestrator:
                 id=turn.turn_id or str(uuid.uuid4()), scan_id=self.scan_id,
                 turn_index=turn.turn_index, prompt=turn.prompt, response=turn.response,
                 latency_ms=turn.latency_ms, strategy=turn.strategy,
-                verdict=verdict.model_dump(mode="json"), created_at=turn.timestamp,
+                verdict=verdict.model_dump(mode="json") if verdict else None,
+                created_at=turn.timestamp,
             )
             session.add(row)
-            if verdict.exploited:
+            if verdict and verdict.exploited:
                 severity = RiskScorer.compute_severity(verdict.category, verdict.confidence)
                 session.add(FindingEntity(
                     id=str(uuid.uuid4()), scan_id=self.scan_id, turn_id=row.id,
@@ -89,7 +90,13 @@ class Orchestrator:
                 turn = await self.adapter.send_prompt(prompt, turn_index)
                 turn.scan_id = self.scan_id
                 turn.strategy = strategy
-                verdict = await self.evaluator.evaluate(turn)
+                if turn.status != "success" and not turn.response.startswith("[CONNECTOR_"):
+                    # Preserve status in the existing diagnostic text column; no
+                    # schema migration is needed to replay failed turns.
+                    marker = "TIMEOUT" if turn.status == "timeout" else "ERROR"
+                    turn.response = f"[CONNECTOR_{marker}] {turn.response}"
+                # Connector failures contain diagnostics, not chatbot evidence.
+                verdict = await self.evaluator.evaluate(turn) if turn.status == "success" else None
                 self._persist_turn(turn, verdict)
                 await self._emit(
                     "turn_completed",
@@ -101,8 +108,13 @@ class Orchestrator:
                     latency_ms=turn.latency_ms,
                     status=turn.status,
                     strategy=turn.strategy,
-                    verdict=verdict.model_dump(mode="json"),
+                    verdict=verdict.model_dump(mode="json") if verdict else None,
                 )
+                if turn.status != "success":
+                    self.state = ScanState.FAILED
+                    await self._emit("scan_failed", attempt=self.current_attempt,
+                                     error=turn.metadata.get("error") or turn.response)
+                    return None
                 if verdict.exploited:
                     self.state = ScanState.COMPLETED
                     break
@@ -114,9 +126,9 @@ class Orchestrator:
             else:
                 await self._emit("scan_completed", exploited=bool(verdict and verdict.exploited), attempt=self.current_attempt)
             return verdict if verdict and verdict.exploited else None
-        except Exception:
+        except Exception as exc:
             self.state = ScanState.FAILED
-            await self._emit("scan_failed", attempt=self.current_attempt)
+            await self._emit("scan_failed", attempt=self.current_attempt, error=str(exc))
             raise
         finally:
             try:
