@@ -10,7 +10,8 @@ Read all files here before implementing anything.
 3. [Design](design.md) — active scope and implementation rationale.
 4. [Folder structure](folder-structure.md) — planned layout and current repository comparison.
 5. [Status](Status.md) — implementation and gate state.
-6. [Logs](logs.md) — append-only history.
+6. [Frontend design](frontend-design.md) - approved visual specification and current implementation notes.
+7. [Logs](logs.md) — append-only history.
 
 ## Key Project Documents
 
@@ -63,7 +64,7 @@ For any new feature or bugfix, the agent workflow must be:
 1. **Plan & Spec Check**: Check `Project-Context/architecture.md` using `spec-to-code-compliance` and `writing-plans`.
 2. **Implement**: Apply `modern-python` (backend) or `frontend-ui-engineering` (frontend) with `test-driven-development`.
 3. **Verify**: Execute terminal tests using `verification-before-completion`. **Evidence before assertions.**
-4. **Report**: File the mandatory post-implementation report in `Coding-Agent-Guide/logs.md` per `rules.md`.
+4. **Report**: File the mandatory post-implementation report in `Project-Context/logs.md` per `rules.md`.
 
 ## Startup
 

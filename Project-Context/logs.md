@@ -695,3 +695,45 @@ feature was implemented = native headed browser sizing, shared chatbot readiness
 **Removals**: Removed duplicated calibration launcher code and its silent exception handling in favor of shared explicit readiness checks. Neither calibration mode nor any vulnerability strategy was removed.
 **Deviations from Plan**: No dependency installation; used existing pytest packages and a temporary async runner. Corrected the existing connector test's nonportable path so it could run on this laptop. The real scan was executed through ScanService in-process while the HTTP engine was offline; desktop/API transport was fixture-tested separately. No DB migration; legacy status inference uses reserved error markers and leaves historical rows unchanged.
 **Gate Impact**: Focused reliability and regression checks pass. Other-machine coverage, full desktop-to-engine integration, arbitrary launcher/iframe coverage, and broader acceptance gates remain unverified. No Milestone 5 UI work, commit, push, or PR.
+
+### Implementation Report
+**Date**: 2026-10-21
+**Contributor**: Codex
+**Module**: Module 7 - Milestone 5 Results & Findings UI
+**Files Changed**:
+- `desktop/src/views/FindingsInspector.tsx` - modified - Approved-reference overview composition, real-result metrics/metadata, preserved inspection/export actions, accurate unavailable and diagnostic states.
+- `desktop/src/views/findings-inspector.css` - modified - Scoped Results layout, semantic colors, responsive panels and local table scrolling.
+- `Project-Context/frontend-design.md` - modified - Appended current Results implementation guidance superseding historical stub descriptions.
+- `Project-Context/Status.md` - modified - Appended implementation, verification, and limitations.
+- `Project-Context/logs.md` - modified - Appended this report; existing history preserved.
+**What Was Done**: Reviewed the approved Results image and existing Inspector. Adapted its overview to six metrics and the reference's two-column panels; retained Findings/Evidence/Timeline and PDF download. Distinguished unavailable requests from zero findings, guarded stale aggregate responses, preserved zero risk grades, and labeled failed connector evidence as not evaluated. Production build passed. Isolated Chromium fixtures verified Dashboard/history navigation, expanded evidence, PDF success/error controls, offline/partial/failed-empty states, zero-grade and connector-error rendering. Desktop, short-height, and mobile screenshots inspected; 320px reflow checked; no runtime exceptions.
+**Why**: Implement the approved Results visual direction with existing persisted APIs and truthful outcomes, without replacing the working Inspector or changing scanner behavior.
+**Removals**: Removed the old generic overview cards and unconditional clean-scan banner; removed misleading frontend letter-grade labels. Existing findings, evidence, and report APIs were retained.
+**Deviations from Plan**: Real data constraints require evaluated-turn counts, no invented pending test cases, and the existing Export PDF action rather than an unsupported report-preview control. Tests used isolated representative API fixtures and a generated fixture PDF; live integration was not claimed.
+**Gate Impact**: Frontend build and focused Chromium checks passed; visual approval pending. Live PDF generation, full scanner/calibration integration, Electron, and backend reporting/legacy findings corrections remain outside this frontend verification. No commit, push, PR, branch change, backend edit, or dependency installation.
+
+
+feature was documented = Milestone 5 documentation verification by "Shahzaman" at 17:27, 2026-10-21 (Asia/Karachi)
+
+### Implementation Report
+**Date**: 2026-10-21
+**Contributor**: Shahzaman
+**Module**: Module 7 - Milestone 5 documentation verification only
+**Files Changed**:
+- `Project-Context/README.md` - corrected log destination and linked the frontend specification.
+- `Project-Context/rules.md` - corrected obsolete Coding-Agent-Guide paths to existing Project-Context files; retained reporting requirements.
+- `Project-Context/Status.md` - added a current snapshot above preserved historical checkpoints, milestone review states, known gaps and next steps.
+- `Project-Context/frontend-design.md` - reconciled current Results/navigation descriptions with code; separated approved design, implemented layout and pending acceptance.
+- `Project-Context/architecture.md` - documented Results routing, persisted data flow and PDF cache/generation boundaries.
+- `Project-Context/design.md` - documented real-data adaptations and reuse rationale, linking the detailed UI specification.
+- `Project-Context/folder-structure.md` - replaced blanket unverified/scaffold descriptions with implementation-aware status links.
+- `docs/api.md` - documented existing summary/detail/report endpoints, graceful stop semantics and reporting limitations.
+- `docs/user-guide.md` - documented current Results navigation, evidence and export use with review/integration caveats.
+- `Project-Context/logs.md` - appended this verification record; all previous entries retained.
+**What Was Done**: Compared current Inspector/CSS, navigation/API client, backend findings/report contracts and services with every Project-Context document, root README, and docs API/user-guide/architecture/demo notes. Corrected current stub/deferred descriptions and separated historical test reports from current verification. Root README and docs/architecture/README.md and docs/demo/README.md required no Milestone 5 changes.
+**Why**: Make pre-commit review accurate without changing application behavior or treating implemented features as accepted.
+**Removals**: None. Historical logs and dated status records were preserved. Obsolete statements in current guidance were corrected.
+**Deviations from Plan**: None. Documentation-only review; no source edits, dependency installs, branch changes, commits or pushes.
+**Gate Impact**: No new build, browser, backend, PDF or scanner tests were executed in this documentation review. The preceding Milestone 5 build and isolated Chromium fixture results remain the recorded evidence; they do not prove live integration. Visual approval, live Results/evidence/PDF integration and full desktop acceptance remain pending. Static review also identifies that the current LiveScanPage is not the earlier approved Milestone 4 redesign; reconciliation is separate work.
+
+**Correction to the preceding Milestone 5 entry (history preserved):** The responsible project contributor is Shahzaman; the previous `Contributor: Codex` field identifies AI assistance rather than the project's contributor convention. Its removal description was imprecise: the removed overview clean banner was gated on COMPLETED plus zero returned findings, but did not require successful findings retrieval. Findings-tab empty copy was unconditional. No historical entry has been rewritten. Recorded UI checks used temporary representative API fixtures, not real persisted engine records; PDF download success used a fixture PDF. No exact visual parity, exhaustive accessibility coverage, delayed-request-race verification or live acceptance is asserted.

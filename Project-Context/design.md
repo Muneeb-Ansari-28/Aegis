@@ -38,3 +38,10 @@ The approved scope is native headed sizing, automatic chat opening, and connecto
 - Generic search fields must not prevent opening a lazy-mounted chatbot, and hidden unrelated textareas must not override visible specific composers. These cases have regression coverage. Existing main-document launcher heuristics remain finite; iframe/shadow-specific calibration and arbitrary custom launchers are not newly implemented.
 - Connector errors/timeouts stop the scan as failed and do not enter the LLM07 evaluator. Failed turn verdicts are null. The existing response column retains reserved `[CONNECTOR_ERROR]` / `[CONNECTOR_TIMEOUT]` diagnostics for status replay. Legacy replay infers status from these markers; historical scan states/verdict rows are not rewritten. A genuine reply beginning with a reserved marker is a limitation of this migration-free compatibility path.
 - Scan activity distinguishes connector diagnostics from chatbot replies and suppresses misleading legacy verdicts. Turn status no longer overwrites scan lifecycle status. The layout and vulnerability rules are unchanged.
+
+
+## Results presentation decisions - Milestone 5
+
+The approved Results reference determines the overview composition; implemented sections and data semantics are maintained in [frontend-design.md, Section 9](frontend-design.md#9-results-findings). Reuse the existing Inspector and PDF client rather than introducing a second Results implementation.
+
+Counts, severity, and risk grade remain backend-derived; the frontend does not assign severity or letter grades. A missing request is not a zero result, and a connector diagnostic is not an evaluated chatbot response. The overview presents only persisted cases, not fabricated pending cases from unused budget. The backend stops on the first positive verdict, so reference-image counts and multiple sample findings are not promised production outcomes. Existing shell/navigation is preserved; screenshot-only report-preview and interface-type controls are not invented. Implementation is awaiting visual approval and live integration acceptance; screenshot comparison is not exact-parity certification.

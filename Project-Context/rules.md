@@ -57,7 +57,7 @@ Every implementation report **MUST** use the following template exactly:
 
 ### Reporting Rules
 
-- Reports are **appended** to `Coding-Agent-Guide/logs.md`. They are never inserted, reordered, or overwritten.
+- Reports are **appended** to `Project-Context/logs.md`. They are never inserted, reordered, or overwritten.
 - A report must be filed **immediately** after the implementation is complete — not at the end of the day, not in a batch.
 - If a single task touches multiple modules, file **one report per module** affected.
 - If a task is abandoned or rolled back, a report must still be filed explaining what was attempted and why it was reverted.
@@ -152,7 +152,7 @@ The Aegis folder structure was designed intentionally and is considered **final 
 
 | Rule                                               | Detail                                                                                                                                                                                                                                   |
 | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **No new top-level directories**                   | The top-level directories (`engine/`, `desktop/`, `agents/`, `docs/`, `tests/`, `Coding-Agent-Guide/`, etc.) are fixed. Do **NOT** add new sibling directories at the project root.                                                      |
+| **No new top-level directories**                   | The top-level directories (`engine/`, `desktop/`, `agents/`, `docs/`, `tests/`, `Project-Context/`, etc.) are fixed. Do **NOT** add new sibling directories at the project root.                                                      |
 | **No reorganizing existing packages**              | Do not move, rename, or merge existing packages or modules without **explicit written approval** from the project owner.                                                                                                                 |
 | **New files within existing packages are allowed** | You may add new `.py`, `.md`, `.ts`, or other files inside existing directories as needed by the implementation plan.                                                                                                                    |
 | **Files marked `(later)` are stubs**               | Some files in the architecture plan are marked `(later)` — they are placeholders for future modules. Do **NOT** implement them before their scheduled module. Creating empty stub files with a `# TODO: Module X` comment is acceptable. |
@@ -323,7 +323,7 @@ All implementation activity must be tracked in the project's implementation log.
 
 ### 8.1 — Log Location
 
-- All implementation logs are recorded in **`Coding-Agent-Guide/logs.md`**.
+- All implementation logs are recorded in **`Project-Context/logs.md`**.
 
 ### 8.2 — Log Format
 
@@ -476,12 +476,12 @@ Documentation is not optional. It is a first-class deliverable alongside code.
 
 ### 12.1 — Status Tracking
 
-- Update **`Coding-Agent-Guide/Status.md`** after completing any module or gate.
+- Update **`Project-Context/Status.md`** after completing any module or gate.
 - Status updates must include: module name, completion date, gate pass/fail status, and any blockers.
 
 ### 12.2 — Implementation Logs
 
-- Update **`Coding-Agent-Guide/logs.md`** after every implementation session.
+- Update **`Project-Context/logs.md`** after every implementation session.
 - Follow the format specified in [Section 8: Logging Rules](#8-logging-rules).
 
 ### 12.3 — API Documentation
@@ -505,7 +505,7 @@ Documentation is not optional. It is a first-class deliverable alongside code.
 
 Use this checklist before marking any task as complete:
 
-- [ ] Implementation report filed in `Coding-Agent-Guide/logs.md`
+- [ ] Implementation report filed in `Project-Context/logs.md`
 - [ ] No architecture constraints violated (Section 2)
 - [ ] No new top-level directories created (Section 3)
 - [ ] All new functions have docstrings (Section 4)
@@ -513,7 +513,7 @@ Use this checklist before marking any task as complete:
 - [ ] Database changes use Alembic migrations (Section 5)
 - [ ] MCP tools are thin wrappers only (Section 6)
 - [ ] Security rules followed — consent, authorization, no silent certs (Section 7)
-- [ ] Log entry added to `Coding-Agent-Guide/logs.md` (Section 8)
+- [ ] Log entry added to `Project-Context/logs.md` (Section 8)
 - [ ] Commit message references module number (Section 9)
 - [ ] No forbidden files committed (Section 9)
 - [ ] Relevant gate criteria still passing (Section 10)
@@ -537,8 +537,8 @@ After each implementation session, tell the user what changed and why. Keep the 
 - Explain the reason for each material design or structural choice.
 - If anything was removed, identify it and explain why it was safe or necessary to remove.
 - State what was verified and what remains unverified; never report a gate as passed based only on files existing.
-- Append a matching entry to `Coding-Agent-Guide/logs.md` with the responsible project contributor's approved name and local time/date. AI assistance is not listed as the contributor.
-- Update `Coding-Agent-Guide/Status.md` when implementation progress or gate evidence changes.
+- Append a matching entry to `Project-Context/logs.md` with the responsible project contributor's approved name and local time/date. AI assistance is not listed as the contributor.
+- Update `Project-Context/Status.md` when implementation progress or gate evidence changes.
 
 Do not silently remove project files or features. Explain deletions in the log and user-facing completion report.
 
