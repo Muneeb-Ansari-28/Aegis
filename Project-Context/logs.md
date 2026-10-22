@@ -754,3 +754,26 @@ feature was documented = Milestone 5 documentation verification by "Shahzaman" a
 **Removals**: None.
 **Deviations from Plan**: None.
 **Gate Impact**: `pyrefly check` reports 0 errors across all services, models, and tests. All 29 engine unit tests and `test_findings_persistence_weak_bot` pass.
+
+- `FIXED` Resolved all Pyrefly static type-checker errors and deprecation warnings across the entire repository in `engine/app/agents/orchestrator.py`, `engine/app/models/entities.py`, `engine/app/schemas/turn_record.py`, `engine/app/services/scan_service.py`, `engine/app/adapters/playwright_web.py`, `engine/app/adapters/web_calibration.py`, `engine/tests/integration/test_connectors.py`, `engine/tests/integration/test_report_generation.py`, `engine/tests/integration/test_chat_readiness.py`, and `engine/tests/integration/test_scan_flow.py` — by "Muneeb" at 10:50, 2026-10-22
+
+### Implementation Report
+**Date**: 2026-10-22
+**Contributor**: Muneeb
+**Module**: Full Engine & Integration Test Suite
+**Files Changed**:
+- `engine/app/agents/orchestrator.py` — modified — Added `if verdict is not None and verdict.exploited:` and `previous_feedback = verdict.rationale if verdict is not None else None`; annotated `attack_agent` and `evaluator` as `Any` to accommodate test mocks.
+- `engine/app/models/entities.py` — modified — Introduced `utc_now()` returning `datetime.now(timezone.utc)` and updated `created_at = Column(DateTime, default=utc_now)` across all 4 entity models (`TargetEntity`, `ScanEntity`, `ScanTurnEntity`, `FindingEntity`).
+- `engine/app/schemas/turn_record.py` — modified — Updated `timestamp` field default factory to `lambda: datetime.now(timezone.utc)`.
+- `engine/app/services/scan_service.py` — modified — Updated `completed_at` assignment to use `datetime.now(timezone.utc)`.
+- `engine/app/adapters/playwright_web.py` — modified — Replaced dictionary unpacking into `launch_persistent_context` and `new_context` with explicit keyword arguments `viewport` and `no_viewport`.
+- `engine/app/adapters/web_calibration.py` — modified — Annotated overlay state as `Dict[str, Any]` to permit `int()` conversion of step index.
+- `engine/tests/integration/test_connectors.py` — modified — Added null guard `if spec is None or spec.loader is None: raise RuntimeError(...)` in `weak_bot_server` fixture.
+- `engine/tests/integration/test_report_generation.py` — modified — Added null guard in `weak_bot_server` fixture.
+- `engine/tests/integration/test_chat_readiness.py` — modified — Corrected `BaseHTTPRequestHandler.log_message` signature, added `assert adapter.page is not None` assertions, and set `browser_timeout_ms=3000` to prevent Windows click timing flakiness.
+- `engine/tests/integration/test_scan_flow.py` — modified — Added null check for `session.get(ScanTurnEntity, "2")`.
+**What Was Done**: Executed full project static analysis via `pyrefly check` and eliminated all errors repository-wide.
+**Why**: Ensure strict type compliance across all components, eliminate false positives, and ensure clean IDE diagnostics upon workspace launch.
+**Removals**: None.
+**Deviations from Plan**: None.
+**Gate Impact**: `pyrefly check` reports 0 errors across the entire codebase. All 57 tests across unit, benchmark, and integration suites pass (100% green).

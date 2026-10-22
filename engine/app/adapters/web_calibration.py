@@ -2,7 +2,7 @@
 import asyncio
 import logging
 import time
-from typing import Awaitable, Callable, Dict, Optional
+from typing import Any, Awaitable, Callable, Dict, Optional
 
 from playwright.async_api import async_playwright
 
@@ -197,7 +197,7 @@ class WebCalibration:
                     await progress_callback(0)
                 started = time.monotonic()
                 last_reported_step = 0
-                state: Dict[str, object] = {}
+                state: Dict[str, Any] = {}
                 while time.monotonic() - started < timeout_sec:
                     await asyncio.sleep(0.2)
                     state = await page.evaluate("() => window.__aegis_result || ({})")

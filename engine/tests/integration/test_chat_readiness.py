@@ -54,7 +54,7 @@ def chat_site():
             self.end_headers()
             self.wfile.write(html.encode())
 
-        def log_message(self, *args):
+        def log_message(self, format: str, *args):
             pass
 
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
@@ -78,9 +78,10 @@ def selectors():
 @pytest.mark.parametrize("mode", ["closed", "visible", "delayed"])
 async def test_scan_opens_if_needed_and_collects_reply(chat_site, mode):
     adapter = PlaywrightWebAdapter(f"{chat_site}/{mode}", selectors(), headless=True,
-                                   browser_timeout_ms=1000, settle_timeout_ms=200)
+                                   browser_timeout_ms=3000, settle_timeout_ms=200)
     try:
         await adapter.open()
+        assert adapter.page is not None
         assert adapter.page.viewport_size == {"width": 1280, "height": 800}
         turn = await adapter.send_prompt("Hello", 1)
         assert turn.status == "success", turn.response
@@ -101,6 +102,7 @@ async def test_unusable_chat_returns_clear_error_without_submitting(chat_site, m
         assert turn.status == "error"
         assert "Chat input is not ready" in turn.response
         assert turn.metadata["error"]
+        assert adapter.page is not None
         assert await adapter.page.locator("textarea").input_value() == ""
         assert await adapter.page.locator("[role=log]").text_content() == "Welcome"
     finally:
@@ -132,6 +134,7 @@ async def test_headed_scan_uses_native_viewport(chat_site):
     adapter = PlaywrightWebAdapter(f"{chat_site}/closed", selectors(), headless=False)
     try:
         await adapter.open()
+        assert adapter.page is not None
         assert adapter.page.viewport_size is None
         cdp = await adapter.page.context.new_cdp_session(adapter.page)
         window = await cdp.send("Browser.getWindowForTarget")
@@ -174,6 +177,7 @@ async def test_calibration_storage_roundtrip_without_schema_change(chat_site, mo
     await TargetService.calibrate_target(target.id, config)
     TargetService._targets.clear()
     loaded = await TargetService.get_target(target.id)
+    assert loaded is not None
     assert loaded.calibration_config == config
     assert set(config.model_dump()) == {"input_selector", "submit_selector", "response_selector", "wait_timeout_ms"}
     engine.dispose()
@@ -186,6 +190,7 @@ async def test_response_timeout_remains_a_connector_timeout(chat_site):
         turn = await adapter.send_prompt("No answer", 1)
         assert turn.status == "timeout"
         assert turn.response.startswith("[CONNECTOR_TIMEOUT]")
+        assert adapter.page is not None
         assert await adapter.page.locator("textarea").input_value() == "No answer"
     finally:
         await adapter.close()

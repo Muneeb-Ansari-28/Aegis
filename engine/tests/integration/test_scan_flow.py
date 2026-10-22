@@ -144,7 +144,9 @@ async def test_replay_preserves_success_and_marks_legacy_connector_errors():
     assert turns[0].verdict == {"exploited": False}
     assert turns[1].verdict is None and turns[2].verdict is None
     with sessions() as session:
-        assert session.get(ScanTurnEntity, "2").verdict == {"exploited": False}
+        turn_row = session.get(ScanTurnEntity, "2")
+        assert turn_row is not None
+        assert turn_row.verdict == {"exploited": False}
     engine.dispose()
 
 
