@@ -24,10 +24,10 @@ def find_free_port() -> int:
 def weak_bot_server():
     """Starts local weak-bot server in background thread for live connector integration testing."""
     port = find_free_port()
-    spec = importlib.util.spec_from_file_location(
-        "weak_bot_app",
-        str(Path(__file__).resolve().parents[3] / "test-targets" / "weak-bot" / "app.py")
-    )
+    weak_bot_path = Path(__file__).resolve().parents[3] / "test-targets" / "weak-bot" / "app.py"
+    spec = importlib.util.spec_from_file_location("weak_bot_app", str(weak_bot_path))
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Could not load weak-bot app specification from {weak_bot_path}")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
 

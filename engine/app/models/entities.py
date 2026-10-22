@@ -1,8 +1,12 @@
-﻿"""SQLAlchemy Entity Models."""
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Integer, Float, DateTime, Text, ForeignKey, JSON, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
 
 class TargetEntity(Base):
     __tablename__ = "targets"
@@ -11,7 +15,7 @@ class TargetEntity(Base):
     target_type = Column(String, default="web") # web, api, app
     url = Column(String, nullable=True)
     calibration_config = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
 class ScanEntity(Base):
     __tablename__ = "scans"
@@ -21,7 +25,7 @@ class ScanEntity(Base):
     category = Column(String, default="LLM07")
     budget = Column(Integer, default=10)
     current_attempt = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     completed_at = Column(DateTime, nullable=True)
 
 class ScanTurnEntity(Base):
@@ -34,7 +38,7 @@ class ScanTurnEntity(Base):
     latency_ms = Column(Integer, default=0)
     strategy = Column(String, nullable=True)
     verdict = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
 class FindingEntity(Base):
     __tablename__ = "findings"
@@ -46,5 +50,5 @@ class FindingEntity(Base):
     confidence = Column(Float, default=1.0)
     description = Column(Text, nullable=False)
     remediation = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 

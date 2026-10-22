@@ -203,7 +203,7 @@ class PlaywrightWebAdapter(BaseAdapter):
                 user_data_dir=self.profile_dir,
                 headless=self.headless,
                 timeout=self.browser_timeout_ms,
-                **({"no_viewport": True} if not self.headless else {}),
+                no_viewport=True if not self.headless else None,
             )
             self.page = self._context.pages[0] if self._context.pages else await self._context.new_page()
         else:
@@ -212,8 +212,8 @@ class PlaywrightWebAdapter(BaseAdapter):
                 timeout=self.browser_timeout_ms,
             )
             self._context = await self._browser.new_context(
-                **({"viewport": {"width": 1280, "height": 800}} if self.headless
-                   else {"no_viewport": True}),
+                viewport={"width": 1280, "height": 800} if self.headless else None,
+                no_viewport=True if not self.headless else None,
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Aegis/0.1.0",
             )
             self.page = await self._context.new_page()

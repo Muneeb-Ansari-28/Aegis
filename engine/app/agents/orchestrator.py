@@ -3,7 +3,7 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Optional
 
 from app.adapters.base import BaseAdapter
 from app.agents.attack_agent import AttackAgent
@@ -27,8 +27,8 @@ class Orchestrator:
         self.adapter = adapter
         self.max_budget = max_budget
         self.state = ScanState.QUEUED
-        self.attack_agent = AttackAgent()
-        self.evaluator = Evaluator()
+        self.attack_agent: Any = AttackAgent()
+        self.evaluator: Any = Evaluator()
         self._session_factory = session_factory
         self._stop_requested = asyncio.Event()
         self.current_attempt = 0
@@ -115,10 +115,10 @@ class Orchestrator:
                     await self._emit("scan_failed", attempt=self.current_attempt,
                                      error=turn.metadata.get("error") or turn.response)
                     return None
-                if verdict.exploited:
+                if verdict is not None and verdict.exploited:
                     self.state = ScanState.COMPLETED
                     break
-                previous_feedback = verdict.rationale
+                previous_feedback = verdict.rationale if verdict is not None else None
             else:
                 self.state = ScanState.COMPLETED
             if self.state == ScanState.STOPPED:

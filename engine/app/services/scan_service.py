@@ -1,7 +1,7 @@
 """Scan lifecycle service that dispatches authorized local web scans."""
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List
 import uuid
 
@@ -103,7 +103,7 @@ class ScanService:
                     entity.status = orchestrator.state.value  # type: ignore # pyrefly: ignore[read-only]
                     entity.current_attempt = orchestrator.current_attempt  # type: ignore # pyrefly: ignore[read-only]
                     if orchestrator.state.value in {"COMPLETED", "STOPPED", "FAILED"}:
-                        entity.completed_at = datetime.utcnow()  # type: ignore # pyrefly: ignore[read-only]
+                        entity.completed_at = datetime.now(timezone.utc)  # type: ignore # pyrefly: ignore[read-only]
                     session.commit()
             cls._tasks.pop(scan_id, None)
 
