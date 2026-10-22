@@ -92,8 +92,8 @@ export default function Overview({ history, activeScan, onNavigate, engineOnline
     <aside className="dashboard-context" aria-label="Assessment scope">
       <img className="dashboard-art" src={securityArtwork} alt="" aria-hidden="true"/>
       <h2>AI Security Testing<br/>for LLM Applications</h2>
-      <p>Assess authorized targets for system prompt leakage. Review the evidence behind each response.</p>
-      <ul><li><CheckCircle2 size={15}/>Focused OWASP LLM07 testing</li><li><CheckCircle2 size={15}/>Web target calibration</li><li><CheckCircle2 size={15}/>Prompt and response evidence</li><li><CheckCircle2 size={15}/>Browser-local request history</li></ul>
+      <p>Assess authorized targets for hidden context exposure. Review the evidence behind each response.</p>
+      <ul><li><CheckCircle2 size={15}/>Focused OWASP LLM08 testing</li><li><CheckCircle2 size={15}/>Web target calibration</li><li><CheckCircle2 size={15}/>Prompt and response evidence</li><li><CheckCircle2 size={15}/>Browser-local request history</li></ul>
       <p className="dashboard-context-note"><Shield size={15}/>Only test systems you own or have permission to assess.</p>
     </aside>
     <section className="dashboard-panel dashboard-actions" aria-labelledby="actions-heading"><div className="dashboard-panel-heading"><div><h2 id="actions-heading">Quick Actions</h2><p>Common tasks to get started quickly.</p></div></div>

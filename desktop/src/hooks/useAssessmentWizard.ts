@@ -118,7 +118,7 @@ export function useAssessmentWizard({ targets, refresh, onStarted, notify }: Ass
     lock.current = true; setOperation('scan');
     const version = revision.current;
     try {
-      const scan = await api.startScan({ target_id: target!.id, category: 'LLM07', budget, authorized: consent });
+      const scan = await api.startScan({ target_id: target!.id, category: 'LLM08', budget, authorized: consent });
       // Preserve acknowledged scans in App even if the analyst left this view while waiting.
       onStarted(scan, target);
     } catch (e) { if (version === revision.current) setError(message(e)); }

@@ -104,7 +104,7 @@ class ReportService:
                 scan_id=scan.id,
                 target_name=target_name,
                 target_url=target_url,
-                category=scan.category or "LLM07",
+                category=scan.category or "LLM08",
                 scan_status=scan.status or "COMPLETED",
                 started_at=scan.created_at.isoformat() if scan.created_at else None,
                 completed_at=scan.completed_at.isoformat() if scan.completed_at else None,

@@ -4,9 +4,9 @@ This guide summarizes the system boundaries and contracts for the current eight-
 
 ## Active scope
 
-The initial scanner assesses OWASP LLM07 System Prompt Leakage through direct, plain-language disclosure requests against authorized targets. The local weak and hardened chatbots use a fake system prompt with the `AEGIS-CANARY-7731` canary. Deterministic canary and n-gram overlap checks are combined with triage and rubric judging.
+The initial scanner assesses OWASP LLM08 Hidden Context Exposure (migrated from OWASP 2025 LLM07 System Prompt Leakage per the canonical OWASP GenAI Top 10 2026 taxonomy) through direct, plain-language disclosure requests against authorized targets. The local weak and hardened chatbots use a fake system prompt with the `AEGIS-CANARY-7731` canary. Deterministic canary and n-gram overlap checks are combined with triage and rubric judging.
 
-Jailbreaks, role impersonation, instruction overrides, encoding or obfuscation, safeguard bypass, and real secret extraction are out of scope. LLM01 and the other OWASP categories remain taxonomy references or future scope, not active scan categories.
+Jailbreaks, role impersonation, instruction overrides, encoding or obfuscation, safeguard bypass, and real secret extraction are out of scope. Other OWASP categories remain taxonomy references or future scope, not active scan categories.
 
 ## Core components and contracts
 

@@ -777,3 +777,57 @@ feature was documented = Milestone 5 documentation verification by "Shahzaman" a
 **Removals**: None.
 **Deviations from Plan**: None.
 **Gate Impact**: `pyrefly check` reports 0 errors across the entire codebase. All 57 tests across unit, benchmark, and integration suites pass (100% green).
+
+
+feature was implemented = OWASP GenAI Top 10 (2026) Canonical Taxonomy Migration and Active Scanner Alignment to LLM08 (Hidden Context Exposure) by "Muneeb" at 23:10, 2026-10-22
+
+### Implementation Report
+**Date**: 2026-10-22
+**Contributor**: Muneeb
+**Module**: Full System: Knowledge Base, Engine Pipelines, Reporting, Desktop UI, Project-Context
+**Files Changed**:
+- `engine/app/kb/01_OWASP/2026/` — created — Canonical OWASP GenAI/LLM Top 10 (2026) category definitions (LLM01–LLM10) with updated severities, descriptions, and attack surface mappings.
+- `engine/app/kb/loader.py` — modified — Updated `KBLoader.load_owasp` default year to `"2026"` and added `utf-8-sig` encoding handling for BOM tolerance on Windows.
+- `engine/app/kb/07_REFERENCES/owasp_llm_top10.json` — modified — Updated reference version to `"2026"`.
+- `engine/app/kb/06_RISK_RULES/risk_rules.json` — modified — Added base risk weights for all canonical 2026 categories (`LLM08`: 7.5).
+- `engine/app/kb/04_TEST_CASES/test_cases.json` — modified — Updated default assessment category to `LLM08`.
+- `engine/app/agents/risk_scorer.py` — modified — Updated `RiskScorer.WEIGHTS` mapping with all 10 canonical 2026 categories (`LLM08`: 7.5).
+- `engine/app/agents/prompts/judge_rubric_llm08.md` — created — Rubric judge prompt for OWASP LLM08 (Hidden Context Exposure) assessing system prompt and hidden context leakage.
+- `engine/app/agents/evaluation/judge.py` — modified — Updated judge rubric prompt loader to point to `judge_rubric_llm08.md` and default fallback category to `"LLM08"`.
+- `engine/app/agents/evaluation/evaluator.py` — modified — Updated evaluator category to `"LLM08"`.
+- `engine/app/agents/orchestrator.py` — modified — Updated scan telemetry emission to `category="LLM08"`.
+- `engine/app/agents/reporting_agent.py` — modified — Updated reporting narrative to format `OWASP LLM08 (Hidden Context Exposure)`.
+- `engine/app/agents/prompts/attack_system.md` — modified — Updated attack system prompt category label to `OWASP LLM08 Hidden Context Exposure`.
+- `engine/app/schemas/scan.py` — modified — Updated `ScanCreate` default category to `"LLM08"`.
+- `engine/app/schemas/verdict.py` — modified — Updated `JudgeVerdict` default category to `"LLM08"`.
+- `engine/app/models/entities.py` — modified — Updated `ScanEntity.category` default to `"LLM08"`.
+- `engine/app/services/scan_service.py` — modified — Enforced `data.category == "LLM08"` validation check.
+- `engine/app/services/report_service.py` — modified — Updated category badge mapping to `OWASP LLM08 (Hidden Context Exposure)`.
+- `engine/app/templates/report.html` — modified — Updated report scope disclaimer to `OWASP LLM08 (Hidden Context Exposure)`.
+- `desktop/src/App.tsx` — modified — Updated OWASP categories list to 2026 canonical order and labels, updated active category gating to `LLM08 active`.
+- `desktop/src/api/client.ts` — modified — Updated default category fallback to `'LLM08'`.
+- `desktop/src/components/NewAssessment.tsx` — modified — Updated New Assessment dropdown selection and step descriptions to `LLM08 · Hidden Context Exposure`.
+- `desktop/src/components/Overview.tsx` — modified — Updated Overview quick start category and runnable label to `LLM08`.
+- `desktop/src/hooks/useAssessmentWizard.ts` — modified — Updated `startScan` payload dispatch to `category: 'LLM08'`.
+- `desktop/src/views/FindingsInspector.tsx` — modified — Updated category fallback to `'LLM08'`.
+- `scripts/verify_gate4.py` — modified — Updated category assertions to `LLM08`.
+- `test-targets/README.md` — modified — Updated scope documentation to `OWASP LLM08 (Hidden Context Exposure)`.
+- `engine/tests/unit/test_risk_scorer.py` — modified — Updated risk score unit test assertions for 2026 weights.
+- `engine/tests/unit/test_reporting_agent.py` — modified — Updated test fixture category to `LLM08`.
+- `engine/tests/unit/test_report_service.py` — modified — Updated test fixture category to `LLM08`.
+- `engine/tests/unit/test_reports_api.py` — modified — Updated test fixture category to `LLM08`.
+- `engine/tests/unit/test_findings_service.py` — modified — Updated test fixture category to `LLM08`.
+- `engine/tests/integration/test_report_generation.py` — modified — Updated integration test assertions to verify `LLM08` and `OWASP LLM08 (Hidden Context Exposure)` text fidelity.
+- `engine/tests/integration/test_findings_persistence.py` — modified — Updated test fixture category to `LLM08`.
+- `Project-Context/README.md` — modified — Updated active scope description to OWASP LLM08 Hidden Context Exposure.
+- `Project-Context/design.md` — modified — Updated active category and UI entry point documentation to LLM08.
+- `Project-Context/architecture.md` — modified — Updated active scope and category references to LLM08.
+- `Project-Context/folder-structure.md` — modified — Updated layout documentation to reflect `01_OWASP/2026/` and `judge_rubric_llm08.md`.
+- `Project-Context/frontend-design.md` — modified — Updated runnable test scope and payload references to LLM08.
+- `Project-Context/Status.md` — modified — Appended 2026-10-22 snapshot documenting OWASP 2026 migration and Gate 4 re-verification.
+- `Project-Context/logs.md` — modified — Appended this implementation report.
+**What Was Done**: Executed full system migration from OWASP 2025 to the canonical OWASP GenAI/LLM Top 10 (2026) taxonomy. Migrated the active assessment scanner, evaluator, judge rubric, risk scoring weights, schemas, database defaults, PDF report templates, test suites, and desktop frontend from LLM07 (System Prompt Leakage) to LLM08 (Hidden Context Exposure). Retained `engine/app/kb/01_OWASP/2025/` as a sibling for historical taxonomy reference while defaulting runtime to `2026`. Re-verified Gate 4 evidence fidelity end-to-end via `scripts/verify_gate4.py` (10/10 checks passed). Cleaned up temporary planning artifacts in `tasks/`.
+**Why**: Align Aegis with the official 2026 OWASP GenAI Top 10 release, ensuring vulnerability classifications, risk weights, and client interfaces adhere to the latest industry standards.
+**Removals**: Removed temporary `tasks/` directory (`plan.md`, `todo.md`) which was used solely as a session scratchpad and is not part of the committed repository.
+**Deviations from Plan**: None.
+**Gate Impact**: Gate 4 criteria re-verified with 100% evidence fidelity for LLM08. All 57 engine unit and integration tests pass (100% green); desktop production build (`npm run build`) passes with 0 errors.

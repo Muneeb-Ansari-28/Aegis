@@ -1,0 +1,6 @@
+{
+  "id": "LLM04:2026",
+  "name": "Supply Chain",
+  "severity_base": 7.0,
+  "description": "Vulnerabilities introduced through third-party models, packages, or data."
+}

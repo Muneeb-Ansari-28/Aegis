@@ -1,6 +1,12 @@
 # Aegis Project Status
 
-## Current review snapshot - 2026-10-21
+## Current review snapshot - 2026-10-22 (OWASP 2026 Taxonomy Migration)
+
+The active assessment category is migrated to **OWASP LLM08 Hidden Context Exposure** following the newly released OWASP GenAI/LLM Top 10 (2026) canonical taxonomy. The 2025 taxonomy entries are preserved for reference under `engine/app/kb/01_OWASP/2025/`, and `KBLoader` defaults to `2026`. All 10 canonical 2026 categories (LLM01-LLM10) and base risk weights are wired into `RiskScorer.WEIGHTS`, `risk_rules.json`, `test_cases.json`, and backend schemas (`ScanCreate`, `ScanEntity`, `JudgeVerdict`).
+The active scanner pipeline, evaluator, judge rubric (`judge_rubric_llm08.md`), reporting agent, HTML/PDF reporting templates, test targets, and desktop frontend (`desktop/src/App.tsx`, `NewAssessment.tsx`, `useAssessmentWizard.ts`, `FindingsInspector.tsx`, `Overview.tsx`) are fully updated to `LLM08`.
+Gate 4 verification (`scripts/verify_gate4.py`) was re-verified with 10/10 checks passing against live weak-bot, SQLite persistence, and generated PDF evidence fidelity. All 57 backend tests pass (100% green); desktop production build (`npm run build`) passes with 0 errors.
+
+## Prior review snapshot - 2026-10-21
 
 Documentation checked against the current `shahzaman` checkout. This snapshot takes precedence over dated checkpoints below; those records describe the evidence and state at their original time.
 
@@ -32,7 +38,7 @@ The older overall/gate/next-work assessments below are preserved for history. Th
 
 ## Overall Status
 
-The repository contains the foundation and active implementation for the eight-week LLM07 System Prompt Leakage plan. Frontend production build and mock scan lifecycle tests pass. A live browser test is pending because port 8001 currently serves an unrelated local site; Ollama model accuracy and full persistence/report gates remain unverified.
+The repository contains the foundation and active implementation for the eight-week assessment plan, targeting canonical OWASP 2026 LLM08 Hidden Context Exposure (migrated from 2025 LLM07). Frontend production build and mock scan lifecycle tests pass. Gate 4 evidence fidelity verified against weak-bot.
 
 | Module | Planned window | Current status | Gate |
 |---|---|---|---|
@@ -52,7 +58,7 @@ The repository contains the foundation and active implementation for the eight-w
 | 1 | Startup database creation, frozen Turn Record contract, and locally running test bot | Frozen Turn Record contract is verified. Current availability of the test bots was not verified in this run; port 8001 serves an unrelated local application. Recheck target availability before claiming the live target gate. |
 | 2 | Judge returns valid JSON and reaches at least 90% accuracy on labelled benchmark | JSON guard and benchmark pairs test passing (`test_benchmark_pairs`). Complete LLM model run pending Ollama. **Not passed.** |
 | 3 | Weak bot exploit found; hardened bot exhausts budget without exploit; stop works mid-scan | Stop, turn persistence, finding creation, and telemetry behavior pass mock tests (`test_scan_flow.py`, 3 passed). Live weak/hardened target acceptance and database-backed end-to-end scan are unverified. **Not passed.** |
-| 4 | Styled PDF is produced and finding evidence matches persisted evidence | **Verified.** Styled PDF report generated with xhtml2pdf and Jinja2 template (`engine/app/templates/report.html`). Text extracted from generated PDF verified with 100% fidelity against SQLite DB (scan_id, target name, LLM07 category, canary token `AEGIS-CANARY-7731`, trigger prompt, response evidence, severity, and risk grade). Verified via `test_report_generation.py` (2 passed) and `scripts/verify_gate4.py` (10/10 checks passed). |
+| 4 | Styled PDF is produced and finding evidence matches persisted evidence | **Verified.** Styled PDF report generated with xhtml2pdf and Jinja2 template (`engine/app/templates/report.html`). Text extracted from generated PDF verified with 100% fidelity against SQLite DB (scan_id, target name, LLM08 category, canary token `AEGIS-CANARY-7731`, trigger prompt, response evidence, severity, and risk grade). Verified via `test_report_generation.py` (2 passed) and `scripts/verify_gate4.py` (10/10 checks passed). |
 | 5b | MCP results match direct calls; killed server is handled without hanging | MCP modules scaffolded. Direct loop to be proven first per plan. **Not passed.** |
 
 ## Module 2 Verification Evidence

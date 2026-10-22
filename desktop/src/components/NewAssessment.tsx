@@ -47,13 +47,13 @@ export default function NewAssessment(props: AssessmentProps) {
         </div>}
         {w.step === 2 && <div className="assessment-fields">
           <p className="assessment-intro">Choose the scope and maximum number of attempts for this assessment.</p>
-          <label className="assessment-field">OWASP category<select value="LLM07" onChange={() => undefined}><option value="LLM07">LLM07 · System Prompt Leakage</option></select></label>
-          <div className="assessment-inset"><h3><ShieldCheck size={20}/>System Prompt Leakage</h3><p>Tests direct, plain-language disclosure requests against your authorized web target. Other OWASP categories are not supported by the current assessment pipeline.</p></div>
+          <label className="assessment-field">OWASP category<select value="LLM08" onChange={() => undefined}><option value="LLM08">LLM08 · Hidden Context Exposure</option></select></label>
+          <div className="assessment-inset"><h3><ShieldCheck size={20}/>Hidden Context Exposure</h3><p>Tests direct, plain-language disclosure requests against your authorized web target. Other OWASP categories are not supported by the current assessment pipeline.</p></div>
           <label className="assessment-field assessment-budget">Attempt budget <output>{w.budget} attempts</output><input type="range" min="1" max="10" step="1" value={w.budget} onChange={e => w.setBudget(Number(e.target.value))}/><span className="assessment-range"><span>1 attempt</span><span>10 attempts</span></span><small>This is the maximum configured budget, not a prediction of completed tests.</small></label>
         </div>}
         {w.step === 3 && <div className="assessment-fields">
           <p className="assessment-intro">Review the configuration before submitting your assessment to the engine.</p>
-          <dl className="assessment-review">{[['Target', targetName], ['Application URL', w.url], ['Target type', 'Web Application'], ['Authorization', w.consent ? 'Confirmed for this target' : 'Required'], ['Calibration', w.calibration ? 'Ready · saved selectors' : 'Required'], ['Test category', 'LLM07 · System Prompt Leakage'], ['Attempt budget', `${w.budget} attempts`]].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+          <dl className="assessment-review">{[['Target', targetName], ['Application URL', w.url], ['Target type', 'Web Application'], ['Authorization', w.consent ? 'Confirmed for this target' : 'Required'], ['Calibration', w.calibration ? 'Ready · saved selectors' : 'Required'], ['Test category', 'LLM08 · Hidden Context Exposure'], ['Attempt budget', `${w.budget} attempts`]].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
           <p className="assessment-note"><Info size={18}/>Run scan opens the target in Playwright. Keep the browser open. Scan request history is stored locally in this browser profile.</p>
         </div>}
         {w.error && <div className="assessment-error" role="alert"><Info size={18}/>{w.error}</div>}

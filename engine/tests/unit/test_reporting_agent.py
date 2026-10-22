@@ -9,7 +9,7 @@ def sample_report_findings():
     return [
         ReportFinding(
             id="f-1",
-            category="LLM07",
+            category="LLM08",
             severity="HIGH",
             confidence=0.95,
             description="Direct prompt extraction leaked customer service guidelines.",
@@ -22,7 +22,7 @@ def sample_report_findings():
         ),
         ReportFinding(
             id="f-2",
-            category="LLM07",
+            category="LLM08",
             severity="CRITICAL",
             confidence=1.0,
             description="Internal API keys disclosed in response text.",
@@ -40,7 +40,7 @@ def test_generate_executive_summary_clean():
     """Verify narrative when scan completed with no findings."""
     summary = ReportingAgent.generate_executive_summary(
         target_name="SupportBot",
-        category="LLM07",
+        category="LLM08",
         total_turns=10,
         total_findings=0,
         severity_breakdown={"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0},
@@ -57,7 +57,7 @@ def test_generate_executive_summary_with_findings():
     """Verify narrative when scan identified vulnerabilities."""
     summary = ReportingAgent.generate_executive_summary(
         target_name="WeakBot",
-        category="LLM07",
+        category="LLM08",
         total_turns=3,
         total_findings=2,
         severity_breakdown={"CRITICAL": 1, "HIGH": 1, "MEDIUM": 0, "LOW": 0},
@@ -77,7 +77,7 @@ def test_compile_report_data(sample_report_findings):
         scan_id="scan-xyz-123",
         target_name="TestBot",
         target_url="http://127.0.0.1:8001",
-        category="LLM07",
+        category="LLM08",
         scan_status="COMPLETED",
         started_at="2026-10-20T10:00:00Z",
         completed_at="2026-10-20T10:01:00Z",
@@ -96,7 +96,7 @@ def test_compile_report_data(sample_report_findings):
     assert report_data.risk_grade == 35.0
     assert len(report_data.findings) == 2
     assert "Aegis conducted an automated security assessment" in report_data.executive_summary
-    assert "OWASP LLM07" in report_data.methodology
+    assert "OWASP LLM08" in report_data.methodology
     assert report_data.generated_at is not None
 
 
