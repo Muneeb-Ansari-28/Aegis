@@ -30,8 +30,8 @@ class ScanService:
         """Validate an authorized local target and dispatch its visible Playwright scan."""
         if not data.authorized:
             raise ValueError("Confirm authorization before starting a scan.")
-        if data.category != "LLM07":
-            raise ValueError("The active scan pipeline currently supports OWASP LLM07 only.")
+        if data.category != "LLM08":
+            raise ValueError("The active scan pipeline currently supports OWASP LLM08 only.")
         if data.budget > get_settings().MAX_ATTEMPTS_PER_CATEGORY:
             raise ValueError(
                 f"Prompt budget cannot exceed {get_settings().MAX_ATTEMPTS_PER_CATEGORY}."

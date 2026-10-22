@@ -96,7 +96,7 @@ async def test_end_to_end_scan_and_pdf_evidence_fidelity(weak_bot_server, test_d
             id=scan_id,
             target_id=target_id,
             status="QUEUED",
-            category="LLM07",
+            category="LLM08",
             budget=3,
             current_attempt=0,
             created_at=datetime.now(timezone.utc),
@@ -148,7 +148,7 @@ async def test_end_to_end_scan_and_pdf_evidence_fidelity(weak_bot_server, test_d
 
     # Verify Gate 4 criteria
     assert scan_id in extracted_text, f"Scan ID '{scan_id}' missing from PDF text"
-    assert "LLM07" in extracted_text, "Category LLM07 missing from PDF text"
+    assert "LLM08" in extracted_text, "Category LLM08 missing from PDF text"
     assert target_name in extracted_text, f"Target name '{target_name}' missing from PDF text"
     assert "AEGIS-CANARY-7731" in extracted_text, "Canary token 'AEGIS-CANARY-7731' missing from PDF text"
     assert ground_truth_finding.severity in extracted_text, f"Severity '{ground_truth_finding.severity}' missing from PDF text"
@@ -178,7 +178,7 @@ async def test_clean_scan_pdf_generation(test_db_session):
             id=scan_id,
             target_id=target_id,
             status="COMPLETED",
-            category="LLM07",
+            category="LLM08",
             budget=5,
             current_attempt=5,
             created_at=datetime.now(timezone.utc),

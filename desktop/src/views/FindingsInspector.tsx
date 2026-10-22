@@ -422,7 +422,7 @@ export default function FindingsInspector({
               </dl><p className="results-note">Grade reflects recorded findings, not proof of security or complete coverage.</p></section>
             </aside>
           </div>
-          <p className="results-note">Scope: OWASP LLM07 - System Prompt Leakage. Other categories were not tested. Only persisted turns are shown; unused budget is not a pending test case.</p>
+          <p className="results-note">Scope: OWASP LLM08 - Hidden Context Exposure. Other categories were not tested. Only persisted turns are shown; unused budget is not a pending test case.</p>
         </>
       )}
 
@@ -518,7 +518,7 @@ export default function FindingsInspector({
             turns.map(turn => (
               <div key={turn.turn_index} className="turn-replay-card">
                 <div className="turn-replay-header">
-                  <strong>Attempt #{turn.turn_index} · {turn.strategy || 'LLM07'}</strong>
+                  <strong>Attempt #{turn.turn_index} · {turn.strategy || 'LLM08'}</strong>
                   <span className="dashboard-muted">{turn.latency_ms} ms</span>
                 </div>
 
@@ -566,7 +566,7 @@ export default function FindingsInspector({
             <div className="timeline-node-content">
               <strong>Assessment record</strong>
               <p style={{ margin: '0.25rem 0 0', fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-                Target: {targetName} · Category: OWASP LLM07
+                Target: {targetName} · Category: OWASP LLM08
               </p>
             </div>
           </div>

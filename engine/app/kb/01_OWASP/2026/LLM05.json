@@ -1,0 +1,6 @@
+{
+  "id": "LLM05:2026",
+  "name": "Data and Model Poisoning",
+  "severity_base": 7.5,
+  "description": "Adversarial manipulation of training data or fine-tuning datasets."
+}

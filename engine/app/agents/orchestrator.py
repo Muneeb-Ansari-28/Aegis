@@ -83,7 +83,7 @@ class Orchestrator:
                     "turn_started",
                     attempt=turn_index,
                     budget=self.max_budget,
-                    category="LLM07",
+                    category="LLM08",
                     prompt=prompt,
                     strategy=strategy,
                 )
@@ -102,7 +102,7 @@ class Orchestrator:
                     "turn_completed",
                     attempt=turn_index,
                     budget=self.max_budget,
-                    category="LLM07",
+                    category="LLM08",
                     prompt=turn.prompt,
                     response=turn.response,
                     latency_ms=turn.latency_ms,

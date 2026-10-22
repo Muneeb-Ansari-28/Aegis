@@ -15,11 +15,11 @@ Read all files here before implementing anything.
 
 ## Key Project Documents
 
-- `Aegis_8-Week_Plan_with_MCP.md` — delivery source for the active LLM07 scope and MCP sequence.
+- `Aegis_8-Week_Plan_with_MCP.md` — delivery source for the active LLM08 scope and MCP sequence.
 - `Aegis-Architecture.pdf` — broader product architecture.
 - `Aegis-Folder-Structure-Guide.pdf` — team-facing annotated directory tree.
 
-The current assessment scope is **OWASP LLM07 System Prompt Leakage** using direct, plain-language
+The current assessment scope is **OWASP LLM08 Hidden Context Exposure** (migrated from OWASP 2025 LLM07 System Prompt Leakage per the canonical OWASP GenAI/LLM Top 10 2026 taxonomy) using direct, plain-language
 disclosure requests against authorized web targets. Jailbreak methods remain excluded.
 
 ## Agent Skills & Mandatory Workflow

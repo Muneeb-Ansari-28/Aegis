@@ -1,10 +1,10 @@
-﻿"""Scan Lifecycle Request/Response Schemas."""
+"""Scan Lifecycle Request/Response Schemas."""
 from pydantic import BaseModel, Field
 from typing import Optional
 
 class ScanCreate(BaseModel):
     target_id: str
-    category: str = "LLM07"
+    category: str = "LLM08"
     budget: int = Field(default=10, ge=1, le=20)
     authorized: bool = False
 

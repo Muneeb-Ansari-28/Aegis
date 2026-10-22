@@ -22,7 +22,7 @@ class ScanEntity(Base):
     id = Column(String, primary_key=True)
     target_id = Column(String, ForeignKey("targets.id"), nullable=False)
     status = Column(String, default="QUEUED") # QUEUED, RUNNING, COMPLETED, STOPPED, FAILED
-    category = Column(String, default="LLM07")
+    category = Column(String, default="LLM08")
     budget = Column(Integer, default=10)
     current_attempt = Column(Integer, default=0)
     created_at = Column(DateTime, default=utc_now)

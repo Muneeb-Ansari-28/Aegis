@@ -32,7 +32,7 @@ AEGIS should feel like a calm, precise cybersecurity workbench. Help the analyst
 - Use actual profile names and data. The image's names, counts, findings, timestamps, percentages, and durations are illustrative, not production defaults.
 - Avoid hacker-style neon, excessive gradients, oversized card grids, and continuous decorative animation. Keep the reference's subtle accent treatment without reproducing its small composite-image text sizes.
 
-The active scanner remains LLM07 System Prompt Leakage using direct disclosure requests against authorized local/private-network web targets. Do not copy claims of full OWASP coverage into the interface.
+The active scanner remains LLM08 Hidden Context Exposure using direct disclosure requests against authorized local/private-network web targets. Do not copy claims of full OWASP coverage into the interface.
 
 ## 2. Approved graphite-neutral light theme
 
@@ -141,7 +141,7 @@ The reference's global search and notification bell are deferred: there is no im
 - Recent assessments should preserve target name, category, timestamp, and known status. Distinguish actual attempts from configured budget. Opening a historical run is implemented through the selected scan ID and Results view; live integration acceptance remains pending.
 - Show engine/Ollama health with checking, connected, offline, and retry states. Avoid a permanently green Playwright status.
 - Quick actions should be real: New assessment, Scan history, Setup guidance. The Dashboard retains setup guidance as its third action; PDF export is available inside Results.
-- Decorative shield art belongs in a secondary area only at wide widths. Its copy must describe current LLM07 scope, not all-category coverage.
+- Decorative shield art belongs in a secondary area only at wide widths. Its copy must describe current LLM08 scope, not all-category coverage.
 
 Required states: initial loading, no assessments, populated history, unavailable/stale data, and engine offline. Keep cached history readable offline with clear labeling.
 
@@ -153,7 +153,7 @@ Required states: initial loading, no assessments, populated history, unavailable
 
 1. **Target:** Choose an existing target or enter a name and local/private-network URL. Preserve URL normalization and backend validation messages. Web is the supported connector; desktop is unavailable. Explain authorization and obtain the existing explicit consent before any calibration can open the target.
 2. **Interface calibration:** Preserve Automatic calibration and Click to calibrate. Manual mode captures input, then Send/Enter; the response selector is detected automatically. Preserve opening, capture progress, selector saving, completed, failed, and timeout feedback, plus existing selector reuse. Do not reproduce the older documentation's three-click description.
-3. **Test scope:** LLM07 is runnable; other OWASP categories are clearly not enabled. Retain the current 1–10 attempt budget and existing payload contract. This redesign does not raise backend budgets or expand assessment scope.
+3. **Test scope:** LLM08 is runnable; other OWASP categories are clearly not enabled. Retain the current 1–10 attempt budget and existing payload contract. This redesign does not raise backend budgets or expand assessment scope.
 4. **Review & run:** Summarize target URL/name, category, budget, calibration readiness, and authorization. Submit exactly one scan request through the existing integration. The final action reads “Run scan” or “Start assessment”, with a pending state until acknowledged.
 
 Consent placement is a **provisional adaptation**: the reference's final review step must not postpone authorization until after calibration. Keep consent visible before target interaction and visible again in the review summary. It must never be preselected; revocation blocks subsequent target interaction and submission.
@@ -275,7 +275,7 @@ Before every implementation task, identify exact intended files and risks. Prese
 | Target registration/selection | Correct payload, normalization, validation errors, saved-target selection |
 | Authorization | No calibration or scan submission without explicit consent; target changes cannot reuse inappropriate consent silently |
 | Calibration | Automatic and two-click flows, progress polling, saving selectors, errors, reuse, and stale-result protection |
-| Configuration/start | LLM07 and budget preserved; one request per submit; correct target and pending/error states |
+| Configuration/start | LLM08 and budget preserved; one request per submit; correct target and pending/error states |
 | Live observation | Status polling, actual telemetry, saved-turn replay, no lost/duplicated evidence, stable navigation |
 | Stop | Stop request sent; acknowledgment distinguished from terminal state; partial evidence retained |
 | History/profile/assistant | Existing local persistence/search, profile editing, and truthful local guidance retained |
@@ -362,7 +362,7 @@ Implemented a vertical four-step desktop rail next to one white form panel, rest
 
 The four steps are Target Configuration, Interface Calibration, Test Scope, and Review & Run. Unlike the single reference image, Step 1 contains explicit target-specific authorization, while both calibration actions live in Step 2 as requested. Existing target selection reuses saved selectors; editing its name or URL becomes a new target draft, resets consent and discards mismatched selectors. Back/Next retains draft data. New targets register only when calibration is explicitly requested; the returned target is retained even if list refresh is unavailable. Moving to Step 2 alone performs no registration or browser interaction.
 
-Automatic and manual calibration retain the existing API payloads, 90-second manual session, 300ms polls, 95-second client deadline, and up to 20 additional 250ms polls for saved configuration. Manual selection remains input then Send/Enter, with automatic response detection. In-flight wizard navigation is disabled; leaving the page invalidates late calibration results and stops further frontend polling, but is not backend cancellation. Recalibration clears old readiness until the new attempt succeeds. LLM07 is the only category, budget remains 1–10/default 10. Run scan sends the existing payload once per in-flight submission and hands an acknowledged scan to the existing App handler; backend errors retain the form. No backend idempotency contract is added.
+Automatic and manual calibration retain the existing API payloads, 90-second manual session, 300ms polls, 95-second client deadline, and up to 20 additional 250ms polls for saved configuration. Manual selection remains input then Send/Enter, with automatic response detection. In-flight wizard navigation is disabled; leaving the page invalidates late calibration results and stops further frontend polling, but is not backend cancellation. Recalibration clears old readiness until the new attempt succeeds. LLM08 is the only category, budget remains 1–10/default 10. Run scan sends the existing payload once per in-flight submission and hands an acknowledged scan to the existing App handler; backend errors retain the form. No backend idempotency contract is added.
 
 Verification: final `npm run build` passed (pre-existing Vite CJS warning). Isolated Chromium fixtures passed validation/consent gates, normalized new-target registration, existing target selector reuse, automatic/manual success, registration/automatic/manual/submission errors, timeout handling using an accelerated test clock, step persistence, target/URL invalidation, budget keyboard controls, exact scan payload, duplicate-click prevention, delayed acknowledgment and Live Scan navigation, locked navigation while calibrating and late-result rejection after leaving. All four steps passed body/main overflow checks at 320/390/768/1024/1440px with no JavaScript runtime exceptions. Four 1440x900 viewport screenshots (full-page capture where content exceeds viewport) and a mobile capture were inspected. Step 1 spacing was refined after comparison; other steps use the same visual language. Test scripts/screenshots are temporary artifacts outside the repository.
 
@@ -392,7 +392,7 @@ Live Scan and Results redesigns are **not yet implemented**. The pre-existing Li
 
 Verification for this checkpoint: `npm run build` in desktop passed (TypeScript and Vite; existing CJS deprecation warning). No frontend test script or checked-in frontend test suite is configured. Re-ran the existing temporary isolated Chromium fixture harness: target registration/selection, consent and URL checks, auto/manual calibration success/failure, accelerated timeout, selector reuse/invalidation, step persistence, keyboard budget, exact submission payload, duplicate guard, acknowledgment-driven Live Scan navigation, stale-result rejection, and 20 step/viewport overflow combinations passed with no JavaScript runtime errors. The fixture harness is outside the repository and is not a committed automated test suite.
 
-Live Playwright calibration and full LLM07 end-to-end testing remain pending for the redesigned frontend. Full integration testing is deferred until all frontend screens are complete. No backend acceptance gate is newly passed by these fixture results. Historical backend verification entries do not establish integration acceptance of this redesign.
+Live Playwright calibration and full LLM08 end-to-end testing remain pending for the redesigned frontend. Full integration testing is deferred until all frontend screens are complete. No backend acceptance gate is newly passed by these fixture results. Historical backend verification entries do not establish integration acceptance of this redesign.
 
 Scope review: shahzaman was active with a clean working tree and no untracked files at entry. Milestone 3 is already committed; this checkpoint adds documentation only. The reviewed branch diff against local main is limited to desktop frontend files and Project-Context documents. Backend functionality, scanner logic and API contracts are preserved; no changes to the API client, engine, agents or run_aegis.ps1 are included. No main modification, merge or PR creation. Push only to origin/shahzaman; PR creation still requires explicit authorization.
 

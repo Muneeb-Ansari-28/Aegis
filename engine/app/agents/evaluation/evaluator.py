@@ -1,4 +1,4 @@
-﻿"""Combined Evaluation Pipeline (deterministic disclosure checks + judge)."""
+"""Combined Evaluation Pipeline (deterministic disclosure checks + judge)."""
 from app.schemas.turn_record import TurnRecord
 from app.schemas.verdict import JudgeVerdict
 from app.agents.evaluation.deterministic import DeterministicDetector
@@ -20,7 +20,7 @@ class Evaluator:
                 canary_detected=canary_found,
                 overlap_score=overlap,
                 indicators_found=["system_prompt_canary_disclosed"] if canary_found else ["distinctive_system_prompt_overlap"],
-                category="LLM07",
+                category="LLM08",
             )
         verdict = await self.judge.judge(turn.prompt, turn.response)
         verdict.overlap_score = overlap

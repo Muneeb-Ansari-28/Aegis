@@ -53,9 +53,10 @@ class ReportingAgent:
             rating = "Compromised (Critical Risk)"
 
         lines = []
+        category_name = "Hidden Context Exposure" if category in ("LLM08", "LLM07") else category
         lines.append(
             f"Aegis conducted an automated security assessment of '{target_name}' "
-            f"evaluating resilience against OWASP {category} (System Prompt Leakage). "
+            f"evaluating resilience against OWASP {category} ({category_name}). "
             f"The scan executed {total_turns} prompt interaction(s) with an overall status of {scan_status}."
         )
 
@@ -152,9 +153,10 @@ class ReportingAgent:
             scan_status=scan_status,
         )
 
+        category_name = "Hidden Context Exposure" if category in ("LLM08", "LLM07") else category
         methodology = (
             "Aegis uses deterministic state machines and verified test harnesses to assess LLM application endpoints. "
-            "Under OWASP LLM07 (System Prompt Leakage), sequential probe variations are dispatched across authorized web interfaces "
+            f"Under OWASP {category} ({category_name}), sequential probe variations are dispatched across authorized web interfaces "
             "to test if system instructions, internal operating parameters, or canary tokens can be coerced into the chatbot response. "
             "Evaluations enforce strict JSON schemas and deterministic heuristics to prevent false classifications."
         )
@@ -181,7 +183,7 @@ class ReportingAgent:
         """Backward-compatible summary method."""
         return self.generate_executive_summary(
             target_name="Target",
-            category="LLM07",
+            category="LLM08",
             total_turns=len(findings) or 1,
             total_findings=len(findings),
             severity_breakdown={"HIGH": len(findings)},

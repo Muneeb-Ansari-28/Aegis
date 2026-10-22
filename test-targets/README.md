@@ -1,6 +1,6 @@
-﻿# Vulnerable Test Targets
+# Vulnerable Test Targets
 
-This directory contains weak and hardened web chat targets for OWASP LLM07 System Prompt Leakage. Both use a fake prompt and canary only.
+This directory contains weak and hardened web chat targets for OWASP LLM08 Hidden Context Exposure. Both use a fake prompt and canary only.
 
 - `weak-bot/`: Discloses the planted test system prompt when asked directly.
 - `hardened-bot/`: Refuses direct requests for hidden instructions and the canary.

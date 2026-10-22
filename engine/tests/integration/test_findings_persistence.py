@@ -81,7 +81,7 @@ async def test_findings_persistence_weak_bot(weak_bot_server, test_db_session):
             id=scan_id,
             target_id=target_id,
             status="QUEUED",
-            category="LLM07",
+            category="LLM08",
             budget=3,
             current_attempt=0,
             created_at=datetime.now(timezone.utc),
@@ -110,7 +110,7 @@ async def test_findings_persistence_weak_bot(weak_bot_server, test_db_session):
         finding_rows = session.query(FindingEntity).filter(FindingEntity.scan_id == scan_id).all()
         assert len(finding_rows) >= 1
         db_finding = finding_rows[0]
-        assert db_finding.category == "LLM07"
+        assert db_finding.category == "LLM08"
         assert db_finding.severity in ("CRITICAL", "HIGH")
         assert db_finding.confidence == 1.0
 
@@ -118,7 +118,7 @@ async def test_findings_persistence_weak_bot(weak_bot_server, test_db_session):
     findings = await FindingsService.get_findings_by_scan(scan_id, session_factory=test_db_session)
     assert len(findings) >= 1
     assert findings[0].scan_id == scan_id
-    assert findings[0].category == "LLM07"
+    assert findings[0].category == "LLM08"
     assert findings[0].severity in ("CRITICAL", "HIGH")
 
     # 6. Verify FindingDetail correlates with the trigger prompt and response

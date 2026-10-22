@@ -101,7 +101,7 @@ async def run_verification() -> bool:
             id=scan_id,
             target_id=target_id,
             status="QUEUED",
-            category="LLM07",
+            category="LLM08",
             budget=3,
             current_attempt=0,
             created_at=datetime.now(timezone.utc),
@@ -179,7 +179,7 @@ async def run_verification() -> bool:
     checks = [
         ("Scan ID in PDF", scan_id in extracted_text),
         ("Target Name in PDF", target_name in extracted_text),
-        ("Vulnerability Category (LLM07) in PDF", "LLM07" in extracted_text),
+        ("Vulnerability Category (LLM08) in PDF", "LLM08" in extracted_text),
         ("Planted Canary Token in PDF", "AEGIS-CANARY-7731" in extracted_text),
         ("Finding Severity in PDF", finding.severity in extracted_text),
         ("Prompt Evidence in PDF", detail.prompt[:30] in extracted_text or "system instructions" in extracted_text),

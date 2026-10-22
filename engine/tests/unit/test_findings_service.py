@@ -44,7 +44,7 @@ def seeded_db(memory_session_factory):
             id="scan-1",
             target_id="target-1",
             status="COMPLETED",
-            category="LLM07",
+            category="LLM08",
             budget=5,
             current_attempt=2,
             created_at=datetime.now(timezone.utc),
@@ -56,7 +56,7 @@ def seeded_db(memory_session_factory):
             id="scan-clean",
             target_id="target-1",
             status="COMPLETED",
-            category="LLM07",
+            category="LLM08",
             budget=5,
             current_attempt=5,
             created_at=datetime.now(timezone.utc),
@@ -80,7 +80,7 @@ def seeded_db(memory_session_factory):
             id="finding-1",
             scan_id="scan-1",
             turn_id="turn-1",
-            category="LLM07",
+            category="LLM08",
             severity="HIGH",
             confidence=0.9,
             description="System prompt disclosure detected via direct extraction request.",
@@ -119,7 +119,7 @@ async def test_get_findings_by_scan_with_results(seeded_db):
     assert f.id == "finding-1"
     assert f.scan_id == "scan-1"
     assert f.turn_id == "turn-1"
-    assert f.category == "LLM07"
+    assert f.category == "LLM08"
     assert f.severity == "HIGH"
     assert f.confidence == 0.9
     assert "System prompt disclosure" in f.description
@@ -156,7 +156,7 @@ async def test_get_finding_detail_missing_turn(memory_session_factory):
             id="finding-orphan",
             scan_id="scan-orphan",
             turn_id="missing-turn",
-            category="LLM07",
+            category="LLM08",
             severity="MEDIUM",
             confidence=0.7,
             description="Orphan finding",
