@@ -6,6 +6,8 @@ import Overview from './components/Overview';
 import NewAssessment from './components/NewAssessment';
 import ApplicationShell, { type AppPage as Page } from './components/ApplicationShell';
 import FindingsInspector from './views/FindingsInspector';
+import { MarkdownRenderer } from './components/MarkdownRenderer';
+import { SourcesView } from './components/SourcesView';
 
 import type { ChatMessage } from './types';
 type LocalScan = ScanRecord & { targetName?: string; createdAt: string };
@@ -157,25 +159,37 @@ function Assistant({history}:{history:LocalScan[]}) {
                   <div className="message-avatar"><Bot size={14}/></div>
                 )}
                 <div className="message-bubble">
-                  <div style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
+                  {m.role === 'assistant' ? (
+                    <MarkdownRenderer content={m.text} />
+                  ) : (
+                    <div>{m.text}</div>
+                  )}
                   {m.role === 'assistant' && m.citations && m.citations.length > 0 && (
-                    <div className="citation-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                      {m.citations.slice(0, 4).map((c, idx) => (
-                        <span key={idx} style={{ fontSize: '11px', background: 'rgba(59, 130, 246, 0.08)', color: '#1e40af', padding: '2px 6px', borderRadius: '4px', fontWeight: 500 }}>
-                          {c.risk_id ? `${c.risk_id}${c.page ? `, p.${c.page}` : ''}` : (c.source_title || c.source)}
-                        </span>
-                      ))}
-                    </div>
+                    <SourcesView citations={m.citations} />
                   )}
                   {m.role === 'assistant' && i > 0 && (
-                    <div style={{ marginTop: '8px' }}>
+                    <div style={{ marginTop: '9px', display: 'flex', justifyContent: 'flex-end' }}>
                       <button
                         type="button"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', padding: '3px 8px', background: 'transparent', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', color: '#475569' }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '10px',
+                          padding: '3px 8px',
+                          background: '#ffffff',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          color: '#475569',
+                          fontWeight: 500,
+                          transition: 'all 0.15s ease'
+                        }}
                         onClick={() => void send('Explain this more simply', 'simplify')}
                         disabled={busy}
+                        title="Generate a simplified plain-language version with an analogy"
                       >
-                        <Sparkles size={11}/> Explain simply
+                        <Sparkles size={11} style={{ color: '#2563eb' }}/> Explain simply
                       </button>
                     </div>
                   )}

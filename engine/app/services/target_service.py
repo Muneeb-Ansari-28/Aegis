@@ -76,8 +76,8 @@ class TargetService:
         target = TargetResponse(
             id=entity.id,
             name=entity.name,
-            target_type=entity.target_type,
-            url=entity.url,
+            target_type=entity.target_type or "web",
+            url=entity.url or "",
             calibration_config=calibration,
         )
         cls._targets[target_id] = target
@@ -102,8 +102,8 @@ class TargetService:
             target = TargetResponse(
                 id=entity.id,
                 name=entity.name,
-                target_type=entity.target_type,
-                url=entity.url,
+                target_type=entity.target_type or "web",
+                url=entity.url or "",
                 calibration_config=calibration,
             )
             cls._targets[target.id] = target

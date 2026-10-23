@@ -2,7 +2,7 @@
 import logging
 from pathlib import Path
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 from app.core.config import get_settings
 from app.llm.ollama_client import OllamaClient
@@ -26,10 +26,27 @@ FOLLOW_UP_RE = re.compile(
     re.I,
 )
 
+SCAN_EVIDENCE_INQUIRY_RE = re.compile(
+    r"\b(was|did|has|have|were|is)\b.*"
+    r"(?:"
+    r"\b(?:my (?:scan|target|app|application)|the scan|this scan|the target|our target)\b.*\b(?:detect|detected|confirm|confirmed|find|found|vulnerab|exploit)\b|"
+    r"\b(?:detect|detected|confirm|confirmed|find|found|vulnerab|exploit)\b.*\b(?:my (?:scan|target|app|application)|the scan|this scan|the target|our target)\b"
+    r")|"
+    r"\b(?:did the scan (?:detect|find)|was (?:a|any) vulnerability detected|has (?:the|any) vulnerability been detected)\b",
+    re.I,
+)
+
 NO_DOCS_REPLY = (
     "I don't have enough documentation on that topic in the Aegis knowledge base. "
     "I can answer questions about the OWASP Top 10 for LLM Applications (2026), "
     "Aegis scan operation and calibration, findings evaluation, and remediation playbooks."
+)
+
+NO_SCAN_EVIDENCE_REPLY = (
+    "I do not have access to live scan telemetry or target execution findings in this conversation. "
+    "To verify whether a vulnerability was detected on your target, please inspect the Live Scan telemetry "
+    "or the generated PDF report in the Overview tab. "
+    "I can, however, explain how Aegis tests for this vulnerability and what evidence constitutes a verified finding."
 )
 
 OWASP_NAME_MAP = {
@@ -81,6 +98,90 @@ def _load_prompt_file(filename: str) -> str:
     return prompt_path.read_text(encoding="utf-8").strip()
 
 
+def clean_response(text: str) -> str:
+    """
+    Clean up artifacts from LLM generation:
+    - Strip trailing (source: ...) from inline citations.
+    - Remove leading citation dumps on line 1.
+    - Remove redundant trailing summary conclusions if distinction already established.
+    """
+    cleaned = text.strip()
+
+    # 1. Remove trailing `(source: ...)` or `(source: ...)` inside or after brackets
+    cleaned = re.sub(r"\s*\(source:\s*[^)]+\)", "", cleaned)
+
+    # 2. If the model started by dumping citation tags before the real answer
+    leading_cite_match = re.match(
+        r"^(\s*\[[^\]]+\](?:\s*(?:and|,)\s*\[[^\]]+\])*\s*\n+)(.+)", cleaned, re.DOTALL
+    )
+    if leading_cite_match:
+        remainder = leading_cite_match.group(2).strip()
+        if remainder:
+            cleaned = remainder
+
+    # 3. Clean up trailing redundant "In summary, while both..." boilerplate
+    parts = cleaned.split("\n\n")
+    if len(parts) >= 2:
+        last_block = parts[-1].strip().lower()
+        if (
+            last_block.startswith("in summary,")
+            or last_block.startswith("in conclusion,")
+            or "represent distinct types of vulnerabilities with different causes" in last_block
+        ):
+            cleaned = "\n\n".join(parts[:-1]).strip()
+
+    return cleaned
+
+
+def deduplicate_citations(metadatas: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Deduplicate and clean citation objects for frontend presentation.
+
+    Args:
+        metadatas: List of chunk metadata dictionaries.
+
+    Returns:
+        List of deduplicated CitationItem dictionary models.
+    """
+    seen: Set[Tuple[str, Any, str, str]] = set()
+    deduped: List[Dict[str, Any]] = []
+
+    for m in metadatas:
+        risk_id = m.get("risk_id", "")
+        page = m.get("page")
+        source = (
+            "owasp_llm_top10_2026"
+            if ("owasp" in m.get("source", "") or risk_id or m.get("source") == "aegis_plain_language")
+            else "aegis"
+        )
+        source_title = m.get("source_title") or (
+            "OWASP Top 10 for LLM Applications 2026"
+            if source == "owasp_llm_top10_2026"
+            else "Aegis System Documentation"
+        )
+        section = m.get("section", "")
+        chunk_id = m.get("chunk_id", "")
+        excerpt = m.get("excerpt", "")
+
+        key = (risk_id, page, source_title, section)
+        if key in seen:
+            continue
+        seen.add(key)
+
+        item = CitationItem(
+            source=source,
+            source_title=source_title,
+            risk_id=risk_id,
+            section=section,
+            page=page,
+            chunk_id=chunk_id,
+            excerpt=excerpt,
+        )
+        deduped.append(item.model_dump())
+
+    return deduped
+
+
 class AssistantAgent:
     """AI Assistant Copilot providing source-grounded answers over Aegis and OWASP KB."""
 
@@ -121,7 +222,7 @@ class AssistantAgent:
     def detect_double_simplify(
         self,
         message: str,
-        history: List[Union[ChatMessage, Dict[str, Any]]],
+        history: Sequence[Union[ChatMessage, Dict[str, Any]]],
     ) -> bool:
         """
         Detect if the user is asking for a second, even simpler explanation.
@@ -155,28 +256,32 @@ class AssistantAgent:
         norm = query
         q_lower = query.lower()
 
+        # Handle legacy 2025 mappings first
+        is_legacy = False
+        for legacy_term, target_term in LEGACY_RENAME_MAP.items():
+            if legacy_term in q_lower:
+                is_legacy = True
+                if target_term not in norm:
+                    norm += f" {target_term}"
+
         # Handle concept names (e.g. excessive agency -> LLM03:2026)
         for concept_phrase, target_term in CONCEPT_MAP.items():
             if concept_phrase in q_lower and target_term not in norm:
                 norm += f" {target_term}"
 
-        # Handle legacy 2025 mappings
-        for legacy_term, target_term in LEGACY_RENAME_MAP.items():
-            if legacy_term in q_lower and target_term not in norm:
-                norm += f" {target_term}"
-
-        # Expand bare LLMxx references if not already expanded
-        for code, full_name in OWASP_NAME_MAP.items():
-            pattern = re.compile(rf"\b{code}\b(?!:2026)", re.I)
-            if pattern.search(query) and full_name not in norm:
-                norm += f" {full_name}"
+        # Expand bare LLMxx references if not already expanded, unless this was a legacy remapped query
+        if not is_legacy:
+            for code, full_name in OWASP_NAME_MAP.items():
+                pattern = re.compile(rf"\b{code}\b(?!:2026)", re.I)
+                if pattern.search(query) and full_name not in norm:
+                    norm += f" {full_name}"
 
         return norm
 
     async def standalone_query(
         self,
         message: str,
-        history: List[Union[ChatMessage, Dict[str, Any]]],
+        history: Sequence[Union[ChatMessage, Dict[str, Any]]],
     ) -> str:
         """
         Rewrite conversational follow-ups into a self-contained search query.
@@ -218,7 +323,7 @@ class AssistantAgent:
     async def chat(
         self,
         message: str,
-        history: Optional[List[Union[ChatMessage, Dict[str, Any]]]] = None,
+        history: Optional[Sequence[Union[ChatMessage, Dict[str, Any]]]] = None,
         mode: Optional[str] = None,
         reply_to_message_id: Optional[str] = None,
     ) -> Dict[str, Any]:
@@ -236,6 +341,31 @@ class AssistantAgent:
         """
         hist = history or []
         intent = self.detect_intent(message, mode)
+
+        logger.info(
+            "Assistant Chat Request: mode=%s | query='%s' | history_turns=%d",
+            intent,
+            message[:120],
+            len(hist),
+        )
+
+        # ----------------------------------------------------
+        # Guard: Inquiries about scan findings without evidence
+        # ----------------------------------------------------
+        if SCAN_EVIDENCE_INQUIRY_RE.search(message):
+            # Check if history or message contains actual scan report data
+            has_scan_evidence = any(
+                "finding" in (t.text if isinstance(t, ChatMessage) else t.get("text", "")).lower()
+                for t in hist
+            )
+            if not has_scan_evidence:
+                logger.info("Triggered scan evidence honesty guard for query: '%s'", message[:100])
+                return {
+                    "reply": NO_SCAN_EVIDENCE_REPLY,
+                    "source_ids": [],
+                    "citations": [],
+                    "mode": intent,
+                }
 
         # ----------------------------------------------------
         # Simplify Mode
@@ -285,20 +415,18 @@ class AssistantAgent:
                         prompt=prompt,
                         temperature=0.2,
                     )
+                    reply = clean_response(reply)
                 except Exception as e:
                     logger.error(f"Generation error in simplify mode: {e}")
                     reply = "I encountered an error generating the simplified explanation. Please ensure Ollama is running."
 
-                citations = [
-                    CitationItem(
-                        source=m.get("source", "aegis"),
-                        source_title=m.get("source_title", ""),
-                        risk_id=m.get("risk_id", ""),
-                        section=m.get("section", ""),
-                        page=m.get("page"),
-                    ).model_dump()
-                    for m in merged_metas
-                ]
+                citations = deduplicate_citations(merged_metas)
+
+                logger.info(
+                    "Assistant Simplify Response: reply_len=%d | citations_count=%d",
+                    len(reply),
+                    len(citations),
+                )
 
                 return {
                     "reply": reply,
@@ -318,13 +446,24 @@ class AssistantAgent:
         # Standard Ask Mode
         # ----------------------------------------------------
         search_query = await self.standalone_query(message, hist)
+        logger.debug("Normalized search query: '%s'", search_query)
+
         docs, metas, ids = await self.retriever.retrieve(
             query=search_query,
             n_results=self.settings.RAG_TOP_K,
             relevance_cutoff=self.settings.RAG_RELEVANCE_CUTOFF,
+            exclude_simple=True,
+        )
+
+        logger.info(
+            "Assistant Retrieval Results: kept=%d chunks | IDs=%s | scores=%s",
+            len(docs),
+            ids,
+            [m.get("score") for m in metas],
         )
 
         if not docs:
+            logger.info("No chunks passed relevance threshold. Returning NO_DOCS_REPLY.")
             return {
                 "reply": NO_DOCS_REPLY,
                 "source_ids": [],
@@ -336,26 +475,25 @@ class AssistantAgent:
         prompt = self.ask_template.format(context=formatted_ctx, question=message)
 
         try:
-            reply = await self.client.generate(
+            raw_reply = await self.client.generate(
                 model=self.settings.MODEL_ASSISTANT,
                 system=self.system_prompt,
                 prompt=prompt,
-                temperature=0.2,
+                temperature=0.15,
             )
+            reply = clean_response(raw_reply)
         except Exception as e:
             logger.error(f"Generation error in ask mode: {e}")
             reply = "I encountered an error generating the response. Please ensure the local Ollama service is running."
 
-        citations = [
-            CitationItem(
-                source=m.get("source", "aegis"),
-                source_title=m.get("source_title", ""),
-                risk_id=m.get("risk_id", ""),
-                section=m.get("section", ""),
-                page=m.get("page"),
-            ).model_dump()
-            for m in metas
-        ]
+        citations = deduplicate_citations(metas)
+
+        logger.info(
+            "Assistant Ask Response: reply_len=%d | citations_count=%d | model=%s",
+            len(reply),
+            len(citations),
+            self.settings.MODEL_ASSISTANT,
+        )
 
         return {
             "reply": reply,

@@ -100,6 +100,8 @@ export interface CitationItem {
   risk_id?: string;
   section?: string;
   page?: number | string | null;
+  chunk_id?: string | null;
+  excerpt?: string | null;
 }
 
 export interface ChatMessage {

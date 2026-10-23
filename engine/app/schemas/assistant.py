@@ -11,6 +11,8 @@ class CitationItem(BaseModel):
     risk_id: str = Field(default="", description="OWASP Risk ID (e.g. LLM08:2026) or empty")
     section: str = Field(default="", description="Section or subsection title")
     page: Optional[Union[int, str]] = Field(default=None, description="Printed source page number")
+    chunk_id: Optional[str] = Field(default=None, description="Unique chunk ID for provenance tracking")
+    excerpt: Optional[str] = Field(default=None, description="Verified source text excerpt for provenance inspection")
 
 
 class ChatMessage(BaseModel):

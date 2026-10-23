@@ -1,14 +1,19 @@
 """Unit tests for Aegis RAG Assistant subsystem."""
 import hashlib
 from pathlib import Path
+from typing import Any, Dict, List, Sequence, Union
 import pytest
 
 from app.agents.assistant_agent import (
     AssistantAgent,
     NO_DOCS_REPLY,
+    NO_SCAN_EVIDENCE_REPLY,
     OWASP_NAME_MAP,
     LEGACY_RENAME_MAP,
     SIMPLIFY_RE,
+    SCAN_EVIDENCE_INQUIRY_RE,
+    clean_response,
+    deduplicate_citations,
 )
 from app.rag.indexer import (
     generate_chunk_id,
@@ -130,14 +135,14 @@ def test_detect_double_simplify():
     assert agent.detect_double_simplify("Make it even simpler please", []) is True
 
     # Preceding user turn was simplify
-    history = [
+    history: List[Union[ChatMessage, Dict[str, Any]]] = [
         ChatMessage(role="user", text="Explain it simply"),
         ChatMessage(role="assistant", text="Here is a simple explanation..."),
     ]
     assert agent.detect_double_simplify("Still don't get it", history) is True
 
     # Preceding user turn was standard ask
-    history_standard = [
+    history_standard: List[Union[ChatMessage, Dict[str, Any]]] = [
         ChatMessage(role="user", text="What is LLM08:2026?"),
         ChatMessage(role="assistant", text="LLM08 is Hidden Context Exposure..."),
     ]
@@ -163,22 +168,72 @@ def test_normalize_query_legacy_mappings():
 
 
 def test_format_context_delimiter():
-    """Verify context formatting includes delimiters, source tags, and page numbers."""
+    """Verify context formatting includes clean inline citation markers and delimiters without raw source tags."""
     docs = ["First document text", "Second document text"]
     metas = [
-        {"risk_id": "LLM08:2026", "page": 47, "source": "owasp_llm_top10_2026"},
-        {"risk_id": "", "page": 1, "source": "aegis"},
+        {"risk_id": "LLM08:2026", "page": 47, "source": "owasp_llm_top10_2026", "source_title": "OWASP Top 10 for LLM Applications 2026"},
+        {"risk_id": "", "page": 1, "source": "aegis", "source_title": "Aegis System Documentation"},
     ]
     formatted = AssistantRetriever.format_context(docs, metas)
-    assert "[LLM08:2026, p.47] (source: owasp_llm_top10_2026)" in formatted
-    assert "[Aegis Documentation, p.1] (source: aegis)" in formatted
+    assert "[LLM08:2026, p.47]" in formatted
+    assert "[Aegis System Documentation, p.1]" in formatted
     assert "---" in formatted
+    # Must NOT contain leaking (source: ...)
+    assert "(source: owasp_llm_top10_2026)" not in formatted
+    assert "(source: aegis)" not in formatted
+
+
+def test_clean_response_artifacts():
+    """Verify clean_response strips trailing (source: ...) tags and leading citation blocks."""
+    raw = "[LLM03:2026, p.24] (source: owasp_llm_top10_2026) and [LLM04:2026, p.28] (source: owasp_llm_top10_2026)\n\nExcessive Agency and Supply Chain are distinct categories [LLM03:2026, p.24] (source: aegis_plain_language).\n\nIn summary, while both represent distinct vulnerabilities..."
+    cleaned = clean_response(raw)
+
+    assert "(source: owasp_llm_top10_2026)" not in cleaned
+    assert "(source: aegis_plain_language)" not in cleaned
+    assert not cleaned.startswith("[LLM03:2026")
+    assert cleaned.startswith("Excessive Agency and Supply Chain")
+    assert "In summary, while both" not in cleaned
+
+
+def test_deduplicate_citations_logic():
+    """Verify deduplicate_citations removes identical chunk references and enriches provenance."""
+    metas = [
+        {"risk_id": "LLM04:2026", "page": 28, "section": "Description", "source": "owasp_llm_top10_2026", "chunk_id": "c1", "excerpt": "Excerpt 1"},
+        {"risk_id": "LLM04:2026", "page": 28, "section": "Description", "source": "owasp_llm_top10_2026", "chunk_id": "c2", "excerpt": "Excerpt 2"},
+        {"risk_id": "LLM03:2026", "page": 24, "section": "Description", "source": "owasp_llm_top10_2026", "chunk_id": "c3", "excerpt": "Excerpt 3"},
+    ]
+    deduped = deduplicate_citations(metas)
+    assert len(deduped) == 2
+    risk_ids = [c["risk_id"] for c in deduped]
+    assert risk_ids == ["LLM04:2026", "LLM03:2026"]
+    assert deduped[0]["source_title"] == "OWASP Top 10 for LLM Applications 2026"
+    assert deduped[0]["excerpt"] == "Excerpt 1"
+
+
+def test_scan_evidence_inquiry_detection():
+    """Verify regex detects inquiries asking whether a scan confirmed a target vulnerability."""
+    assert bool(SCAN_EVIDENCE_INQUIRY_RE.search("Was a vulnerability detected in my application?"))
+    assert bool(SCAN_EVIDENCE_INQUIRY_RE.search("Did the scan find any prompt injection?"))
+    assert bool(SCAN_EVIDENCE_INQUIRY_RE.search("Has my scan confirmed LLM08?"))
+    assert bool(SCAN_EVIDENCE_INQUIRY_RE.search("Was LLM01 detected in the target?"))
+
+    # Factual knowledge queries should NOT match
+    assert not bool(SCAN_EVIDENCE_INQUIRY_RE.search("What is LLM01:2026 Prompt Injection?"))
+    assert not bool(SCAN_EVIDENCE_INQUIRY_RE.search("How does Aegis test for LLM08?"))
 
 
 def test_schemas_validation():
     """Verify Pydantic schemas validate required fields and default factories."""
-    citation = CitationItem(source="owasp_llm_top10_2026", risk_id="LLM08:2026", page=47)
+    citation = CitationItem(
+        source="owasp_llm_top10_2026",
+        risk_id="LLM08:2026",
+        page=47,
+        chunk_id="chk-123",
+        excerpt="Sample verified excerpt",
+    )
     assert citation.page == 47
+    assert citation.chunk_id == "chk-123"
+    assert citation.excerpt == "Sample verified excerpt"
 
     msg = ChatMessage(role="assistant", text="Grounded reply", citations=[citation])
     assert len(msg.citations) == 1

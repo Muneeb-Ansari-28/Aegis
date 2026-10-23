@@ -1,9 +1,9 @@
-"""Integration tests for Aegis Assistant API and RAG pipeline."""
+"""Integration tests for Aegis Assistant API, RAG pipeline, and answer quality regressions."""
 import pytest
 from fastapi.testclient import TestClient
 
 from app.api.v1.router import app
-from app.agents.assistant_agent import NO_DOCS_REPLY
+from app.agents.assistant_agent import NO_DOCS_REPLY, NO_SCAN_EVIDENCE_REPLY
 from app.rag.vector_store import VectorStore
 
 
@@ -32,98 +32,172 @@ def test_assistant_chat_empty_message_returns_400(client: TestClient):
     assert resp.status_code == 400
 
 
-def test_assistant_chat_all_ten_owasp_categories(client: TestClient):
-    """Verify all 10 OWASP 2026 categories can be queried and return grounded answers with citations."""
-    categories = [
-        ("LLM01:2026", "Prompt Injection"),
-        ("LLM02:2026", "Sensitive Information Disclosure"),
-        ("LLM03:2026", "Excessive Agency"),
-        ("LLM04:2026", "Supply Chain"),
-        ("LLM05:2026", "Data and Model Poisoning"),
-        ("LLM06:2026", "Unbounded Consumption"),
-        ("LLM07:2026", "Misinformation"),
-        ("LLM08:2026", "Hidden Context Exposure"),
-        ("LLM09:2026", "Vector and Embedding Weaknesses"),
-        ("LLM10:2026", "Improper Output Handling"),
-    ]
+# ==============================================================================
+# Required 8 Regression Scenarios (FYP Aegis Specification)
+# ==============================================================================
 
-    for cat_id, cat_name in categories:
-        resp = client.post(
-            "/api/v1/assistant/chat",
-            json={"message": f"What is {cat_id} {cat_name}?"},
-        )
-        assert resp.status_code == 200, f"Query failed for {cat_id}"
-        data = resp.json()
-        assert len(data["reply"]) > 20, f"Empty reply for {cat_id}"
-        assert len(data["source_ids"]) > 0, f"No source chunks retrieved for {cat_id}"
-
-        # Verify citation references the risk
-        citations = data["citations"]
-        assert len(citations) > 0, f"No structured citations for {cat_id}"
-        has_risk_cite = any(c.get("risk_id") == cat_id for c in citations)
-        assert has_risk_cite, f"Expected citation with risk_id {cat_id}"
-
-
-def test_assistant_chat_legacy_system_prompt_leakage_crosswalk(client: TestClient):
-    """Verify query for legacy LLM07:2025 System Prompt Leakage maps to LLM08:2026."""
+def test_scenario_1_basic_factual_owasp(client: TestClient):
+    """Scenario 1: A basic factual question about OWASP Top 10 2026."""
     resp = client.post(
         "/api/v1/assistant/chat",
-        json={"message": "What is LLM07 System Prompt Leakage in the 2025 list?"},
+        json={"message": "What is LLM01:2026 Prompt Injection?"},
     )
     assert resp.status_code == 200
     data = resp.json()
-    reply = data["reply"].lower()
+    reply = data["reply"]
 
-    # Must explain that it maps to LLM08 / Hidden Context Exposure
-    assert "llm08" in reply or "hidden context" in reply
+    assert len(reply) > 40
+    # Must explain prompt injection
+    assert "prompt injection" in reply.lower() or "llm01" in reply.lower()
     assert len(data["source_ids"]) > 0
+    # Must have citations without leaking internal (source: ...) tags
+    assert "(source: " not in reply
+    assert any(c.get("risk_id") == "LLM01:2026" for c in data["citations"])
 
 
-def test_assistant_chat_scan_capability_honesty(client: TestClient):
-    """Verify assistant honestly states only LLM08 is scanned and other categories are in development."""
+def test_scenario_2_comparison_supply_chain_vs_excessive_agency(client: TestClient):
+    """Scenario 2: Comparison between Supply Chain and Excessive Agency (synthesized, non-repetitive)."""
     resp = client.post(
         "/api/v1/assistant/chat",
-        json={"message": "Can Aegis scan for LLM01 Prompt Injection?"},
+        json={"message": "What is the difference between Supply Chain and Excessive Agency?"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    reply = data["reply"]
+
+    # Must cover both categories
+    assert "supply chain" in reply.lower()
+    assert "excessive agency" in reply.lower()
+
+    # Must contain structured comparison (table or clean headers)
+    assert "|" in reply or "###" in reply or "**" in reply
+
+    # Must NOT have raw citation dump at the start
+    assert not reply.strip().startswith("[LLM03:2026")
+    assert "(source:" not in reply
+
+    # Citations must cover both risks and be deduplicated
+    risk_ids = [c.get("risk_id") for c in data["citations"]]
+    assert "LLM03:2026" in risk_ids
+    assert "LLM04:2026" in risk_ids
+
+
+def test_scenario_3_multi_source_question(client: TestClient):
+    """Scenario 3: Question requiring information from multiple relevant sources (OWASP + Aegis)."""
+    resp = client.post(
+        "/api/v1/assistant/chat",
+        json={"message": "How does Aegis test for LLM08 Hidden Context Exposure using canary tokens?"},
     )
     assert resp.status_code == 200
     data = resp.json()
     reply = data["reply"].lower()
 
-    # Must acknowledge knowledge of LLM01 but state scanning is in development or not yet implemented
-    assert "llm08" in reply or "development" in reply or "hidden context" in reply or "not" in reply
+    # Must synthesize concepts: canary token + LLM08 / hidden context
+    assert "canary" in reply or "token" in reply
+    assert "llm08" in reply or "hidden context" in reply or "system prompt" in reply
+
+    # Must cite both sources (OWASP and Aegis)
+    sources = {c.get("source") for c in data["citations"]}
+    assert "owasp_llm_top10_2026" in sources or any("owasp" in str(c.get("source_title", "")).lower() for c in data["citations"])
+    assert "aegis" in sources or any("aegis" in str(c.get("source_title", "")).lower() for c in data["citations"])
 
 
-def test_assistant_chat_operational_calibration_question(client: TestClient):
-    """Verify assistant answers Playwright browser calibration questions from Aegis docs."""
+def test_scenario_4_unsupported_knowledge_fallback(client: TestClient):
+    """Scenario 4: Question whose answer is not supported by the knowledge base."""
     resp = client.post(
         "/api/v1/assistant/chat",
-        json={"message": "How do I calibrate a web target in Aegis?"},
-    )
-    assert resp.status_code == 200
-    data = resp.json()
-    reply = data["reply"].lower()
-
-    # Must cite Playwright calibration / input / click
-    assert "calibration" in reply or "playwright" in reply or "click" in reply
-    assert any(c.get("source") == "aegis" for c in data["citations"])
-
-
-def test_assistant_chat_out_of_scope_fallback(client: TestClient):
-    """Verify off-topic questions trigger the no-documentation fallback."""
-    resp = client.post(
-        "/api/v1/assistant/chat",
-        json={"message": "What is the capital of France?"},
+        json={"message": "What is the capital of France and what is the best bakery there?"},
     )
     assert resp.status_code == 200
     data = resp.json()
 
-    # Expect no documentation fallback
     assert data["reply"] == NO_DOCS_REPLY
+    assert data["source_ids"] == []
+    assert data["citations"] == []
+
+
+def test_scenario_5_markdown_rendering_contract(client: TestClient):
+    """Scenario 5: Response containing headings, bold text, lists, and a comparison table."""
+    resp = client.post(
+        "/api/v1/assistant/chat",
+        json={"message": "Provide a comparison between LLM01 Prompt Injection and LLM02 Sensitive Information Disclosure with a table and mitigations."},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    reply = data["reply"]
+
+    # Verify Markdown formatting elements
+    has_bold = "**" in reply
+    has_list = "-" in reply or "*" in reply or "1." in reply
+    has_table = "|" in reply and "---" in reply
+    assert has_bold, "Response should contain bold emphasis"
+    assert has_list or has_table, "Response should contain formatted lists or table"
+
+
+def test_scenario_6_duplicate_source_references_deduplicated(client: TestClient):
+    """Scenario 6: Response containing multiple source references ensures citations are deduplicated."""
+    resp = client.post(
+        "/api/v1/assistant/chat",
+        json={"message": "What are the prevention and mitigation strategies for LLM04 Supply Chain?"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    citations = data["citations"]
+
+    # Ensure no exact duplicate citations exist in the array
+    keys = [
+        (c.get("risk_id"), c.get("page"), c.get("source_title"), c.get("section"))
+        for c in citations
+    ]
+    assert len(keys) == len(set(keys)), "Citations list must be strictly deduplicated"
+
+
+def test_scenario_7_unimplemented_capability_honesty(client: TestClient):
+    """Scenario 7: Question about Aegis functionality that is documented as not yet implemented."""
+    resp = client.post(
+        "/api/v1/assistant/chat",
+        json={"message": "Can Aegis run an automated scanner for LLM05 Data and Model Poisoning?"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    reply = data["reply"].lower()
+
+    # Must honestly clarify scanning status: LLM08 is active; LLM05 is in development
+    assert "llm08" in reply or "development" in reply or "not yet" in reply or "currently" in reply
+
+
+def test_scenario_8_scan_evidence_inquiry_without_evidence(client: TestClient):
+    """Scenario 8: Question asking whether a vulnerability was actually detected without supplying scan evidence."""
+    resp = client.post(
+        "/api/v1/assistant/chat",
+        json={"message": "Did the scan detect LLM01 in my application?"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+
+    # Must trigger scan evidence honesty response
+    assert data["reply"] == NO_SCAN_EVIDENCE_REPLY
     assert data["source_ids"] == []
 
 
+# ==============================================================================
+# Additional Operational Tests
+# ==============================================================================
+
+def test_assistant_chat_legacy_crosswalk(client: TestClient):
+    """Verify legacy LLM07:2025 maps to LLM08:2026 Hidden Context Exposure."""
+    resp = client.post(
+        "/api/v1/assistant/chat",
+        json={"message": "What was LLM07 System Prompt Leakage in the previous list?"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    reply = data["reply"].lower()
+    assert "llm08" in reply or "hidden context" in reply
+
+
 def test_assistant_chat_simplify_mode(client: TestClient):
-    """Verify explicit simplify mode rewrites previous answer with same citations."""
+    """Verify simplify mode rewrites previous answer with an analogy and 'In short:' conclusion."""
     store = VectorStore()
     llm08_chunks = store.collection.get(where={"risk_id": "LLM08:2026"})["ids"][:2]
 

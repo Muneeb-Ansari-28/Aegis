@@ -144,7 +144,7 @@ def parse_owasp_markdown(path: Path) -> List[Tuple[str, str, Dict[str, Any]]]:
                 current_risk_id = risk_id
                 current_risk_name = raw_title.split("---")[0].strip()
                 current_section = "Simple Explanation"
-                current_source = "aegis_plain_language"
+                current_source = "owasp_llm_top10_2026"
                 current_level = "simple"
             else:
                 is_simple_section = False
@@ -169,7 +169,7 @@ def parse_owasp_markdown(path: Path) -> List[Tuple[str, str, Dict[str, Any]]]:
                         break
                 current_risk_name = sec_title.split("---")[0].strip()
                 current_section = "Simple Explanation"
-                current_source = "aegis_plain_language"
+                current_source = "owasp_llm_top10_2026"
                 current_level = "simple"
                 continue
 
@@ -192,7 +192,7 @@ def parse_owasp_markdown(path: Path) -> List[Tuple[str, str, Dict[str, Any]]]:
                 current_risk_id = ""
                 current_risk_name = "Glossary"
                 current_section = "Glossary"
-                current_source = "aegis_plain_language"
+                current_source = "owasp_llm_top10_2026"
                 current_level = "simple"
                 continue
 

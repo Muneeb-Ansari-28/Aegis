@@ -878,3 +878,32 @@ feature was implemented = Local-first RAG AI Assistant with OWASP 2026 Knowledge
 **Deviations from Plan**: None. Followed `rag-assistant-guide.md` as primary implementation specification.
 **Gate Impact**: AI Assistant is fully operational and verified. All 10 unit tests in `test_rag_assistant.py` pass; all 8 integration tests in `test_assistant_api.py` pass; frontend build passes (`npm run build`).
 
+- `UPDATED` Improved RAG answer quality, synthesis, citation accuracy, Markdown rendering, and expandable evidence drawer in Aegis Assistant — by "Muneeb" at 17:30, 2026-10-23
+
+### Implementation Report
+**Date**: 2026-10-23
+**Contributor**: Muneeb
+**Module**: Module 7: Integration, UI, and Demo (RAG AI Assistant Quality & Chat UI)
+**Files Changed**:
+- `engine/app/agents/prompts/assistant_system.md` — modified — Refactored to mandate immediate direct answers, unified synthesis across passages, adaptive structure (tables for comparisons, bold steps for mitigations), compact inline citations (`[<Risk_ID>, p.<page>]`), capability honesty, and evidence honesty.
+- `engine/app/agents/prompts/assistant_ask.md` — modified — Added explicit synthesis instructions, Markdown comparison table requirements, and legacy 2025-to-2026 crosswalk guidance.
+- `engine/app/agents/prompts/assistant_simplify.md` — modified — Cleaned up to prohibit leaking `(source: ...)` and enforce single "In short:" ending.
+- `engine/app/rag/indexer.py` — modified — Fixed chunk metadata so all OWASP Top 10 chunks use `source="owasp_llm_top10_2026"` and `source_title="OWASP Top 10 for LLM Applications 2026"` (eliminating `aegis_plain_language` leak).
+- `engine/app/rag/retriever.py` — modified — Filter out `level="simple"` during technical Q&A, implemented multi-risk detection and balanced retrieval for comparisons (e.g., Supply Chain vs Excessive Agency), added cross-source interleaving between OWASP definitions and Aegis operational docs, cleaned context header delimiters, and tracked distance scores and text excerpts.
+- `engine/app/agents/assistant_agent.py` — modified — Implemented post-generation cleaning (`clean_response`), deduplicated citation extraction (`deduplicate_citations`), scan evidence inquiry guard (`SCAN_EVIDENCE_INQUIRY_RE`), and structured development logging.
+- `engine/app/schemas/assistant.py` — modified — Added `chunk_id` and `excerpt` fields to `CitationItem`.
+- `desktop/src/types/index.ts` — modified — Added `chunk_id` and `excerpt` fields to TypeScript `CitationItem`.
+- `desktop/src/components/MarkdownRenderer.tsx` — created — Semantic Markdown renderer utilizing `react-markdown` and `remark-gfm` with styled headings, paragraphs, responsive comparison tables, syntax-highlighted code blocks, blockquotes, and lists.
+- `desktop/src/components/SourcesView.tsx` — created — Compact source badge list with expandable evidence drawer displaying verified source titles, sections, page numbers, and quote excerpts.
+- `desktop/src/App.tsx` — modified — Replaced raw text dump with `MarkdownRenderer` and `SourcesView`, improved layout spacing and "Explain simply" action.
+- `desktop/src/index.css` — modified — Added typography, table borders, code blocks, and source drawer styles.
+- `engine/tests/unit/test_rag_assistant.py` — modified — Added unit test coverage for clean delimiter formatting, artifact stripping, citation deduplication, and scan evidence inquiry detection.
+- `engine/tests/integration/test_assistant_api.py` — modified — Added 8 regression test scenarios matching prompt specifications (OWASP factual, comparison, multi-source, out-of-scope fallback, markdown rendering, citation deduplication, unimplemented capability honesty, scan evidence guard).
+- `Project-Context/Status.md` — modified — Appended RAG quality and Chat UI milestone completion.
+- `Project-Context/logs.md` — modified — Appended this implementation report.
+**What Was Done**: Root causes of repetitive RAG answers were identified: (1) retrieving redundant companion "simple" chunks alongside technical chunks, (2) prompt templates lacking synthesis instructions, (3) leaky delimiter headers embedding internal filenames, and (4) lack of frontend Markdown rendering. Addressed these root causes through prompt engineering, multi-risk balanced retrieval, cross-source interleaving, post-processing cleanup, citation deduplication, structured development logging, semantic Markdown rendering with `react-markdown` and `remark-gfm`, and an expandable source evidence drawer.
+**Why**: Ensures the Aegis AI security assistant provides cohesive, professional, conversational answers grounded strictly in OWASP 2026 and Aegis documentation, without repeating content or exposing internal debug strings.
+**Removals**: Removed `level="simple"` chunks from standard query retrieval and removed literal `(source: ...)` metadata headers from context formatting.
+**Deviations from Plan**: None. Preserved existing Ollama models (`llama3.2:latest`, `nomic-embed-text:latest`) and ChromaDB vector store.
+
+- `FIXED` Fixed type invariance diagnostic errors in `test_rag_assistant.py` by accepting `Sequence[Union[ChatMessage, Dict[str, Any]]]` in `AssistantAgent` and explicitly annotating test history lists — by "Muneeb" at 17:39, 2026-10-23
