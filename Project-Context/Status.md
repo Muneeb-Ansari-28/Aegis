@@ -1,6 +1,15 @@
 # Aegis Project Status
 
-## Current review snapshot - 2026-10-22 (OWASP 2026 Taxonomy Migration)
+## Current review snapshot - 2026-10-23 (RAG AI Assistant Implementation)
+
+The local-first RAG AI Assistant is fully implemented and operational across the backend engine (`:8765`) and desktop frontend (`:3000`), following `rag-assistant-guide.md` and `OWASP-LLM-Top-10-2026.md`:
+- **Knowledge Base**: Curated OWASP Top 10 for LLM Applications (2026) markdown placed in `engine/knowledge/owasp/` alongside 8 verified Aegis operational documents in `engine/knowledge/aegis/`.
+- **Vector Store & Embeddings**: Ingested 115 semantic chunks with deterministic IDs into persistent ChromaDB (`%APPDATA%\Aegis\chroma`) using `nomic-embed-text:latest` over Ollama with task-prefixing (`search_document:` / `search_query:`). Repeatable CLI ingestion via `scripts/ingest_kb.py` and `scripts/build_kb_index.py`.
+- **Grounded Assistant Agent**: Implemented `AssistantAgent` with strict capability honesty (transparently distinguishes full knowledge of all 10 OWASP risks from active scan execution coverage limited to LLM08), prompt templates in `engine/app/agents/prompts/` (Rule 2.6), inline citations (`[LLM08:2026, p.47]`), relevance cutoff fallback (`NO_DOCS_REPLY`), query normalization with 2025-to-2026 crosswalk, and explain-simply mode utilizing companion chunks and everyday analogies.
+- **API & Desktop Integration**: Added `/api/v1/assistant/chat` and `/api/v1/assistant/status` endpoints, TypeScript contracts mirroring Pydantic schemas, and wired desktop chat UI with citation chips and per-message "Explain simply" buttons.
+- **Verification Evidence**: All 10 unit tests in `test_rag_assistant.py` pass; all 8 integration tests in `test_assistant_api.py` pass (including all 10 OWASP categories, crosswalk, capability honesty, calibration, out-of-scope fallback, and simplify mode); desktop production build (`npm run build`) passes with 0 errors.
+
+## Prior review snapshot - 2026-10-22 (OWASP 2026 Taxonomy Migration)
 
 The active assessment category is migrated to **OWASP LLM08 Hidden Context Exposure** following the newly released OWASP GenAI/LLM Top 10 (2026) canonical taxonomy. The 2025 taxonomy entries are preserved for reference under `engine/app/kb/01_OWASP/2025/`, and `KBLoader` defaults to `2026`. All 10 canonical 2026 categories (LLM01-LLM10) and base risk weights are wired into `RiskScorer.WEIGHTS`, `risk_rules.json`, `test_cases.json`, and backend schemas (`ScanCreate`, `ScanEntity`, `JudgeVerdict`).
 The active scanner pipeline, evaluator, judge rubric (`judge_rubric_llm08.md`), reporting agent, HTML/PDF reporting templates, test targets, and desktop frontend (`desktop/src/App.tsx`, `NewAssessment.tsx`, `useAssessmentWizard.ts`, `FindingsInspector.tsx`, `Overview.tsx`) are fully updated to `LLM08`.
@@ -192,3 +201,19 @@ Implemented on `shahzaman`, pending visual review. No commit, push, or PR.
 - Isolated Chromium API fixtures passed Dashboard-to-Results and History-to-Results navigation, populated results, expandable finding evidence, PDF error and successful download/filename, offline and partial API failures, failed-empty results, zero risk grade, connector-error evidence and timeline. No JavaScript runtime exceptions. Screenshots inspected at 1280x800, 1280x600, and 390x800; document reflow checked at 320px. Fixture script/screenshots reside in OS temporary storage, not the repository.
 - PDF success used a generated test PDF supplied by the fixture, not the live report endpoint. Live engine/database results, real PDF generation, scanner execution/calibration, Electron, and full end-to-end integration were not exercised in this milestone. No claim of screen-reader certification or exhaustive keyboard testing.
 - Remaining differences: existing shell is preserved; no unsupported report preview, fabricated pending cases, or inferred interface type. Assessment metrics are explicitly persisted-result metrics. Historical backend reporting/legacy findings limitations from the audit remain unresolved and require separate authorization.
+## RAG AI Assistant Quality and Chat UI Redesign — 2026-10-23
+
+Implemented on `muneeb`. Verified through 25 automated unit and integration tests and frontend production build.
+
+- **Root Causes Identified and Resolved**:
+  - Eliminated redundant retrieval of companion plain-language chunks during technical queries by filtering out `level="simple"` in standard mode.
+  - Resolved disjointed answers by restructuring generation prompts to mandate immediate direct answers, multi-passage synthesis, adaptive layout (comparison tables, bulleted steps for mitigations), and suppression of redundant conclusions.
+  - Eliminated internal source filename leaks (e.g. `(source: aegis_plain_language)`) by standardizing context header delimiters to `Inline Citation: [<Risk_ID>, p.<page>]` and indexing OWASP records under the clean source title `OWASP Top 10 for LLM Applications 2026`.
+  - Added balanced multi-risk retrieval for comparison queries (e.g., Supply Chain LLM04 vs Excessive Agency LLM06) and cross-source interleaving between OWASP standards and Aegis operational docs.
+  - Fixed Markdown syntax exposure (`**bold**`, tables, lists) by integrating `react-markdown` with `remark-gfm` in `desktop/src/components/MarkdownRenderer.tsx`.
+  - Cleaned up citation display with `desktop/src/components/SourcesView.tsx`: compact deduplicated source badges that expand into an evidence drawer displaying the source title, section, page badge, and verified excerpt snippet.
+  - Added strict guardrails for capability honesty (refusing to claim unbuilt scans exist) and evidence inquiry honesty (refusing to claim a vulnerability was confirmed without scan telemetry).
+- **Verification Evidence**:
+  - Pytest: 25/25 tests passed (13 unit tests in `test_rag_assistant.py` and 12 integration tests in `test_assistant_api.py`), including all 8 required regression scenarios.
+  - Frontend: `npm run build` in `desktop/` passed with 0 errors (`tsc && vite build` in 2.21s).
+  - ChromaDB: Re-indexed all 115 chunks with clean metadata via `scripts/ingest_kb.py`.

@@ -19,7 +19,12 @@ class Settings(BaseSettings):
     MODEL_ATTACK: str = "llama3.2:latest"
     MODEL_JUDGE: str = "llama3.2:latest"
     MODEL_TRIAGE: str = "llama3.2:latest"
-    MODEL_EMBED: str = "nomic-embed-text:v1.5"
+    MODEL_EMBED: str = "nomic-embed-text:latest"
+    MODEL_ASSISTANT: str = "llama3.2:latest"
+
+    # RAG Assistant Settings
+    RAG_TOP_K: int = 5
+    RAG_RELEVANCE_CUTOFF: float = 0.50
 
     # Playwright Settings
     PLAYWRIGHT_HEADLESS: bool = True

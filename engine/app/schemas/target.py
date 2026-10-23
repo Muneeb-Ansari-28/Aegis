@@ -83,6 +83,6 @@ class TargetResponse(BaseModel):
     """Response body for target endpoints."""
     id: str
     name: str
-    target_type: str
-    url: str
+    target_type: str = "web"
+    url: Optional[str] = None
     calibration_config: Optional[TargetCalibrationConfig] = None

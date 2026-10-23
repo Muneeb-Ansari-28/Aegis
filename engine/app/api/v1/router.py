@@ -1,7 +1,7 @@
 """FastAPI App Router mounting all V1 endpoints."""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1 import health, targets, scans, findings, reports, proxy, websocket
+from app.api.v1 import health, targets, scans, findings, reports, proxy, websocket, assistant
 from app.core.database import Base, engine
 from app.models import entities as _entities
 from app.core.paths import ensure_app_dirs
@@ -35,3 +35,5 @@ app.include_router(findings.router, prefix="/api/v1/findings", tags=["Findings"]
 app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
 app.include_router(proxy.router, prefix="/api/v1/proxy", tags=["Proxy (Later)"])
 app.include_router(websocket.router, prefix="/api/v1", tags=["Telemetry"])
+app.include_router(assistant.router, prefix="/api/v1/assistant", tags=["Assistant"])
+

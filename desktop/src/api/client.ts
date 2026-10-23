@@ -1,4 +1,12 @@
-import type { FindingDetail, FindingResponse, FindingsSummary, ReportMeta } from '../types';
+import type {
+  FindingDetail,
+  FindingResponse,
+  FindingsSummary,
+  ReportMeta,
+  AssistantChatRequest,
+  AssistantChatResponse,
+  AssistantStatusResponse,
+} from '../types';
 
 const BASE_URL = 'http://localhost:8765/api/v1';
 
@@ -95,6 +103,12 @@ export const api = {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   },
+  chatAssistant: (req: AssistantChatRequest) =>
+    request<AssistantChatResponse>('/assistant/chat', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+  getAssistantStatus: () => request<AssistantStatusResponse>('/assistant/status'),
 };
 
 // Lightweight local guidance keeps the assistant useful without sending target data to a model.
