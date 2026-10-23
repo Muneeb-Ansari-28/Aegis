@@ -831,3 +831,50 @@ feature was implemented = OWASP GenAI Top 10 (2026) Canonical Taxonomy Migration
 **Removals**: Removed temporary `tasks/` directory (`plan.md`, `todo.md`) which was used solely as a session scratchpad and is not part of the committed repository.
 **Deviations from Plan**: None.
 **Gate Impact**: Gate 4 criteria re-verified with 100% evidence fidelity for LLM08. All 57 engine unit and integration tests pass (100% green); desktop production build (`npm run build`) passes with 0 errors.
+
+
+feature was implemented = Local-first RAG AI Assistant with OWASP 2026 Knowledge Base, ChromaDB vector store, grounded retrieval, inline citations, explain-simply mode, and desktop integration by "Muneeb" at 16:32, 2026-10-23
+
+### Implementation Report
+**Date**: 2026-10-23
+**Contributor**: Muneeb
+**Module**: Module 7: Integration, UI, and Demo (RAG AI Assistant)
+**Files Changed**:
+- `engine/knowledge/owasp/OWASP-LLM-Top-10-2026.md` — created — Curated OWASP Top 10 for LLM Applications 2026 primary security knowledge base.
+- `engine/knowledge/aegis/aegis_overview.md` — created — Verified Aegis architecture, state machine, deterministic risk scoring, and grade bands.
+- `engine/knowledge/aegis/aegis_user_guide.md` — created — Verified Playwright browser calibration (2-step click and automatic) and scan operation guide.
+- `engine/knowledge/aegis/aegis_scan_capabilities.md` — created — Verified scan capability documentation detailing LLM08 active scan and 9 categories in development.
+- `engine/knowledge/aegis/aegis_findings_guide.md` — created — Verified findings data model, evaluator mechanisms, and canaries as detection aids.
+- `engine/knowledge/aegis/aegis_remediation.md` — created — Verified remediation guidelines for LLM08 Hidden Context Exposure.
+- `engine/knowledge/aegis/aegis_troubleshooting.md` — created — Verified troubleshooting guide for engine, Ollama, Playwright, and Chroma.
+- `engine/knowledge/aegis/security_glossary.md` — created — Core definitions for RAG, vector embeddings, canaries, and OWASP terms.
+- `engine/knowledge/aegis/aegis_faq.md` — created — Frequently asked questions about Aegis offline operation, budgets, and scoring.
+- `engine/app/core/config.py` — modified — Configured `MODEL_EMBED: nomic-embed-text:latest`, `MODEL_ASSISTANT: llama3.2:latest`, and RAG settings.
+- `engine/app/llm/ollama_client.py` — modified — Added batched `/api/embed` method, temperature options support, and health checking.
+- `engine/app/rag/vector_store.py` — modified — ChromaDB persistent client, cosine space, upsert, query, get_by_ids, and get_simple plain-language retrieval.
+- `engine/app/rag/embedder.py` — modified — NomicEmbedder with `search_document:` and `search_query:` task prefixes and batching.
+- `engine/app/rag/indexer.py` — modified — Markdown semantic parser with page tracking, deterministic sha256 IDs, and idempotent ingestion.
+- `engine/app/rag/retriever.py` — modified — AssistantRetriever with relevance cutoff and delimited context formatting.
+- `scripts/ingest_kb.py` — created — Standalone CLI script to ingest and embed knowledge base into ChromaDB.
+- `scripts/build_kb_index.py` — modified — Wired to run `index_knowledge_base()`.
+- `engine/app/agents/prompts/assistant_system.md` — created — Grounded system prompt enforcing capability honesty and citation rules.
+- `engine/app/agents/prompts/assistant_ask.md` — created — Reference context untrusted delimiter template for questions.
+- `engine/app/agents/prompts/assistant_simplify.md` — created — Plain-language rewriting template with everyday analogy requirement.
+- `engine/app/agents/prompts/assistant_rewrite.md` — created — Contextual query rewrite template resolving conversational references.
+- `engine/app/agents/assistant_agent.py` — created — AssistantAgent copilot handling ask/simplify intents, query normalization, double-simplify, and retrieval.
+- `engine/app/schemas/assistant.py` — created — Pydantic schemas for ChatMessage, CitationItem, AssistantChatRequest, AssistantChatResponse, AssistantStatusResponse.
+- `engine/app/api/v1/assistant.py` — created — FastAPI routes for `/api/v1/assistant/chat` and `/api/v1/assistant/status`.
+- `engine/app/api/v1/router.py` — modified — Mounted assistant router at `/api/v1/assistant`.
+- `desktop/src/types/index.ts` — modified — Added TypeScript interfaces mirroring Pydantic assistant schemas.
+- `desktop/src/api/client.ts` — modified — Added chatAssistant and getAssistantStatus client methods.
+- `desktop/src/App.tsx` — modified — Wired Assistant component to real local RAG engine, rendered citations and Explain simply button.
+- `engine/tests/unit/test_rag_assistant.py` — created — 10 unit tests for parser, chunking, IDs, intent, normalize_query, schemas.
+- `engine/tests/integration/test_assistant_api.py` — created — 8 integration tests verifying status, chat, all 10 OWASP risks, crosswalk, capability honesty, calibration, out-of-scope fallback, and simplify mode.
+- `Project-Context/Status.md` — modified — Appended 2026-10-23 RAG AI Assistant snapshot.
+- `Project-Context/logs.md` — modified — Appended this implementation report.
+**What Was Done**: Implemented local-first RAG AI assistant grounded in OWASP Top 10 2026 and verified Aegis operational documentation per `rag-assistant-guide.md`. Placed `OWASP-LLM-Top-10-2026.md` into `engine/knowledge/owasp/` and added 8 verified Aegis documentation files in `engine/knowledge/aegis/`. Ingested 115 knowledge chunks into ChromaDB with deterministic IDs using `nomic-embed-text:latest` over Ollama. Implemented `AssistantAgent` with strict capability honesty, 2026 OWASP identifiers, inline citations (`[LLM08:2026, p.47]`), relevance filtering, contextual query rewriting, and explain-simply mode with companion chunks. Wired the desktop frontend with source citations and an "Explain simply" action.
+**Why**: Provide security analysts with an offline, privacy-preserving AI assistant capable of answering questions about all 10 OWASP 2026 categories and Aegis workflows without leaking target data.
+**Removals**: Replaced frontend rule-based `assist` mock with live FastAPI RAG endpoints while retaining the mock as an offline fallback.
+**Deviations from Plan**: None. Followed `rag-assistant-guide.md` as primary implementation specification.
+**Gate Impact**: AI Assistant is fully operational and verified. All 10 unit tests in `test_rag_assistant.py` pass; all 8 integration tests in `test_assistant_api.py` pass; frontend build passes (`npm run build`).
+

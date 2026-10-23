@@ -93,3 +93,40 @@ export interface ReportData {
   methodology: string;
   generated_at: string;
 }
+
+export interface CitationItem {
+  source: string;
+  source_title?: string;
+  risk_id?: string;
+  section?: string;
+  page?: number | string | null;
+}
+
+export interface ChatMessage {
+  role: 'assistant' | 'user';
+  text: string;
+  source_ids?: string[];
+  citations?: CitationItem[];
+}
+
+export interface AssistantChatRequest {
+  message: string;
+  history?: ChatMessage[];
+  mode?: 'ask' | 'simplify' | null;
+  reply_to_message_id?: string | null;
+}
+
+export interface AssistantChatResponse {
+  reply: string;
+  source_ids: string[];
+  citations: CitationItem[];
+  mode: 'ask' | 'simplify';
+}
+
+export interface AssistantStatusResponse {
+  status: string;
+  ollama_available: boolean;
+  kb_chunks_indexed: number;
+  embed_model: string;
+  assistant_model: string;
+}

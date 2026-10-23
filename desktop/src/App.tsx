@@ -7,7 +7,7 @@ import NewAssessment from './components/NewAssessment';
 import ApplicationShell, { type AppPage as Page } from './components/ApplicationShell';
 import FindingsInspector from './views/FindingsInspector';
 
-type ChatMessage = { role: 'assistant' | 'user'; text: string };
+import type { ChatMessage } from './types';
 type LocalScan = ScanRecord & { targetName?: string; createdAt: string };
 const HISTORY_KEY = 'aegis.scan-history';
 const PROFILE_KEY = 'aegis.profile';
@@ -79,10 +79,171 @@ function HistoryPage({history, onRefresh, onSelectScan}: {history: LocalScan[]; 
 }
 
 function Assistant({history}:{history:LocalScan[]}) {
-  const [messages,setMessages]=useState<ChatMessage[]>([{role:'assistant',text:'Hi, I’m Aegis Assistant. I can help you set up an authorized assessment, understand Playwright calibration, or explain what the current scan modules support.'}]); const [draft,setDraft]=useState(''); const [busy,setBusy]=useState(false);
-  const starters=['How do I calibrate a web target?','Which OWASP categories are available?','What does the current scan module check?'];
-  async function send(text=draft){const q=text.trim();if(!q||busy)return;setMessages(m=>[...m,{role:'user',text:q}]);setDraft('');setBusy(true);await new Promise(resolve=>window.setTimeout(resolve,240));setMessages(m=>[...m,{role:'assistant',text:assist(q,history.length)}]);setBusy(false);}
-  return <div className="page-content assistant-page"><Heading eyebrow="YOUR SECURITY COPILOT" title="Aegis assistant" sub="Get help with target configuration, calibration, and assessment results."/><div className="assistant-layout"><section className="panel chat-panel"><div className="chat-top"><div className="assistant-avatar"><Bot size={19}/><i/></div><div><strong>Aegis Assistant</strong><small><span className="status-dot online"/>Built-in setup guidance · no model calls</small></div><span className="chat-model">GUIDE</span></div><div className="chat-messages">{messages.map((m,i)=><div className={cx('message-row',m.role)} key={i}>{m.role==='assistant'&&<div className="message-avatar"><Bot size={14}/></div>}<div className="message-bubble">{m.text}</div>{m.role==='user'&&<div className="message-avatar user-message-avatar"><UserRound size={14}/></div>}</div>)}{busy&&<div className="message-row"><div className="message-avatar"><Bot size={14}/></div><div className="message-bubble typing"><i/><i/><i/></div></div>}</div><div className="suggestion-row">{starters.map(s=><button key={s} onClick={()=>void send(s)}>{s}<ArrowUpRight size={12}/></button>)}</div><form className="chat-compose" onSubmit={e=>{e.preventDefault();void send();}}><input value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Ask about Aegis, your scans, or calibration…"/><button type="submit" disabled={!draft.trim()||busy}><ArrowUpRight size={17}/></button></form><div className="chat-disclaimer"><ShieldCheck size={12}/> Assistant guidance is informational. Confirm authorization before every scan.</div></section><aside className="assistant-aside"><div className="panel assistant-context"><div className="panel-head"><div><h3>Workspace context</h3><p>What the assistant can see</p></div><Sparkles size={17} className="muted-icon"/></div><div className="context-row"><span>Assessment history</span><strong>{history.length} runs</strong></div><div className="context-row"><span>Assessment module</span><strong>LLM08 active</strong></div><div className="context-row"><span>Target content</span><strong>Not shared</strong></div><div className="privacy-note"><Shield size={14}/>Target page contents and scan evidence are not sent to the assistant.</div></div><div className="panel guide-panel"><div className="guide-heading"><div className="guide-spark"><Sparkles size={16}/></div><div><strong>Playwright calibration</strong><small>2 target controls to select</small></div></div><div className="guide-step"><span>1</span>Click the chat input area</div><div className="guide-step"><span>2</span>Click the Enter / Send button</div><p>Aegis checks off each selection and detects the response area automatically.</p></div></aside></div></div>;
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      role: 'assistant',
+      text: 'Hi, I’m Aegis Assistant. I can help you with the OWASP Top 10 for LLM Applications (2026), target configuration, Playwright calibration, and remediation playbooks.',
+      source_ids: [],
+      citations: [],
+    }
+  ]);
+  const [draft, setDraft] = useState('');
+  const [busy, setBusy] = useState(false);
+  const starters = [
+    'What is LLM08:2026 Hidden Context Exposure?',
+    'What were the 2025 names that changed in 2026?',
+    'How do I calibrate a web target?',
+    'Can Aegis scan for prompt injection?'
+  ];
+
+  async function send(text = draft, mode?: 'ask' | 'simplify') {
+    const q = text.trim();
+    if (!q || busy) return;
+    const userMsg: ChatMessage = { role: 'user', text: q };
+    const nextHistory = [...messages, userMsg];
+    setMessages(nextHistory);
+    setDraft('');
+    setBusy(true);
+
+    try {
+      const res = await api.chatAssistant({
+        message: q,
+        history: nextHistory,
+        mode: mode ?? null,
+      });
+      setMessages(m => [
+        ...m,
+        {
+          role: 'assistant',
+          text: res.reply,
+          source_ids: res.source_ids || [],
+          citations: res.citations || [],
+        }
+      ]);
+    } catch {
+      const fallback = assist(q, history.length);
+      setMessages(m => [
+        ...m,
+        {
+          role: 'assistant',
+          text: fallback + '\n\n*(Note: Local engine on port 8765 was unreachable; showing built-in guidance.)*',
+          source_ids: [],
+          citations: [],
+        }
+      ]);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="page-content assistant-page">
+      <Heading eyebrow="YOUR SECURITY COPILOT" title="Aegis assistant" sub="Grounded in OWASP Top 10 2026 and Aegis operational playbooks."/>
+      <div className="assistant-layout">
+        <section className="panel chat-panel">
+          <div className="chat-top">
+            <div className="assistant-avatar"><Bot size={19}/><i/></div>
+            <div>
+              <strong>Aegis Assistant</strong>
+              <small><span className="status-dot online"/>Local RAG · llama3.2 & nomic-embed</small>
+            </div>
+            <span className="chat-model">RAG · LLAMA 3.2</span>
+          </div>
+
+          <div className="chat-messages">
+            {messages.map((m, i) => (
+              <div className={cx('message-row', m.role)} key={i}>
+                {m.role === 'assistant' && (
+                  <div className="message-avatar"><Bot size={14}/></div>
+                )}
+                <div className="message-bubble">
+                  <div style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
+                  {m.role === 'assistant' && m.citations && m.citations.length > 0 && (
+                    <div className="citation-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                      {m.citations.slice(0, 4).map((c, idx) => (
+                        <span key={idx} style={{ fontSize: '11px', background: 'rgba(59, 130, 246, 0.08)', color: '#1e40af', padding: '2px 6px', borderRadius: '4px', fontWeight: 500 }}>
+                          {c.risk_id ? `${c.risk_id}${c.page ? `, p.${c.page}` : ''}` : (c.source_title || c.source)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {m.role === 'assistant' && i > 0 && (
+                    <div style={{ marginTop: '8px' }}>
+                      <button
+                        type="button"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', padding: '3px 8px', background: 'transparent', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', color: '#475569' }}
+                        onClick={() => void send('Explain this more simply', 'simplify')}
+                        disabled={busy}
+                      >
+                        <Sparkles size={11}/> Explain simply
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {m.role === 'user' && (
+                  <div className="message-avatar user-message-avatar"><UserRound size={14}/></div>
+                )}
+              </div>
+            ))}
+            {busy && (
+              <div className="message-row">
+                <div className="message-avatar"><Bot size={14}/></div>
+                <div className="message-bubble typing"><i/><i/><i/></div>
+              </div>
+            )}
+          </div>
+
+          <div className="suggestion-row">
+            {starters.map(s => (
+              <button key={s} onClick={() => void send(s)} disabled={busy}>
+                {s}<ArrowUpRight size={12}/>
+              </button>
+            ))}
+          </div>
+
+          <form className="chat-compose" onSubmit={e => { e.preventDefault(); void send(); }}>
+            <input
+              value={draft}
+              onChange={e => setDraft(e.target.value)}
+              placeholder="Ask about OWASP Top 10 2026, Aegis, scans, or calibration…"
+              disabled={busy}
+            />
+            <button type="submit" disabled={!draft.trim() || busy}>
+              <ArrowUpRight size={17}/>
+            </button>
+          </form>
+
+          <div className="chat-disclaimer">
+            <ShieldCheck size={12}/> Assistant guidance is informational and grounded in the local KB. Confirm authorization before every scan.
+          </div>
+        </section>
+
+        <aside className="assistant-aside">
+          <div className="panel assistant-context">
+            <div className="panel-head">
+              <div><h3>Workspace context</h3><p>What the assistant can see</p></div>
+              <Sparkles size={17} className="muted-icon"/>
+            </div>
+            <div className="context-row"><span>Assessment history</span><strong>{history.length} runs</strong></div>
+            <div className="context-row"><span>Knowledge corpus</span><strong>115 indexed chunks</strong></div>
+            <div className="context-row"><span>Verified scan module</span><strong>LLM08 active</strong></div>
+            <div className="context-row"><span>Target content</span><strong>Not shared</strong></div>
+            <div className="privacy-note"><Shield size={14}/>Target page contents and scan evidence are not sent to the assistant.</div>
+          </div>
+
+          <div className="panel guide-panel">
+            <div className="guide-heading">
+              <div className="guide-spark"><Sparkles size={16}/></div>
+              <div><strong>Playwright calibration</strong><small>2 target controls to select</small></div>
+            </div>
+            <div className="guide-step"><span>1</span>Click the chat input area</div>
+            <div className="guide-step"><span>2</span>Click the Enter / Send button</div>
+            <p>Aegis checks off each selection and detects the response area automatically.</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
 }
 
 function Profile({onSaveName}:{onSaveName:(name:string)=>void}) {
