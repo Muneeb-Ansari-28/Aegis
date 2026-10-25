@@ -71,6 +71,8 @@ async def auto_calibrate_target(target_id: str) -> dict:
         raise HTTPException(status_code=404, detail=f"Target '{target_id}' not found.")
     if target.target_type != "web":
         raise HTTPException(status_code=400, detail="Playwright calibration supports web targets only.")
+    if not target.url:
+        raise HTTPException(status_code=400, detail="Target URL is required for calibration.")
     try:
         config = await WebCalibration().auto_calibrate(target.url, headless=False)
     except Exception as exc:
@@ -97,6 +99,8 @@ async def interactive_calibrate_target(
         raise HTTPException(status_code=404, detail=f"Target '{target_id}' not found.")
     if target.target_type != "web":
         raise HTTPException(status_code=400, detail="Playwright calibration supports web targets only.")
+    if not target.url:
+        raise HTTPException(status_code=400, detail="Target URL is required for calibration.")
     if timeout_sec < 15 or timeout_sec > 180:
         raise HTTPException(status_code=422, detail="timeout_sec must be between 15 and 180.")
     session_id = str(uuid.uuid4())

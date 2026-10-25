@@ -1,6 +1,6 @@
 """ChromaDB Vector Store Adapter for Aegis Knowledge Base."""
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union, cast
 import chromadb
 from app.core.paths import get_app_data_dir
 
@@ -45,8 +45,8 @@ class VectorStore:
         self.collection.upsert(
             ids=ids,
             documents=documents,
-            embeddings=embeddings,
-            metadatas=metadatas,
+            embeddings=cast(Any, embeddings),
+            metadatas=cast(Any, metadatas),
         )
 
     # Alias for backward-compatibility with reference code
@@ -83,7 +83,7 @@ class VectorStore:
         }
         if where:
             kwargs["where"] = where
-        return self.collection.query(**kwargs)
+        return cast(Dict[str, Any], self.collection.query(**kwargs))
 
     def get_by_ids(self, ids: List[str]) -> Dict[str, Any]:
         """
@@ -97,7 +97,7 @@ class VectorStore:
         """
         if not ids:
             return {"ids": [], "documents": [], "metadatas": []}
-        return self.collection.get(ids=ids)
+        return cast(Dict[str, Any], self.collection.get(ids=ids))
 
     def get_simple(self, risk_ids: Union[Set[str], List[str]]) -> Dict[str, Any]:
         """
@@ -128,18 +128,18 @@ class VectorStore:
                         {"risk_id": {"$in": cleaned_risks}},
                     ]
                 }
-            return self.collection.get(where=where_clause)
+            return cast(Dict[str, Any], self.collection.get(where=where_clause))
         except Exception:
             # Fallback to level-only query and client filter if complex where clause fails
             res = self.collection.get(where={"level": "simple"})
-            docs = res.get("documents", [])
-            metas = res.get("metadatas", [])
-            ids = res.get("ids", [])
+            docs: List[Any] = res.get("documents") or []
+            metas: List[Any] = res.get("metadatas") or []
+            ids: List[Any] = res.get("ids") or []
             filtered_docs = []
             filtered_metas = []
             filtered_ids = []
             for d, m, i in zip(docs, metas, ids):
-                if m.get("risk_id") in cleaned_risks:
+                if isinstance(m, dict) and m.get("risk_id") in cleaned_risks:
                     filtered_docs.append(d)
                     filtered_metas.append(m)
                     filtered_ids.append(i)

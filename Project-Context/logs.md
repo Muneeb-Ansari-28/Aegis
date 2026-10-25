@@ -907,3 +907,5 @@ feature was implemented = Local-first RAG AI Assistant with OWASP 2026 Knowledge
 **Deviations from Plan**: None. Preserved existing Ollama models (`llama3.2:latest`, `nomic-embed-text:latest`) and ChromaDB vector store.
 
 - `FIXED` Fixed type invariance diagnostic errors in `test_rag_assistant.py` by accepting `Sequence[Union[ChatMessage, Dict[str, Any]]]` in `AssistantAgent` and explicitly annotating test history lists — by "Muneeb" at 17:39, 2026-10-23
+
+- `FIXED` Resolved all 11 Pyrefly type checker errors and deprecation warnings in `engine/app/api/v1/targets.py`, `engine/app/services/scan_service.py`, `engine/tests/integration/test_chat_readiness.py`, `engine/app/rag/vector_store.py`, `engine/app/api/v1/router.py`, and `engine/app/rag/indexer.py`. Narrowed `target.url` nullability, typed ChromaDB vector store returns with casts and safe list unwrap, transitioned FastAPI startup handler to lifespan context manager, and cleaned redundant type conversions — by "Muneeb" at 14:10, 2026-10-25

@@ -42,6 +42,8 @@ class ScanService:
             raise LookupError("The selected target was not found.")
         if target.target_type != "web":
             raise ValueError("The Playwright scan pipeline supports web targets only.")
+        if not target.url:
+            raise ValueError("Target URL is required for web scanning.")
         if target.calibration_config is None:
             raise ValueError("Calibrate the target before starting a scan.")
 
