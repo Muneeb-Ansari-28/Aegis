@@ -1,4 +1,4 @@
-"""FastAPI App Router mounting all V1 endpoints."""
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import health, targets, scans, findings, reports, proxy, websocket, assistant
@@ -6,10 +6,20 @@ from app.core.database import Base, engine
 from app.models import entities as _entities
 from app.core.paths import ensure_app_dirs
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Create the declared SQLAlchemy tables in the per-user Aegis data directory."""
+    ensure_app_dirs()
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
 app = FastAPI(
     title="Aegis Red-Teaming Engine",
     version="0.1.0",
     description="Automated red-teaming engine and MCP controller for LLM vulnerability assessments",
+    lifespan=lifespan,
 )
 
 # CORS middleware for local desktop Electron renderer
@@ -20,13 +30,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-async def initialize_database() -> None:
-    """Create the declared SQLAlchemy tables in the per-user Aegis data directory."""
-    ensure_app_dirs()
-    Base.metadata.create_all(bind=engine)
 
 app.include_router(health.router, prefix="/api/v1/health", tags=["Health"])
 app.include_router(targets.router, prefix="/api/v1/targets", tags=["Targets"])

@@ -173,6 +173,7 @@ async def test_calibration_storage_roundtrip_without_schema_change(chat_site, mo
     monkeypatch.setattr("app.services.target_service.SessionLocal", sessionmaker(bind=engine))
     monkeypatch.setattr(TargetService, "_targets", {})
     target = await TargetService.create_target(TargetCreate(name="Fixture", url=f"{chat_site}/closed"))
+    assert target.url is not None
     config = await WebCalibration().auto_calibrate(target.url)
     await TargetService.calibrate_target(target.id, config)
     TargetService._targets.clear()

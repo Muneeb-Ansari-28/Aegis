@@ -15,7 +15,7 @@ def main() -> None:
     ensure_app_dirs()
     settings = get_settings()
     if sys.platform == "win32":
-        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())  # pyrefly: ignore[deprecated]
     uvicorn.run(
         "app.api.v1.router:app",
         host=settings.HOST,

@@ -119,7 +119,7 @@ def parse_owasp_markdown(path: Path) -> List[Tuple[str, str, Dict[str, Any]]]:
                 "page": current_page,
                 "level": current_level,
                 "chunk_index": idx,
-                "path": str(path.as_posix()),
+                "path": path.as_posix(),
             }
             c_id = generate_chunk_id(current_source, current_risk_id, current_section, idx, piece)
             chunks.append((c_id, chunk_text, meta))
@@ -243,7 +243,7 @@ def parse_aegis_markdown(path: Path) -> List[Tuple[str, str, Dict[str, Any]]]:
                 "page": 1,
                 "level": "standard",
                 "chunk_index": idx,
-                "path": str(path.as_posix()),
+                "path": path.as_posix(),
             }
             c_id = generate_chunk_id("aegis", path.stem, current_section, idx, piece)
             chunks.append((c_id, chunk_text, meta))
