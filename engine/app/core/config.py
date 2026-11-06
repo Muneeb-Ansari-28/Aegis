@@ -16,8 +16,10 @@ class Settings(BaseSettings):
 
     # Ollama Endpoints & Models
     OLLAMA_BASE_URL: str = "http://localhost:11434"
+    MODEL_BASE: str = "llama3.2:latest"
     MODEL_ATTACK: str = "llama3.2:latest"
     MODEL_JUDGE: str = "llama3.2:latest"
+    MODEL_RECON: str = "llama3.2:latest"
     MODEL_TRIAGE: str = "llama3.2:latest"
     MODEL_EMBED: str = "nomic-embed-text:latest"
     MODEL_ASSISTANT: str = "llama3.2:latest"

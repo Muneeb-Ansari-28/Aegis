@@ -1,6 +1,20 @@
 # Aegis Project Status
 
-## Current review snapshot - 2026-10-23 (RAG AI Assistant Implementation)
+## Current review snapshot - 2026-11-06 (Recon Agent & Test Planner Implementation)
+
+The **Recon Agent (Step 0a)** and **Deterministic Test Planner (Step 0b)** have been fully implemented and verified against the master specifications:
+- **Schemas & Persistence**: Added `TargetProfile` and `FieldEvidence` models with explicit evidence and confidence tracking (`engine/app/schemas/target_profile.py`), `TestPlan` and `CategoryPlan` schemas (`engine/app/schemas/test_plan.py`), updated `TurnRecord` with `category` and `attempt_in_category`, added `target_profiles` database table and auto-migration in `database.py`.
+- **YAML Signatures**: Versioned technology signatures created in `engine/app/recon/signatures/ai_stack.yaml` detecting OpenAI-compatible endpoints, Ollama, LangServe, Streamlit, Gradio, Chainlit, SSE/WebSocket streaming, Vercel AI SDK, RAG response citations, and session memory.
+- **Passive Fingerprinting**: Implemented `PassiveNetworkCollector` using Playwright to capture network requests, responses, WebSocket frames, headers, DOM globals, scripts, well-known paths (`/openapi.json`), and chat candidate pre-detection.
+- **Active Benign Probing**: Implemented `ProbeRunner` executing 5-8 benign messages (scope, RAG citation probe, memory recall, output rendering, tools) and logging each turn to `scan_turns` with `category = 'RECON'`.
+- **Fuzzy Classification**: Implemented `SiteTypeClassifier` using Ollama (`llama3.2` / `qwen3:4b`) with `JSONGuard` schema validation and deterministic keyword fallback when Ollama is offline.
+- **Localhost Discovery (Tiers 2 & 3)**: Implemented `LocalDiscovery` using `psutil` port mapping on common dev ports (`3000, 5173, 8000, 8501, 7860, 11434, 1234, 8001, 8002`) and `StaticProjectScanner` inspecting manifests (`requirements.txt`, `pyproject.toml`, `package.json`, `docker-compose.yml`), AST imports, and privacy-guarded `.env` key names (strictly values never read).
+- **Profile Builder**: Implemented `ProfileBuilder` with multi-tier evidence corroboration, confidence calculation, and enforcement of the non-negotiable principle: **"Unknown is not absent"**.
+- **Deterministic Test Planner**: Implemented pure-Python rules engine (`engine/app/agents/planner/rules.py`) prioritizing OWASP categories (`LLM08` RAG, `LLM01` Prompt Injection, `LLM03` Excessive Agency, `LLM10` Output Handling, `LLM07`, `LLM02`), bounded turn budgets ($N \le 10$), safe-fallback execution, and dynamic prompt filtering via `requires` and `applicable_when` metadata (`engine/app/agents/planner/prompt_filter.py`).
+- **REST Endpoints**: Added `POST /api/v1/targets/{id}/recon`, `GET /api/v1/targets/{id}/profile`, `GET /api/v1/targets/local/discover`, and `POST /api/v1/targets/{id}/plan`.
+- **Verification Evidence**: 63/63 tests passing (100% green), including 20 new dedicated unit tests and end-to-end integration test (`test_recon_and_planner_flow.py`).
+
+## Prior review snapshot - 2026-10-23 (RAG AI Assistant Implementation)
 
 The local-first RAG AI Assistant is fully implemented and operational across the backend engine (`:8765`) and desktop frontend (`:3000`), following `rag-assistant-guide.md` and `OWASP-LLM-Top-10-2026.md`:
 - **Knowledge Base**: Curated OWASP Top 10 for LLM Applications (2026) markdown placed in `engine/knowledge/owasp/` alongside 8 verified Aegis operational documents in `engine/knowledge/aegis/`.
@@ -52,8 +66,9 @@ The repository contains the foundation and active implementation for the eight-w
 | Module | Planned window | Current status | Gate |
 |---|---|---|---|
 | 1. Foundation and test target | Week 1 | Verified: Turn Record contract frozen, weak and hardened bots running | Gate 1 verified |
-| 2. Configuration and Playwright connector | Weeks 2Ã¢â‚¬â€œ3 | Automatic and two-step click calibration are implemented with session polling. Session completion race fixed: sessions report `saving_selectors` after capture and `completed` only once selectors are persisted, so a completed session always carries `calibration_config`. Full browser capture is pending a live target test. | Connector partly verified; calibration flow pending |
-| 3. Knowledge base and Attack Agent | Weeks 3ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“4 | KB fixed/template prompts feed the Attack Agent; Ollama generates plain-language rephrases. Live Ollama behavior not verified | Not passed |
+| 2. Configuration and Playwright connector | Weeks 2–3 | Automatic and two-step click calibration are implemented with session polling. Session completion race fixed: sessions report `saving_selectors` after capture and `completed` only once selectors are persisted, so a completed session always carries `calibration_config`. Full browser capture is pending a live target test. | Connector partly verified; calibration flow pending |
+| 2.5. Recon & Deterministic Test Planner | Weeks 3–4 | Implemented multi-tier Recon Agent (Step 0a) with passive Playwright collection, YAML technology signatures, active benign probes, fuzzy classifier with fallback, localhost port discovery, static manifest/AST/.env scanner, and TargetProfile corroboration. Deterministic Test Planner (Step 0b) implemented with pure Python rules, bounded budgets ($N \le 10$), safe fallback, and prompt filtering. (63/63 tests pass). | Step 0a/0b verified |
+| 3. Knowledge base and Attack Agent | Weeks 3–4 | KB fixed/template prompts feed the Attack Agent; Ollama generates plain-language rephrases. Live Ollama behavior not verified | Not passed |
 | 4. Evaluation Agent | Weeks 4ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“5 | RubricJudge calls Ollama and validates JudgeVerdict JSON; benchmark accuracy not verified | Gate 2 not passed |
 | 5. Orchestrator | Weeks 5Ã¢â‚¬â€œ6 | Scan start/status/stop dispatch, turn persistence, and prompt telemetry are connected to the visible Playwright adapter. Mock lifecycle tests pass. | Gate 3 not passed |
 | 5b. MCP tool layer | Week 6 | Client, schemas, and four server modules present; parity, timeout, and crash handling not verified | Gate 5b not passed |

@@ -14,6 +14,31 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+
+def init_db():
+    """Ensure declared tables and migrated columns exist in the database."""
+    from app.models import entities as _  # noqa: F401
+    Base.metadata.create_all(bind=engine)
+    if "sqlite" in settings.DATABASE_URL:
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            for stmt in [
+                "ALTER TABLE targets ADD COLUMN project_path VARCHAR",
+                "ALTER TABLE scans ADD COLUMN test_plan JSON",
+                "ALTER TABLE scan_turns ADD COLUMN category VARCHAR DEFAULT 'UNKNOWN'",
+                "ALTER TABLE scan_turns ADD COLUMN attempt_in_category INTEGER DEFAULT 0",
+            ]:
+                try:
+                    conn.execute(text(stmt))
+                    conn.commit()
+                except Exception:
+                    pass
+
+
+# Ensure schema is initialized at import time
+init_db()
+
+
 def get_db():
     db = SessionLocal()
     try:

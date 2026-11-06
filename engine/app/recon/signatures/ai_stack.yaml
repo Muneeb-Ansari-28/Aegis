@@ -1,0 +1,208 @@
+version: "1.0.0"
+description: "Aegis AI Stack Technology Signatures for Passive Fingerprinting"
+
+signatures:
+  - id: sig_openai_compat
+    name: "OpenAI-Compatible Endpoint"
+    category: "endpoint"
+    indicators:
+      paths:
+        - "/v1/chat/completions"
+        - "/v1/completions"
+        - "/v1/models"
+        - "/chat/completions"
+      headers:
+        - "openai-processing-ms"
+        - "openai-version"
+        - "x-request-id"
+      payload_keys:
+        - "messages"
+        - "model"
+        - "temperature"
+    confidence: 0.95
+    implies:
+      endpoint: "openai_compat"
+      streaming: "sse"
+
+  - id: sig_ollama
+    name: "Ollama API"
+    category: "endpoint"
+    indicators:
+      paths:
+        - "/api/generate"
+        - "/api/chat"
+        - "/api/tags"
+        - "/api/version"
+      headers:
+        - "ollama"
+    confidence: 0.95
+    implies:
+      endpoint: "ollama"
+
+  - id: sig_langserve
+    name: "LangChain LangServe"
+    category: "framework"
+    indicators:
+      paths:
+        - "/invoke"
+        - "/stream"
+        - "/batch"
+        - "/stream_log"
+      response_keys:
+        - "output"
+        - "intermediate_steps"
+        - "run_id"
+    confidence: 0.90
+    implies:
+      framework: "langchain"
+
+  - id: sig_streamlit
+    name: "Streamlit UI"
+    category: "ui"
+    indicators:
+      websocket_paths:
+        - "/_stcore/stream"
+        - "/stream"
+      dom:
+        - "div.stApp"
+        - "div[data-testid='stChatMessage']"
+        - "div[data-testid='stChatInput']"
+        - "header[data-testid='stHeader']"
+      globals:
+        - "Streamlit"
+        - "streamlit"
+      scripts:
+        - "streamlit"
+        - "st-runtime"
+    confidence: 0.95
+    implies:
+      framework: "streamlit"
+      streaming: "websocket"
+
+  - id: sig_gradio
+    name: "Gradio UI"
+    category: "ui"
+    indicators:
+      paths:
+        - "/queue/join"
+        - "/queue/data"
+        - "/info"
+        - "/config"
+      dom:
+        - "gradio-app"
+        - "div.gradio-container"
+        - "div[data-testid='bot']"
+      globals:
+        - "gradio_config"
+        - "gradio_api_info"
+      scripts:
+        - "gradio"
+    confidence: 0.95
+    implies:
+      framework: "gradio"
+      streaming: "sse"
+
+  - id: sig_chainlit
+    name: "Chainlit UI"
+    category: "ui"
+    indicators:
+      websocket_paths:
+        - "/ws/socket.io"
+      paths:
+        - "/project/settings"
+      dom:
+        - "div#chainlit-copilot"
+        - "div[data-testid='chat-message']"
+      globals:
+        - "chainlit"
+    confidence: 0.95
+    implies:
+      framework: "chainlit"
+      streaming: "websocket"
+
+  - id: sig_fastapi_backend
+    name: "FastAPI / Uvicorn Backend"
+    category: "backend"
+    indicators:
+      paths:
+        - "/openapi.json"
+        - "/docs"
+        - "/redoc"
+      headers:
+        - "server: uvicorn"
+    confidence: 0.90
+    implies:
+      backend: "fastapi"
+
+  - id: sig_nextjs_frontend
+    name: "Next.js Frontend"
+    category: "frontend"
+    indicators:
+      globals:
+        - "__NEXT_DATA__"
+      headers:
+        - "x-powered-by: Next.js"
+      dom:
+        - "div#__next"
+    confidence: 0.90
+    implies:
+      frontend: "nextjs"
+
+  - id: sig_sse_streaming
+    name: "Server-Sent Events (SSE)"
+    category: "streaming"
+    indicators:
+      headers:
+        - "content-type: text/event-stream"
+    confidence: 0.95
+    implies:
+      streaming: "sse"
+
+  - id: sig_vercel_ai_sdk
+    name: "Vercel AI SDK Data Stream"
+    category: "streaming"
+    indicators:
+      headers:
+        - "x-vercel-ai-data-stream"
+      response_prefixes:
+        - "0:"
+        - "2:"
+        - "d:"
+    confidence: 0.90
+    implies:
+      framework: "vercel_ai"
+      streaming: "sse"
+
+  - id: sig_rag_response_keys
+    name: "RAG Retrieval Citations & Sources"
+    category: "rag"
+    indicators:
+      response_keys:
+        - "sources"
+        - "citations"
+        - "retrieved_documents"
+        - "context_chunks"
+        - "source_nodes"
+        - "relevant_docs"
+        - "score"
+    confidence: 0.85
+    implies:
+      rag: true
+
+  - id: sig_session_memory
+    name: "Session State & Conversation Memory"
+    category: "memory"
+    indicators:
+      payload_keys:
+        - "session_id"
+        - "conversation_id"
+        - "chat_history"
+        - "thread_id"
+      response_keys:
+        - "session_id"
+        - "conversation_id"
+        - "thread_id"
+    confidence: 0.85
+    implies:
+      memory: true
+

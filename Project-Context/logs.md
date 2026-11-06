@@ -909,3 +909,65 @@ feature was implemented = Local-first RAG AI Assistant with OWASP 2026 Knowledge
 - `FIXED` Fixed type invariance diagnostic errors in `test_rag_assistant.py` by accepting `Sequence[Union[ChatMessage, Dict[str, Any]]]` in `AssistantAgent` and explicitly annotating test history lists — by "Muneeb" at 17:39, 2026-10-23
 
 - `FIXED` Resolved all 11 Pyrefly type checker errors and deprecation warnings in `engine/app/api/v1/targets.py`, `engine/app/services/scan_service.py`, `engine/tests/integration/test_chat_readiness.py`, `engine/app/rag/vector_store.py`, `engine/app/api/v1/router.py`, and `engine/app/rag/indexer.py`. Narrowed `target.url` nullability, typed ChromaDB vector store returns with casts and safe list unwrap, transitioned FastAPI startup handler to lifespan context manager, and cleaned redundant type conversions — by "Muneeb" at 14:10, 2026-10-25
+
+
+- `DELETED` Removed tracked PDF documentation files `Aegis-Architecture.pdf` and `Aegis-Folder-Structure-Guide.pdf` from git repository index; updated `.gitignore` with `*.pdf` and excluded internal draft `aegis-recon-agent-spec.md` — by "Muneeb" at 19:40, 2026-11-06
+
+- `IMPLEMENTED` Module 2.5 Pre-Scan Reconnaissance Agent (Step 0a) and Deterministic Test Planner (Step 0b). Implemented multi-tier fingerprinting (passive Playwright network/DOM inspection, YAML technology signatures, 5–8 active benign probe queries logged with category="RECON", Ollama JSONGuard fuzzy classifier with keyword fallback), Tier 2 localhost dev port discovery with psutil, Tier 3 static manifest/AST scanning with .env privacy protection, corroborated TargetProfile persistence, pure-Python deterministic TestPlanner with turn budgets (N <= 10) and safe fallback, dynamic prompt library capability filtering, and REST endpoints (/recon, /profile, /local/discover, /plan). Added 20 unit tests and end-to-end integration test suite (63/63 passing) — by "Muneeb" at 19:45, 2026-11-06
+
+### Implementation Report
+**Date**: 2026-11-06
+**Contributor**: Muneeb
+**Module**: Module 2.5: Pre-Scan Reconnaissance & Deterministic Test Planner (Step 0a & Step 0b)
+**Files Changed**:
+- `engine/app/recon/__init__.py` — created — Initialized recon package.
+- `engine/app/recon/schemas.py` — created — Re-exported TargetProfile and FieldEvidence schemas for recon module.
+- `engine/app/recon/signatures/ai_stack.yaml` — created — Versioned YAML technology signatures for OpenAI, Ollama, LangServe, Streamlit, Gradio, Chainlit, SSE, Vercel AI SDK, RAG payload keys, and session memory.
+- `engine/app/recon/fingerprint.py` — created — Implemented SignatureMatcher and SignatureMatch evaluation engine.
+- `engine/app/recon/network_collector.py` — created — Implemented PassiveNetworkCollector capturing HTTP headers, websockets, DOM globals, scripts, endpoints, and chat candidate locators via Playwright.
+- `engine/app/recon/probe_runner.py` — created — Implemented ProbeRunner executing 5–8 benign probes (scope, RAG citation, memory recall token AegisCyan42, output rendering, tools) and persisting turns to scan_turns with category="RECON".
+- `engine/app/recon/classifier.py` — created — Implemented SiteTypeClassifier with Ollama (llama3.2 / qwen3:4b), JSONGuard schema validation, and deterministic keyword fallback.
+- `engine/app/recon/local_discovery.py` — created — Implemented LocalDiscovery inspecting active localhost processes and ports (3000, 5173, 8000, 8501, 7860, 11434, 1234, 8001, 8002) using psutil.
+- `engine/app/recon/static_scanner.py` — created — Implemented StaticProjectScanner inspecting requirements.txt, pyproject.toml, package.json, docker-compose.yml, AST imports, and .env key names (privacy guard: strictly ignores values).
+- `engine/app/recon/profile_builder.py` — created — Implemented ProfileBuilder with multi-tier corroboration, confidence calculation, and enforcement of "Unknown is not absent".
+- `engine/app/services/recon_service.py` — created — Implemented ReconService coordinating full multi-tier profiling and target_profiles table persistence.
+- `engine/app/agents/planner/__init__.py` — created — Initialized planner agent package.
+- `engine/app/agents/planner/rules.py` — created — Implemented pure-Python deterministic TestPlanner prioritizing OWASP categories (LLM08, LLM01, LLM03, LLM10, LLM07, LLM02), enforcing turn budgets (N <= 10), and providing safe-baseline fallback.
+- `engine/app/agents/planner/prompt_filter.py` — created — Implemented PromptFilter selecting attack prompts whose 'requires' and 'applicable_when' match the target profile.
+- `engine/app/schemas/target_profile.py` — created — Pydantic models for FieldEvidence and TargetProfile with confidence scores.
+- `engine/app/schemas/test_plan.py` — created — Pydantic models for CategoryPlan and TestPlan.
+- `engine/app/models/entities.py` — modified — Added TargetProfileEntity model and extended ScanTurnEntity (category, attempt_in_category), ScanEntity (test_plan), and TargetEntity (project_path).
+- `engine/app/schemas/target.py` — modified — Added optional project_path field to TargetBase, TargetCreate, and TargetResponse.
+- `engine/app/schemas/turn_record.py` — modified — Added category and attempt_in_category fields to TurnRecord.
+- `engine/app/core/config.py` — modified — Added recon settings (RECON_TIMEOUT_SECONDS, RECON_MAX_TURNS, RECON_PORTS, RECON_LOCAL_DISCOVERY).
+- `engine/app/core/database.py` — modified — Added auto-migration logic executing safe SQLite ALTER TABLE statements for new columns.
+- `engine/app/api/v1/targets.py` — modified — Added POST /recon, GET /profile, GET /local/discover, and POST /plan endpoints.
+- `engine/app/api/v1/websocket.py` — modified — Added /scans/{scan_id}/live WebSocket alias.
+- `engine/app/llm/ollama_client.py` — modified — Lowered is_available timeout to 1.5s for fast non-blocking health checks.
+- `engine/app/services/scan_service.py` — modified — Added test_plan persistence handling.
+- `engine/app/services/target_service.py` — modified — Added get_target_profile and update_target_profile methods.
+- `engine/app/agents/orchestrator.py` — modified — Updated orchestrator with target profile awareness.
+- `engine/requirements.txt` — modified — Added psutil>=5.9.0 and pyyaml>=6.0.
+- `engine/app/kb/03_PROMPT_LIBRARY/fixed/llm01_prompt_injection.json` — created — Seed prompts tagged with planner requirements metadata.
+- `engine/app/kb/03_PROMPT_LIBRARY/fixed/llm03_excessive_agency.json` — created — Seed prompts tagged with planner requirements metadata.
+- `engine/app/kb/03_PROMPT_LIBRARY/fixed/llm07_direct_disclosure.json` — modified — Added requires and applicable_when metadata tags.
+- `engine/app/kb/03_PROMPT_LIBRARY/fixed/llm08_vector_rag_leakage.json` — created — Seed prompts tagged with planner requirements metadata.
+- `engine/app/kb/03_PROMPT_LIBRARY/fixed/llm10_improper_output.json` — created — Seed prompts tagged with planner requirements metadata.
+- `engine/tests/unit/test_recon_signatures.py` — created — 4 unit tests for signature matching.
+- `engine/tests/unit/test_recon_profile_builder.py` — created — 3 unit tests for profile builder and corroboration.
+- `engine/tests/unit/test_recon_static_scanner.py` — created — 3 unit tests for static manifest, AST, and .env key scanner.
+- `engine/tests/unit/test_recon_probe_runner.py` — created — 2 unit tests for active benign probe runner.
+- `engine/tests/unit/test_recon_classifier.py` — created — 2 unit tests for Ollama classifier and fallback.
+- `engine/tests/unit/test_recon_api.py` — created — 4 unit tests for recon/planner REST API endpoints.
+- `engine/tests/unit/test_test_planner.py` — created — 4 unit tests for rule engine, safe fallback, budget enforcement, and prompt filtering.
+- `engine/tests/integration/test_recon_and_planner_flow.py` — created — End-to-end integration test verifying full multi-tier recon to budgeted test plan flow.
+- `Project-Context/Status.md` — modified — Added current review snapshot for Recon Agent & Test Planner.
+- `Project-Context/architecture.md` — modified — Added architecture documentation for Recon Agent and Test Planner Agent.
+- `Project-Context/folder-structure.md` — modified — Documented recon and planner modules in tree layout.
+- `Project-Context/logs.md` — modified — Appended this implementation report.
+- `.gitignore` — modified — Excluded *.pdf and aegis-recon-agent-spec.md.
+**What Was Done**: Implemented the complete Pre-Scan Reconnaissance Agent (Step 0a) and Deterministic Test Planner (Step 0b) per the Aegis Master Specification and Implementation Plan. The Recon Agent delivers multi-tier profiling (Tier 1 passive network/signatures + active benign probing, Tier 2 localhost dev port discovery, Tier 3 static project scanning with strict .env key-only inspection). Profiles corroborate evidence across tiers, assign confidence ratings, and strictly maintain that "Unknown ≠ Absent". The Test Planner uses a pure-Python deterministic rule engine (no LLM in control flow) to generate prioritized, budget-bounded (N <= 10) test plans and filters the prompt library to match the target's verified capabilities. Added 20 new unit tests and an end-to-end integration test, achieving 63/63 passing tests (100% green).
+**Why**: Addresses Module 2.5 of the implementation plan, replacing naive one-size-fits-all scanning with intelligent target-tailored test plans, preventing wasted prompt budgets and discovering actual target attack surfaces offline and locally.
+**Removals**: Removed tracked PDF files (`Aegis-Architecture.pdf` and `Aegis-Folder-Structure-Guide.pdf`) in favor of versioned Markdown documentation in `Project-Context/`.
+**Deviations from Plan**: User environment currently uses `llama3.2:latest` across all local Ollama agents; the classifier is built with model-agnostic prompting and deterministic keyword fallback so it works seamlessly on `llama3.2` and will smoothly transition to `qwen3:4b` when the full stack is deployed.
+**Gate Impact**: Step 0a and Step 0b fully verified. Test suite expanded from 43 to 63 passing tests (100% green). Database auto-migration verified without breaking existing scan data.

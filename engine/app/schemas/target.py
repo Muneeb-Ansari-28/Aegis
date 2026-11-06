@@ -33,6 +33,7 @@ class TargetCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200, description="Human-readable target name.")
     target_type: str = Field(default="web", description="Target connector type: web, api, or app.")
     url: str = Field(..., min_length=1, description="Target URL (must start with http:// or https://).")
+    project_path: Optional[str] = Field(default=None, description="Optional local project folder path for Tier 3 static analysis.")
     calibration_config: Optional[TargetCalibrationConfig] = None
 
     @field_validator("name")
@@ -85,4 +86,5 @@ class TargetResponse(BaseModel):
     name: str
     target_type: str = "web"
     url: Optional[str] = None
+    project_path: Optional[str] = None
     calibration_config: Optional[TargetCalibrationConfig] = None

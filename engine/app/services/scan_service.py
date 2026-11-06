@@ -65,6 +65,13 @@ class ScanService:
             adapter=adapter,
             max_budget=data.budget,
         )
+
+        # Retrieve TargetProfile and generate TestPlan if present
+        from app.services.recon_service import ReconService
+        from app.agents.planner.rules import TestPlanner
+        profile = ReconService.get_target_profile(target.id)
+        test_plan = TestPlanner.build_test_plan(profile) if profile else None
+
         with SessionLocal() as session:
             session.add(ScanEntity(
                 id=scan_id,
@@ -72,6 +79,7 @@ class ScanService:
                 status="QUEUED",
                 category=data.category,
                 budget=data.budget,
+                test_plan=test_plan.model_dump(mode="json") if test_plan else None,
             ))
             session.commit()
 

@@ -1,9 +1,8 @@
 """Target Registration & Calibration Endpoints."""
 import asyncio
 import uuid
-from typing import Dict
+from typing import Dict, List, Optional
 from fastapi import APIRouter, HTTPException
-from typing import List
 from app.schemas.target import (
     CalibrationSessionResponse,
     TargetCreate,
@@ -11,6 +10,11 @@ from app.schemas.target import (
     TargetCalibrationConfig,
 )
 from app.services.target_service import TargetService
+from app.services.recon_service import ReconService
+from app.recon.local_discovery import LocalDiscovery, LocalTarget
+from app.recon.schemas import TargetProfile
+from app.agents.planner.rules import TestPlanner
+from app.schemas.test_plan import TestPlan
 from app.adapters.web_calibration import WebCalibration
 
 router = APIRouter()
@@ -35,6 +39,15 @@ async def list_targets() -> List[TargetResponse]:
     return await TargetService.list_targets()
 
 
+@router.get("/local/discover", response_model=List[LocalTarget])
+async def discover_local_dev_servers() -> List[LocalTarget]:
+    """
+    Tier 2 Local Discovery: Scan active listening dev ports on localhost.
+    Identifies candidate AI apps and their process working directories.
+    """
+    return LocalDiscovery.discover_local_targets()
+
+
 @router.get("/{target_id}", response_model=TargetResponse)
 async def get_target(target_id: str) -> TargetResponse:
     """
@@ -47,6 +60,68 @@ async def get_target(target_id: str) -> TargetResponse:
     if target is None:
         raise HTTPException(status_code=404, detail=f"Target '{target_id}' not found.")
     return target
+
+
+@router.post("/{target_id}/recon", response_model=TargetProfile)
+async def run_target_recon(
+    target_id: str,
+    project_path: Optional[str] = None,
+    run_probes: bool = True,
+) -> TargetProfile:
+    """
+    Execute Recon Agent (Step 0a):
+    Runs passive fingerprinting, localhost discovery, static analysis,
+    active benign probing, and fuzzy classification. Returns and saves TargetProfile.
+    """
+    target = await TargetService.get_target(target_id)
+    if target is None:
+        raise HTTPException(status_code=404, detail=f"Target '{target_id}' not found.")
+    try:
+        profile = await ReconService.run_recon(
+            target_id=target_id,
+            project_path=project_path,
+            run_probes=run_probes,
+        )
+        return profile
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Recon execution failed: {exc}",
+        ) from exc
+
+
+@router.get("/{target_id}/profile", response_model=TargetProfile)
+async def get_target_profile(target_id: str) -> TargetProfile:
+    """
+    Fetch the saved TargetProfile for a target.
+    """
+    target = await TargetService.get_target(target_id)
+    if target is None:
+        raise HTTPException(status_code=404, detail=f"Target '{target_id}' not found.")
+    profile = ReconService.get_target_profile(target_id)
+    if profile is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No TargetProfile found for target '{target_id}'. Run recon first.",
+        )
+    return profile
+
+
+@router.post("/{target_id}/plan", response_model=TestPlan)
+async def generate_target_test_plan(target_id: str) -> TestPlan:
+    """
+    Execute Test Planner (Step 0b):
+    Converts target profile into a prioritized, bounded execution plan.
+    If recon has not run yet, runs fast passive recon first.
+    """
+    target = await TargetService.get_target(target_id)
+    if target is None:
+        raise HTTPException(status_code=404, detail=f"Target '{target_id}' not found.")
+    profile = ReconService.get_target_profile(target_id)
+    if profile is None:
+        # Run recon to build profile
+        profile = await ReconService.run_recon(target_id=target_id, run_probes=False)
+    return TestPlanner.build_test_plan(profile)
 
 
 @router.post("/{target_id}/calibrate")

@@ -14,6 +14,7 @@ class TargetEntity(Base):
     name = Column(String, nullable=False)
     target_type = Column(String, default="web") # web, api, app
     url = Column(String, nullable=True)
+    project_path = Column(String, nullable=True)
     calibration_config = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=utc_now)
 
@@ -25,6 +26,7 @@ class ScanEntity(Base):
     category = Column(String, default="LLM08")
     budget = Column(Integer, default=10)
     current_attempt = Column(Integer, default=0)
+    test_plan = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=utc_now)
     completed_at = Column(DateTime, nullable=True)
 
@@ -33,6 +35,8 @@ class ScanTurnEntity(Base):
     id = Column(String, primary_key=True)
     scan_id = Column(String, ForeignKey("scans.id"), nullable=False)
     turn_index = Column(Integer, nullable=False)
+    category = Column(String, default="UNKNOWN") # RECON or OWASP category (e.g. LLM01, LLM08)
+    attempt_in_category = Column(Integer, default=0)
     prompt = Column(Text, nullable=False)
     response = Column(Text, nullable=False)
     latency_ms = Column(Integer, default=0)
@@ -51,4 +55,12 @@ class FindingEntity(Base):
     description = Column(Text, nullable=False)
     remediation = Column(Text, nullable=True)
     created_at = Column(DateTime, default=utc_now)
+
+class TargetProfileEntity(Base):
+    __tablename__ = "target_profiles"
+    id = Column(String, primary_key=True)
+    target_id = Column(String, ForeignKey("targets.id"), nullable=False, unique=True)
+    profile_data = Column(JSON, nullable=False)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 

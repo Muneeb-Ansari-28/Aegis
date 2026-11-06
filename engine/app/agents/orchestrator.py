@@ -49,7 +49,10 @@ class Orchestrator:
         with self._session_factory() as session:
             row = ScanTurnEntity(
                 id=turn.turn_id or str(uuid.uuid4()), scan_id=self.scan_id,
-                turn_index=turn.turn_index, prompt=turn.prompt, response=turn.response,
+                turn_index=turn.turn_index,
+                category=getattr(turn, "category", "LLM08") or "LLM08",
+                attempt_in_category=getattr(turn, "attempt_in_category", turn.turn_index) or turn.turn_index,
+                prompt=turn.prompt, response=turn.response,
                 latency_ms=turn.latency_ms, strategy=turn.strategy,
                 verdict=verdict.model_dump(mode="json") if verdict else None,
                 created_at=turn.timestamp,
