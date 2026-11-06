@@ -1,21 +1,54 @@
 # Aegis System Architecture
 
-This guide summarizes the system boundaries and contracts for the current eight-week delivery. The full product architecture remains in `Aegis-Architecture.pdf`; the delivery sequence and active category are defined by `Aegis_8-Week_Plan_with_MCP.md`.
+This guide summarizes the system boundaries, agent contracts, and execution pipelines for the Aegis project per the master specification and implementation plan.
 
 ## Active scope
 
-The initial scanner assesses OWASP LLM08 Hidden Context Exposure (migrated from OWASP 2025 LLM07 System Prompt Leakage per the canonical OWASP GenAI Top 10 2026 taxonomy) through direct, plain-language disclosure requests against authorized targets. The local weak and hardened chatbots use a fake system prompt with the `AEGIS-CANARY-7731` canary. Deterministic canary and n-gram overlap checks are combined with triage and rubric judging.
+Aegis assesses LLM applications against the canonical OWASP GenAI/LLM Top 10 (2026) taxonomy with priority scanning on OWASP LLM08 Hidden Context Exposure, LLM01 Prompt Injection, LLM03 Excessive Agency, LLM10 Improper Output Handling, LLM07, and LLM02. The local weak and hardened chatbots use a fake system prompt with the `AEGIS-CANARY-7731` canary. Deterministic canary and n-gram overlap checks are combined with triage and rubric judging.
 
-Jailbreaks, role impersonation, instruction overrides, encoding or obfuscation, safeguard bypass, and real secret extraction are out of scope. Other OWASP categories remain taxonomy references or future scope, not active scan categories.
+Jailbreaks, role impersonation, instruction overrides, encoding or obfuscation, safeguard bypass, and real secret extraction are out of scope.
 
 ## Core components and contracts
 
 - FastAPI engine with deterministic orchestrator and scan state/budget handling.
+- **Recon Agent (Step 0a)**: Multi-tier target profiling (Tier 1 passive network/signatures + active benign probing; Tier 2 local port discovery; Tier 3 static project scanning).
+- **Deterministic Test Planner (Step 0b)**: Pure-Python rule engine translating `TargetProfile` into a prioritized, budgeted `TestPlan` with safe fallback.
 - Playwright web connector producing the Unified Turn Record.
 - Attack Agent uses fixed and templated direct requests with safe wording rephrases.
 - Evaluation Agent combines deterministic checks, triage, and structured rubric verdicts.
 - Risk scoring stays pure Python; MCP servers expose existing module functions as tools.
 - Electron/React desktop client communicates with the engine over localhost REST and WebSocket.
+
+## Pre-Scan Reconnaissance Agent (Module 2.5 / Step 0a)
+
+The Recon Agent (`engine/app/recon/`) profiles the target before vulnerability scanning begins. It constructs a corroborated `TargetProfile` adhering to the architectural invariant: **"Unknown is not absent"**.
+
+1. **Tier 1 — Network & Web Profiling**:
+   - **Passive Fingerprinting** (`PassiveNetworkCollector`): Inspects HTTP traffic, headers (e.g. `server`, `x-powered-by`), WebSocket frames, DOM globals, loaded scripts, well-known endpoints (`/openapi.json`), and DOM input/submit/response candidate detection.
+   - **Technology Signatures** (`ai_stack.yaml` & `SignatureMatcher`): Versioned regex and header rules identifying OpenAI, Ollama, LangServe, Streamlit, Gradio, Chainlit, SSE, Vercel AI SDK, RAG payload keys, and session memory.
+   - **Active Benign Probing** (`ProbeRunner`): Dispatches 5–8 non-hostile inquiry prompts (scope, RAG citation probe, memory recall with token `AegisCyan42`, output rendering, tool invocation query). All probe interactions are recorded as `scan_turns` with `category="RECON"`.
+   - **Site Type Classification** (`SiteTypeClassifier`): Structured fuzzy classifier backed by local Ollama (`llama3.2` / `qwen3:4b`) using `JSONGuard` with deterministic keyword fallback.
+2. **Tier 2 — Localhost Discovery** (`LocalDiscovery`):
+   - Scans common AI and application development ports (`3000, 5173, 8000, 8501, 7860, 11434, 1234, 8001, 8002`) using `psutil` to map running processes, command lines, and active servers.
+3. **Tier 3 — Static Code Inspection** (`StaticProjectScanner`):
+   - When a project directory is provided, inspects dependency manifests (`requirements.txt`, `pyproject.toml`, `package.json`, `docker-compose.yml`), Python AST imports (e.g., `langchain`, `llama_index`, `chromadb`), and environment variable keys (`.env` privacy guard: strictly reads variable names, **never** variable values).
+4. **Profile Corroboration** (`ProfileBuilder`):
+   - Corroborates evidence across tiers, assigns confidence levels (`HIGH`, `MEDIUM`, `LOW`, `UNKNOWN`), and persists to the `target_profiles` database table via `ReconService`.
+
+## Deterministic Test Planner (Module 2.5 / Step 0b)
+
+The Test Planner (`engine/app/agents/planner/`) determines the execution plan for the active scan based on the corroborated `TargetProfile`.
+
+1. **Pure-Python Rule Engine** (`rules.py`):
+   - Zero LLM involvement in test planning logic.
+   - Generates a prioritized list of OWASP categories with per-category turn budgets ($N \le 10$):
+     - `LLM08` (Hidden Context / RAG Leakage): prioritized when RAG or vector DBs are detected.
+     - `LLM01` (Prompt Injection): prioritized when custom system instructions or delimiters are detected.
+     - `LLM03` (Excessive Agency): prioritized when agentic tool calling or API integrations are detected.
+     - `LLM10` (Improper Output Handling): prioritized when markdown, HTML, code execution, or JSON rendering is detected.
+     - Fallback: Defaults to safe baseline execution (`LLM08`, `LLM01`) when characteristics are unknown.
+2. **Dynamic Prompt Filtering** (`prompt_filter.py`):
+   - Evaluates prompt library metadata (`requires` and `applicable_when`) against the target profile to select prompts tailored to the target's verified capabilities.
 
 ## Website Scanning Module & Playwright Connector (Module 2)
 

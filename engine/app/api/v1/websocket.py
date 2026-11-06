@@ -5,6 +5,7 @@ from app.core.events import event_bus
 router = APIRouter()
 
 @router.websocket("/ws/telemetry/{scan_id}")
+@router.websocket("/scans/{scan_id}/live")
 async def telemetry_websocket(websocket: WebSocket, scan_id: str):
     await websocket.accept()
     queue = event_bus.subscribe(scan_id)

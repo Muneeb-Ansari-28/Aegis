@@ -19,7 +19,7 @@ class OllamaClient:
             True if Ollama responds to health/version check, False otherwise.
         """
         try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
+            async with httpx.AsyncClient(timeout=1.5) as client:
                 resp = await client.get(f"{self.settings.OLLAMA_BASE_URL}/api/version")
                 return resp.status_code == 200
         except Exception:

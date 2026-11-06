@@ -33,6 +33,7 @@ class TargetService:
             name=data.name,
             target_type=data.target_type,
             url=data.url,
+            project_path=data.project_path,
             calibration_config=data.calibration_config,
         )
         cls._targets[target_id] = resp
@@ -42,6 +43,7 @@ class TargetService:
                 name=data.name,
                 target_type=data.target_type,
                 url=data.url,
+                project_path=data.project_path,
                 calibration_config=(
                     data.calibration_config.model_dump(mode="json")
                     if data.calibration_config else None
@@ -78,6 +80,7 @@ class TargetService:
             name=entity.name,
             target_type=entity.target_type or "web",
             url=entity.url or "",
+            project_path=entity.project_path,
             calibration_config=calibration,
         )
         cls._targets[target_id] = target
@@ -104,6 +107,7 @@ class TargetService:
                 name=entity.name,
                 target_type=entity.target_type or "web",
                 url=entity.url or "",
+                project_path=entity.project_path,
                 calibration_config=calibration,
             )
             cls._targets[target.id] = target

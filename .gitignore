@@ -57,3 +57,10 @@ htmlcov/
 .idea/
 *.swp
 *.swo
+
+# PDFs
+*.pdf
+
+# Excluded specs
+aegis-recon-agent-spec.md
+

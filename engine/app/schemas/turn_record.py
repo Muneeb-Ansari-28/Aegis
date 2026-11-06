@@ -11,6 +11,9 @@ class TurnRecord(BaseModel):
     turn_index: int = Field(..., ge=1)
     prompt: str
     response: str
+    category: str = "UNKNOWN" # RECON or OWASP category (e.g. LLM01, LLM08)
+    attempt_in_category: int = 0
+    target_id: Optional[str] = None
     status: str = "success" # success, timeout, error
     latency_ms: int = 0
     strategy: Optional[str] = None
