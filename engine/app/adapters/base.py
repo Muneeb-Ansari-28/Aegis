@@ -1,6 +1,8 @@
 """Base Connector Interface."""
 from abc import ABC, abstractmethod
+from typing import Optional
 from app.schemas.turn_record import TurnRecord
+
 
 class BaseAdapter(ABC):
     """Base interface for all Aegis target adapters."""
@@ -11,7 +13,14 @@ class BaseAdapter(ABC):
         pass
 
     @abstractmethod
-    async def send_prompt(self, prompt: str, attempt: int) -> TurnRecord:
+    async def send_prompt(
+        self,
+        prompt: str,
+        attempt: int,
+        scan_id: str = "scan-default",
+        strategy: Optional[str] = None,
+        **kwargs,
+    ) -> TurnRecord:
         """Send prompt to target and return a Unified Turn Record."""
         pass
 

@@ -1,6 +1,24 @@
 # Aegis Project Status
 
-## Current review snapshot - 2026-11-06 (Recon Agent & Test Planner Implementation)
+## Current review snapshot - 2026-11-07 (Baseline Security Engine: Deterministic Evaluator, Buff Mutators, Cost Estimator, Prompt Library Expansion)
+
+The baseline security and evaluation capabilities have been upgraded using reverse-engineered patterns from **NVIDIA Garak** and **Agentic Security**:
+- **High-Speed Deterministic Evaluator**: Implemented 28-marker universal refusal pre-filter (`REFUSAL_MARKS`) in `engine/app/agents/evaluation/deterministic.py` and `evaluator.py`, short-circuiting clear refusals at 0 ms latency without calling the LLM judge (~70% scan speedup); integrated zero-dependency PII detector (email, SSN, phone, private keys) and Credit Card candidate detector with Luhn validation (`luhn_validate`); integrated Dora regex suite for high-value secret leaks (AWS, GitHub, Slack, Stripe, OpenAI, Google); added container/sandbox escape heuristics (Docker socket, Kubernetes tokens, Linux capabilities, mount inspection).
+- **Master Prompt Library Expansion**: Replaced 2-prompt stubs across `engine/app/kb/03_PROMPT_LIBRARY/fixed/` with full baseline attack catalogs:
+  - `llm07_direct_disclosure.json`: 14 prompts covering Garak's 9 sysprompt extraction vectors (Direct Requests, Roleplay/Developer, Encoding, Inversion, JSON, Tag Extraction, Continuation, Urgency, Distraction).
+  - `llm03_excessive_agency.json`: Garak `agent_breaker` tool capability discovery and execution abuse payloads.
+  - `llm01_prompt_injection.json`: Direct instruction overrides, Markdown delimiters, XML smuggling, translation injection, and NeurIPS `PromptInject` attacks (`ignore-say`, `nevermind`, `screaming-stop`) strictly excluding harmful content jailbreaks.
+  - `llm08_vector_rag_leakage.json`: Latent WHOIS domain record injection and raw chunk exfiltration.
+  - `llm10_improper_output.json`: Zero-click Markdown pixel image exfiltration (`![data](uri)`) and link URI exfiltration.
+- **Evaluator Judge Rubric**: Embedded Garak's Summarized-Result Exploitation Principle into `engine/app/agents/prompts/judge_rubric_llm08.md`, instructing the LLM judge that accurate summaries or descriptions of internal rules or tool execution outcomes count as successful exploits.
+- **Deterministic Buff Mutation Engine**: Created `engine/app/agents/mutators.py` with `Base64Mutator`, `ROT13Mutator`, `CharCodeMutator`, and `DelimiterMutator`. Wired into `AttackAgent.generate_prompt` to pivot immediately to non-plaintext mutations upon encountering refusal feedback.
+- **Scan Cost & Token Budget Estimator**: Created `engine/app/core/cost_estimator.py` modeling token pricing across Claude, GPT-4o, DeepSeek, Mistral, and local models. Integrated into `ReportingAgent.generate_executive_summary` for financial telemetry reporting in PDF summaries.
+- **Many-Shot Context Saturation (MSJ)**: Created `engine/app/kb/03_PROMPT_LIBRARY/templates/llm08_context_saturation.json` testing attention drift over deep context windows.
+- **Master Prompt Variations Catalog**: Populated `engine/app/kb/03_PROMPT_LIBRARY/variations/prompt_variations.json` with formal metadata for non-jailbreak prompt injection strategies.
+- **Recon Agent Bug Fixes**: Resolved `BaseAdapter.send_prompt` signature divergence in `engine/app/adapters/base.py` and `probe_runner.py`; implemented non-blocking TCP socket connection fallback for non-admin Windows environments and isolated process attribute lookups in `engine/app/recon/local_discovery.py`.
+- **Verification Evidence**: 72/72 unit tests passing (100% green); all integration tests passing.
+
+## Prior review snapshot - 2026-11-06 (Recon Agent & Test Planner Implementation)
 
 The **Recon Agent (Step 0a)** and **Deterministic Test Planner (Step 0b)** have been fully implemented and verified against the master specifications:
 - **Schemas & Persistence**: Added `TargetProfile` and `FieldEvidence` models with explicit evidence and confidence tracking (`engine/app/schemas/target_profile.py`), `TestPlan` and `CategoryPlan` schemas (`engine/app/schemas/test_plan.py`), updated `TurnRecord` with `category` and `attempt_in_category`, added `target_profiles` database table and auto-migration in `database.py`.

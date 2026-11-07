@@ -1,7 +1,8 @@
-"""Tier 2 Localhost Process and Port Discovery via psutil."""
+"""Tier 2 Localhost Process and Port Discovery via psutil and socket probing."""
 import logging
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+import socket
+from typing import Dict, List, Optional
+from pydantic import BaseModel
 
 try:
     import psutil
@@ -43,46 +44,64 @@ class LocalDiscovery:
     def discover_local_targets(cls, target_ports: Optional[List[int]] = None) -> List[LocalTarget]:
         """
         Discover active listening ports on localhost and resolve process metadata.
+        Uses psutil when available, falling back to direct TCP socket probing if
+        psutil lacks elevated privileges or fails.
         """
-        if psutil is None:
-            logger.warning("psutil is not installed; local port discovery unavailable.")
-            return []
-
         ports_to_check = set(target_ports or COMMON_DEV_PORTS.keys())
+        listening_map: Dict[int, Optional[int]] = {}
+
+        # 1. Attempt psutil net_connections query
+        if psutil is not None:
+            try:
+                connections = psutil.net_connections(kind="inet")
+                for conn in connections:
+                    if getattr(conn, "status", None) == psutil.CONN_LISTEN:
+                        laddr = getattr(conn, "laddr", None)
+                        port = getattr(laddr, "port", None)
+                        if port is None and isinstance(laddr, tuple) and len(laddr) > 1:
+                            port = laddr[1]
+                        if port and port in ports_to_check:
+                            listening_map[port] = getattr(conn, "pid", None)
+            except Exception as e:
+                logger.debug(f"psutil.net_connections failed (likely non-admin OS environment): {e}")
+
+        # 2. Socket-level fallback probe for any unmapped ports
+        unmapped_ports = ports_to_check - set(listening_map.keys())
+        for port in unmapped_ports:
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.settimeout(0.08)
+                    if s.connect_ex(("127.0.0.1", port)) == 0:
+                        listening_map[port] = None
+            except Exception:
+                pass
+
         results: List[LocalTarget] = []
 
-        try:
-            connections = psutil.net_connections(kind="inet")
-        except Exception as e:
-            logger.warning(f"Failed to query network connections with psutil: {e}")
-            return []
-
-        listening_map: Dict[int, int] = {}
-        for conn in connections:
-            if conn.status == psutil.CONN_LISTEN:
-                laddr = conn.laddr
-                port = laddr.port
-                if port in ports_to_check:
-                    listening_map[port] = conn.pid
-
-        # Also probe ports to see if connection is actively answering
+        # 3. Resolve process information for active ports
         for port, pid in listening_map.items():
             proc_name = ""
             cmd_line = ""
             proc_cwd = None
             inferred = COMMON_DEV_PORTS.get(port)
 
-            if pid:
+            if pid and psutil is not None:
                 try:
                     proc = psutil.Process(pid)
-                    proc_name = proc.name()
-                    cmd_line = " ".join(proc.cmdline() or [])
+                    try:
+                        proc_name = proc.name() or ""
+                    except Exception:
+                        proc_name = ""
+                    try:
+                        cmd_line = " ".join(proc.cmdline() or [])
+                    except Exception:
+                        cmd_line = ""
                     try:
                         proc_cwd = proc.cwd()
-                    except (psutil.AccessDenied, psutil.NoSuchProcess):
+                    except Exception:
                         proc_cwd = None
 
-                    # Infer technology from command line
+                    # Infer technology from process command line
                     cmd_lower = cmd_line.lower()
                     if "streamlit" in cmd_lower:
                         inferred = "Streamlit"
@@ -96,7 +115,7 @@ class LocalDiscovery:
                         inferred = "Vite"
                     elif "ollama" in cmd_lower:
                         inferred = "Ollama"
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                except Exception:
                     pass
 
             results.append(
@@ -118,4 +137,3 @@ class LocalDiscovery:
         """Inspect a single port specifically."""
         found = cls.discover_local_targets([port])
         return found[0] if found else None
-

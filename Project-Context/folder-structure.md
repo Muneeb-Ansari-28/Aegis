@@ -27,3 +27,11 @@ Pre-scan reconnaissance and test planning components:
 - `engine/app/services/recon_service.py`: Target profiling orchestration and persistence.
 
 Keep generated caches and runtime data outside source control. Keep Pydantic schemas and desktop TypeScript types aligned, and add Alembic revisions when persistent schemas change.
+
+
+Baseline security tooling and evaluation components (2026-11-07):
+- `engine/app/agents/mutators.py`: Deterministic Buff Mutation Engine (`Base64Mutator`, `ROT13Mutator`, `CharCodeMutator`, `DelimiterMutator`).
+- `engine/app/core/cost_estimator.py`: Token consumption and financial cost calculation matrix.
+- `engine/app/kb/03_PROMPT_LIBRARY/templates/llm08_context_saturation.json`: Many-shot conversational padding templates.
+- `engine/app/kb/03_PROMPT_LIBRARY/variations/prompt_variations.json`: Formal registry of non-jailbreak prompt injection variations.
+- `docs/baseline_tools_and_prompts_analysis.md`: Master reference catalog reverse-engineering Garak and Agentic Security.
