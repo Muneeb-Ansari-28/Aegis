@@ -22,6 +22,8 @@ class ReportingAgent:
         severity_breakdown: Dict[str, int],
         risk_grade: float,
         scan_status: str,
+        estimated_cost_usd: Optional[float] = None,
+        total_tokens: Optional[int] = None,
     ) -> str:
         """
         Generate a professional, deterministic executive summary narrative.
@@ -86,6 +88,11 @@ class ReportingAgent:
             lines.append(
                 "Immediate remediation is recommended: review prompt boundaries, remove sensitive instructions "
                 "from context, and deploy output filtering defenses."
+            )
+
+        if estimated_cost_usd is not None and total_tokens is not None:
+            lines.append(
+                f"Financial Telemetry: Estimated scan expenditure is ${estimated_cost_usd:.4f} USD across {total_tokens} total tokens."
             )
 
         return " ".join(lines)

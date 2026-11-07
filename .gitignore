@@ -61,6 +61,7 @@ htmlcov/
 # PDFs
 *.pdf
 
-# Excluded specs
+# Excluded specs and research baselines
 aegis-recon-agent-spec.md
+DATA/
 
