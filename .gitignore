@@ -63,6 +63,5 @@ htmlcov/
 
 # Excluded specs and research baselines
 aegis-recon-agent-spec.md
-docs/baseline_tools_and_prompts_analysis.md
 DATA/
 
