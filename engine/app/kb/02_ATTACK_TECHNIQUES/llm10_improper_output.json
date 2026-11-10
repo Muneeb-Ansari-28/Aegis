@@ -1,0 +1,16 @@
+{
+  "category": "LLM10",
+  "technique": "Improper Output Handling and Client-Side Exfiltration",
+  "description": "Exploiting downstream interface rendering vulnerabilities by inducing the model to generate unescaped HTML, markdown tracking pixels, or clickable exfiltration links.",
+  "methods": [
+    "Zero-click Markdown image tracking pixel injection (![Telemetry](https://...))",
+    "Markdown hyperlink exfiltration with sensitive query parameter serialization",
+    "Unescaped raw HTML image tag injection (<img src=... />)",
+    "JavaScript URI scheme execution button injection ([Click](javascript:...))"
+  ],
+  "excluded": [
+    "Persistent Cross-Site Scripting against external systems",
+    "External phishing site hosting"
+  ]
+}
+

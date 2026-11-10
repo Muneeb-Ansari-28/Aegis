@@ -25,13 +25,22 @@ class ScanService:
     _tasks: Dict[str, asyncio.Task[None]] = {}
     _exploited: Dict[str, bool] = {}
 
+    SUPPORTED_CATEGORIES = {
+        "LLM01", "LLM02", "LLM03", "LLM04", "LLM05",
+        "LLM06", "LLM07", "LLM08", "LLM09", "LLM10"
+    }
+
     @classmethod
     async def start_scan(cls, data: ScanCreate) -> ScanResponse:
         """Validate an authorized local target and dispatch its visible Playwright scan."""
         if not data.authorized:
             raise ValueError("Confirm authorization before starting a scan.")
-        if data.category != "LLM08":
-            raise ValueError("The active scan pipeline currently supports OWASP LLM08 only.")
+        category = (data.category or "LLM08").upper()
+        if category not in cls.SUPPORTED_CATEGORIES:
+            raise ValueError(
+                f"OWASP category '{data.category}' is not supported. "
+                f"Choose from: {', '.join(sorted(cls.SUPPORTED_CATEGORIES))}."
+            )
         if data.budget > get_settings().MAX_ATTEMPTS_PER_CATEGORY:
             raise ValueError(
                 f"Prompt budget cannot exceed {get_settings().MAX_ATTEMPTS_PER_CATEGORY}."
@@ -52,7 +61,7 @@ class ScanService:
             scan_id=scan_id,
             target_id=target.id,
             status="QUEUED",
-            category=data.category,
+            category=category,
             budget=data.budget,
         )
         adapter = PlaywrightWebAdapter(
@@ -64,6 +73,7 @@ class ScanService:
             scan_id=scan_id,
             adapter=adapter,
             max_budget=data.budget,
+            category=category,
         )
 
         # Retrieve TargetProfile and generate TestPlan if present
@@ -134,6 +144,7 @@ class ScanService:
             return ScanStatusResponse(
                 scan_id=scan_id,
                 status=orchestrator.state.value,
+                category=response.category,
                 current_attempt=orchestrator.current_attempt,
                 budget=response.budget,
                 exploited=cls._exploited.get(scan_id, False),
@@ -151,6 +162,7 @@ class ScanService:
             return ScanStatusResponse(
                 scan_id=scan_id,
                 status=entity.status,
+                category=getattr(entity, "category", "LLM08") or "LLM08",
                 current_attempt=entity.current_attempt,
                 budget=entity.budget,
                 exploited=exploited,
@@ -185,6 +197,7 @@ class ScanService:
             return [
                 ScanTurnResponse(
                     turn_index=row.turn_index,
+                    category=row.category,
                     prompt=row.prompt,
                     response=row.response,
                     status=("timeout" if row.response.startswith("[CONNECTOR_TIMEOUT]")

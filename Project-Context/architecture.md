@@ -109,3 +109,25 @@ The attack generation layer (`engine/app/agents/mutators.py` and `attack_agent.p
 ## Scan Cost & Financial Telemetry Estimator
 
 The cost module (`engine/app/core/cost_estimator.py`) models token pricing across commercial APIs (Claude, OpenAI, DeepSeek, Mistral) and local models (`ollama` = $0.00). Integrates with `ReportingAgent` to calculate prompt tokens, response tokens, and total estimated scan cost (USD) for inclusion in executive summaries and PDF reports.
+
+
+## Multi-Category Assessment Pipeline & Dynamic UI Telemetry (Module 3 & 5)
+
+The scan engine supports dynamic category routing across OWASP GenAI Top 10 2026 vulnerability classes:
+1. **Dynamic Category Mapping (`AttackAgent` & `KBLoader`)**:
+   - `AttackAgent(category=category)` initializes attack sequences by dynamically loading the corresponding prompt library (`kb/03_PROMPT_LIBRARY/fixed/<category_file>.json`) and template catalogues.
+   - Attack vectors strictly focus on security and integrity vulnerabilities:
+     - `LLM01`: Instruction overrides, translation smuggling, delimiter escaping, and prefix injection.
+     - `LLM03`: Excessive agency, tool invocation probing, unauthorized tool parameter tampering.
+     - `LLM07`: Misinformation generation, factual manipulation, direct constraint disclosure.
+     - `LLM08`: Vector and RAG corpus leakage, context boundary extraction, embedding proximity forcing.
+     - `LLM10`: Improper output handling, zero-click Markdown tracking pixels (`![tracker](uri)`), URI exfiltration.
+   - Harmful content jailbreaks (DAN, illegal acts, toxic content) are strictly excluded by design.
+2. **Category-Aware Orchestration & Findings Persistence (`Orchestrator` & `ScanService`)**:
+   - `Orchestrator` tracks the active category, tagging each executed `TurnRecord` and transactional `ScanTurnEntity` with `category` and `attempt_in_category`.
+   - Identified exploits generate `FindingEntity` records tagged to the evaluated vulnerability class with automated risk rating via `RiskScorer`.
+   - `ScanStatusResponse` and `ScanTurnResponse` schemas return the active category to support seamless live monitoring and persisted replay.
+3. **Dynamic Frontend Assessment Lifecycle**:
+   - **Wizard Configuration**: `NewAssessment.tsx` dynamically populates the Test Scope selection with supported categories, their descriptions, and validation rules.
+   - **Live Assessment Telemetry**: `App.tsx` (`LiveScanPage`) tracks the active scan category in real time via WebSockets and HTTP polling, animating the OWASP category progress list, highlighting the active module, and rendering category-tailored prompt tags and exploit detection badges.
+   - **Findings Inspection & Evidence Replay**: `FindingsInspector.tsx` resolves category codes dynamically via `CATEGORY_NAMES` and summary telemetry, presenting category-specific scope definitions, test case replay, and audit timelines without hardcoded single-category assumptions.

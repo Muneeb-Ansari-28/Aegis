@@ -21,13 +21,14 @@ class Orchestrator:
     """Run a bounded scan and persist each turn and confirmed finding."""
 
     def __init__(self, scan_id: str, adapter: BaseAdapter, max_budget: int = 10,
-                 session_factory=SessionLocal) -> None:
-        """Create a scan runner with its adapter, budget, and DB session factory."""
+                 session_factory=SessionLocal, category: str = "LLM08") -> None:
+        """Create a scan runner with its adapter, budget, DB session factory, and category."""
         self.scan_id = scan_id
         self.adapter = adapter
         self.max_budget = max_budget
+        self.category = (category or "LLM08").upper()
         self.state = ScanState.QUEUED
-        self.attack_agent: Any = AttackAgent()
+        self.attack_agent: Any = AttackAgent(category=self.category)
         self.evaluator: Any = Evaluator()
         self._session_factory = session_factory
         self._stop_requested = asyncio.Event()
@@ -47,10 +48,11 @@ class Orchestrator:
     def _persist_turn(self, turn, verdict) -> None:
         """Store a turn and, when exploited, its linked finding transactionally."""
         with self._session_factory() as session:
+            cat = getattr(turn, "category", self.category) or self.category
             row = ScanTurnEntity(
                 id=turn.turn_id or str(uuid.uuid4()), scan_id=self.scan_id,
                 turn_index=turn.turn_index,
-                category=getattr(turn, "category", "LLM08") or "LLM08",
+                category=cat,
                 attempt_in_category=getattr(turn, "attempt_in_category", turn.turn_index) or turn.turn_index,
                 prompt=turn.prompt, response=turn.response,
                 latency_ms=turn.latency_ms, strategy=turn.strategy,
@@ -59,19 +61,20 @@ class Orchestrator:
             )
             session.add(row)
             if verdict and verdict.exploited:
-                severity = RiskScorer.compute_severity(verdict.category, verdict.confidence)
+                verdict_cat = verdict.category or cat
+                severity = RiskScorer.compute_severity(verdict_cat, verdict.confidence)
                 session.add(FindingEntity(
                     id=str(uuid.uuid4()), scan_id=self.scan_id, turn_id=row.id,
-                    category=verdict.category, severity=severity,
+                    category=verdict_cat, severity=severity,
                     confidence=verdict.confidence, description=verdict.rationale,
-                    remediation="Review system prompt boundaries and remove sensitive instructions from model context.",
+                    remediation=f"Review boundaries and safeguards for OWASP {verdict_cat}.",
                 ))
             session.commit()
 
     async def run(self):
         """Execute the scan until exploit, budget exhaustion, stop, or failure."""
         self.state = ScanState.RUNNING
-        await self._emit("scan_started", budget=self.max_budget)
+        await self._emit("scan_started", budget=self.max_budget, category=self.category)
         previous_feedback: Optional[str] = None
         verdict = None
         try:
@@ -86,13 +89,14 @@ class Orchestrator:
                     "turn_started",
                     attempt=turn_index,
                     budget=self.max_budget,
-                    category="LLM08",
+                    category=self.category,
                     prompt=prompt,
                     strategy=strategy,
                 )
                 turn = await self.adapter.send_prompt(prompt, turn_index)
                 turn.scan_id = self.scan_id
                 turn.strategy = strategy
+                turn.category = self.category
                 if turn.status != "success" and not turn.response.startswith("[CONNECTOR_"):
                     # Preserve status in the existing diagnostic text column; no
                     # schema migration is needed to replay failed turns.
@@ -105,7 +109,7 @@ class Orchestrator:
                     "turn_completed",
                     attempt=turn_index,
                     budget=self.max_budget,
-                    category="LLM08",
+                    category=self.category,
                     prompt=turn.prompt,
                     response=turn.response,
                     latency_ms=turn.latency_ms,

@@ -1,0 +1,17 @@
+{
+  "category": "LLM08",
+  "technique": "Vector and RAG Context Leakage",
+  "description": "Exfiltrating confidential reference documents, internal chunk boundaries, database IDs, or sensitive knowledge base excerpts retrieved via semantic search.",
+  "methods": [
+    "Raw retrieval chunk and database document ID exfiltration",
+    "Confidential internal remarks and private intranet URL extraction",
+    "Latent document indirect prompt injection (e.g. WHOIS override)",
+    "Top-k vector embedding similarity dump",
+    "Many-Shot context saturation (MSJ) attention drift exploitation"
+  ],
+  "excluded": [
+    "Direct vector database binary exploitation",
+    "Memory corruption attacks"
+  ]
+}
+

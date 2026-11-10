@@ -996,3 +996,34 @@ feature was implemented = Local-first RAG AI Assistant with OWASP 2026 Knowledge
 - `IMPLEMENTED` Many-Shot Context Saturation Probe (`engine/app/kb/03_PROMPT_LIBRARY/templates/llm08_context_saturation.json`). Created multi-turn conversational padding templates to test whether target model attention drift causes system prompt adherence degradation over deep context windows — by "Muneeb" at 13:18, 2026-11-07
 
 - `UPDATED` Master Prompt Variations Catalog (`engine/app/kb/03_PROMPT_LIBRARY/variations/prompt_variations.json`). Populated registry with formal metadata for non-jailbreak prompt injection strategies (`direct_override`, `delimiter_hijacking`, `base64_encoded`, `rot13_encoded`, `charcode_array`, `prefix_continuation`, `xml_smuggling`, `context_saturation`, `json_schema_forcing`) and explicit exclusion of harmful content jailbreaks — by "Muneeb" at 13:20, 2026-11-07
+
+
+---
+
+### Week 5 — Multi-Category Vulnerability Scanning & Dynamic Live Assessment UI
+
+#### Day 32 — 2026-11-10
+
+- `IMPLEMENTED` Dynamic Multi-Category Attack Agent & Prompt Routing (`engine/app/agents/attack_agent.py`, `engine/app/agents/orchestrator.py`). Extended `AttackAgent` and `Orchestrator` to support dynamic category selection across all implemented OWASP GenAI Top 10 2026 vulnerabilities (`LLM01` Prompt Injection, `LLM03` Excessive Agency, `LLM07` Misinformation / Direct Disclosure, `LLM08` Vector & RAG Leakage / Hidden Context Exposure, `LLM10` Improper Output Handling). Prompts are loaded dynamically from `kb/03_PROMPT_LIBRARY/fixed/` and `templates/` matching the requested scan category, with turn records and findings tagged to the target vulnerability — by "Muneeb" at 22:50, 2026-11-10
+
+- `IMPLEMENTED` Knowledge Base Population for Active Vulnerability Classes (`engine/app/kb/`). Fully populated attack techniques (`02_ATTACK_TECHNIQUES/`), evaluation rules (`05_EVALUATION_RULES/`), and test cases (`04_TEST_CASES/test_cases.json`) for LLM01, LLM03, LLM08, and LLM10:
+  - `llm01_prompt_injection.json`: Direct instruction override, translation smuggling, and delimiter hijacking attack techniques.
+  - `llm03_excessive_agency.json`: Tool discovery probing and excessive authorization abuse attack techniques.
+  - `llm08_vector_rag_leakage.json`: RAG corpus extraction, embedding similarity forcing, and context boundary probing.
+  - `llm10_improper_output.json`: Zero-click Markdown pixel tracking (`![data](uri)`) and link exfiltration attack techniques.
+  - `llm01_rules.json`, `llm03_rules.json`, `llm08_rules.json`, `llm10_rules.json`: Deterministic evaluation rules for exploit detection.
+  - `loader.py`: Added category helper methods `get_attack_techniques_by_category`, `get_rules_by_category`, and `get_test_cases_by_category` — by "Muneeb" at 23:05, 2026-11-10
+
+- `UPDATED` Scan Service & Lifecycle API Schemas (`engine/app/services/scan_service.py`, `engine/app/schemas/scan.py`). Removed hardcoded `LLM08` restrictions in `ScanService.start_scan`, allowing all `SUPPORTED_CATEGORIES` (`LLM01`, `LLM03`, `LLM07`, `LLM08`, `LLM10`). Added `category` to `ScanStatusResponse` and `ScanTurnResponse` so telemetry and polling endpoints accurately return the scan's category context — by "Muneeb" at 23:10, 2026-11-10
+
+- `IMPLEMENTED` Unit & Integration Test Coverage (`engine/tests/unit/test_attack_agent_categories.py`). Added comprehensive unit tests verifying that `AttackAgent` and `Orchestrator` load distinct prompt catalogs and correctly configure category pipelines across `LLM01`, `LLM03`, `LLM07`, `LLM08`, and `LLM10`. Reached 74/74 passing unit tests and 7/7 passing integration tests (100% green) — by "Muneeb" at 23:12, 2026-11-10
+
+- `IMPLEMENTED` Dynamic Category Selection Wizard (`desktop/src/components/NewAssessment.tsx`, `desktop/src/hooks/useAssessmentWizard.ts`). Enlisted all supported OWASP GenAI categories with descriptions in the Test Scope dropdown, allowing analysts to select between Prompt Injection, Excessive Agency, Misinformation, Hidden Context Exposure, and Improper Output Handling while keeping unimplemented modules clearly disabled — by "Muneeb" at 23:14, 2026-11-10
+
+- `FIXED` Dynamic Live Scan Activity Page (`desktop/src/App.tsx`). Eliminated hardcoded `LLM08 active` badges and static aside panel checks. Replaced with dynamic `activeCategory`:
+  - Active OWASP category in the sidebar displays an animated spinner (`<LoaderCircle className="spin"/>`) when running, checkmark when `Done`, or stop indicator when ended, while non-tested categories show `Not enabled`.
+  - Top summary badge dynamically updates to `{activeCategory} active`.
+  - Live Assessment subtitle reflects `${targetName} · ${activeCategory} · Playwright browser is open`.
+  - Feed cards display category-aware prompt tags and generalized verdict badges (`Vulnerability exploit detected` / `No exploit detected`) — by "Muneeb" at 23:18, 2026-11-10
+
+- `UPDATED` Dynamic Findings Inspector & Evidence Replay (`desktop/src/views/FindingsInspector.tsx`, `desktop/src/api/client.ts`). Replaced static `OWASP LLM08` and `System Prompt Leakage` strings with dynamic category resolution (`CATEGORY_NAMES` map, `summary?.scan_category`, `history.category`) across Overview metrics, Assessment Information, Evidence prompt replay headers, and the audit Timeline. Verified clean desktop production build (`tsc && vite build`) — by "Muneeb" at 23:21, 2026-11-10

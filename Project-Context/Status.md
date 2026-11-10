@@ -250,3 +250,20 @@ Implemented on `muneeb`. Verified through 25 automated unit and integration test
   - Pytest: 25/25 tests passed (13 unit tests in `test_rag_assistant.py` and 12 integration tests in `test_assistant_api.py`), including all 8 required regression scenarios.
   - Frontend: `npm run build` in `desktop/` passed with 0 errors (`tsc && vite build` in 2.21s).
   - ChromaDB: Re-indexed all 115 chunks with clean metadata via `scripts/ingest_kb.py`.
+
+
+## Multi-Category Vulnerability Scanning & Dynamic Assessment UI Checkpoint — 2026-11-10
+
+Implemented on `muneeb`. Verified through 74 unit tests, 7 integration tests, and desktop frontend production build.
+
+- **Vulnerability Scope Expansion**:
+  - Expanded beyond single-category testing to support five core OWASP GenAI Top 10 2026 categories: `LLM01` (Prompt Injection), `LLM03` (Excessive Agency), `LLM07` (Direct Disclosure / Misinformation), `LLM08` (Vector & RAG Leakage / Hidden Context Exposure), and `LLM10` (Improper Output Handling).
+  - Populated knowledge base assets (`02_ATTACK_TECHNIQUES/`, `05_EVALUATION_RULES/`, and `04_TEST_CASES/`) with concrete, non-jailbreak attack vectors and evaluation rules across each supported category.
+  - Dynamically routes prompts and templates in `AttackAgent` and tags turns and findings to the evaluated category throughout `Orchestrator` and `ScanService`.
+- **Dynamic Frontend UX**:
+  - **New Assessment Wizard**: Enables selection among all implemented categories in the Test Scope dropdown, while cleanly disabling unsupported modules.
+  - **Live Scan Page**: Real-time OWASP category sidebar dynamically tracks the active scan module with an animated spinner during execution and completed/ended indicators; top badge and header subtitle reflect the selected category.
+  - **Findings Inspector**: Replaced static `LLM08` labels with dynamic category badges and contextual evaluation summaries across Overview metrics, Assessment Information, Evidence replay, and Timeline.
+- **Verification Evidence**:
+  - Backend: 74/74 unit tests passed (`pytest engine/tests/unit`) and 7/7 integration tests passed (`pytest engine/tests/integration`).
+  - Frontend: `npm run build` in `desktop/` passed with 0 errors (`tsc && vite build`).

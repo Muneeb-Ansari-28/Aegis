@@ -42,6 +42,7 @@ export interface ScanRecord {
 }
 export interface ScanTurn {
   turn_index: number;
+  category?: string;
   prompt: string;
   response: string;
   status?: string;
@@ -79,7 +80,7 @@ export const api = {
   calibrationStatus: (id: string, sessionId: string) => request<CalibrationSession>(`/targets/${id}/calibrate/interactive/${sessionId}`),
   saveCalibration: (id: string, calibration: TargetCalibration) => request<{ status: string; target_id: string }>(`/targets/${id}/calibrate`, { method: 'POST', body: JSON.stringify(calibration) }),
   startScan: (payload: { target_id: string; category: string; budget: number; authorized: boolean }) => request<ScanRecord>('/scans/start', { method: 'POST', body: JSON.stringify(payload) }),
-  scanStatus: (id: string) => request<{ scan_id: string; status: string; current_attempt: number; budget: number; exploited: boolean }>(`/scans/${id}`),
+  scanStatus: (id: string) => request<{ scan_id: string; status: string; category?: string; current_attempt: number; budget: number; exploited: boolean }>(`/scans/${id}`),
   scanTurns: (id: string) => request<ScanTurn[]>(`/scans/${id}/turns`),
   stopScan: (id: string) => request<{ status: string; scan_id: string }>(`/scans/${id}/stop`, { method: 'POST' }),
   findings: (scanId: string) => request<FindingResponse[]>(`/findings/${scanId}`),
