@@ -18,6 +18,7 @@ class ScanResponse(BaseModel):
 class ScanStatusResponse(BaseModel):
     scan_id: str
     status: str
+    category: str = "LLM08"
     current_attempt: int
     budget: int
     exploited: bool = False
@@ -26,6 +27,7 @@ class ScanStatusResponse(BaseModel):
 class ScanTurnResponse(BaseModel):
     """Persisted prompt/response turn replayed to the live chat view."""
     turn_index: int
+    category: Optional[str] = None
     prompt: str
     response: str
     status: str = "success"

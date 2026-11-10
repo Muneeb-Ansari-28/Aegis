@@ -21,6 +21,19 @@ import { api, type ScanTurn } from '../api/client';
 import type { FindingDetail, FindingResponse, FindingsSummary } from '../types';
 import './findings-inspector.css';
 
+const CATEGORY_NAMES: Record<string, string> = {
+  LLM01: 'Prompt Injection',
+  LLM02: 'Sensitive Information Disclosure',
+  LLM03: 'Excessive Agency',
+  LLM04: 'Supply Chain',
+  LLM05: 'Data and Model Poisoning',
+  LLM06: 'Unbounded Consumption',
+  LLM07: 'Misinformation',
+  LLM08: 'Hidden Context Exposure',
+  LLM09: 'Vector and Embedding Weaknesses',
+  LLM10: 'Improper Output Handling',
+};
+
 interface FindingsInspectorProps {
   scanId?: string;
   history?: Array<{
@@ -214,6 +227,9 @@ export default function FindingsInspector({
   const currentScanHistory = history.find(h => h.scan_id === selectedScanId);
   const targetName = summary?.target_name || currentScanHistory?.targetName || 'Local target';
   const scanStatus = (summary?.scan_status || currentScanHistory?.status || 'UNKNOWN').toUpperCase();
+  const activeCategory = summary?.scan_category || currentScanHistory?.category || 'LLM08';
+  const categoryTitle = CATEGORY_NAMES[activeCategory] || 'Hidden Context Exposure';
+  const categoryFullLabel = `${activeCategory} - ${categoryTitle}`;
   const riskGrade = summary ? Math.round(summary.risk_grade) : null;
   const evaluatedTurns = turns.filter(turn => turn.verdict && (!turn.status || turn.status === 'success'));
   const durationMs = summary?.started_at && summary?.completed_at ? Date.parse(summary.completed_at) - Date.parse(summary.started_at) : NaN;
@@ -223,7 +239,7 @@ export default function FindingsInspector({
     const date = new Date(/(?:Z|[+-]\d{2}:\d{2})$/.test(value) ? value : `${value}Z`);
     return Number.isNaN(date.getTime()) ? 'Unavailable' : date.toLocaleString();
   };
-  const turnOutcome = (turn: ScanTurn) => turn.status === 'error' || turn.status === 'timeout' ? 'Not evaluated' : !turn.verdict ? 'Not evaluated' : turn.verdict.exploited ? 'Disclosure detected' : 'No disclosure detected';
+  const turnOutcome = (turn: ScanTurn) => turn.status === 'error' || turn.status === 'timeout' ? 'Not evaluated' : !turn.verdict ? 'Not evaluated' : turn.verdict.exploited ? 'Exploit detected' : 'No exploit detected';
   const successfulTurns = turns.filter(turn => !turn.status || turn.status === 'success');
   const averageLatency = successfulTurns.length ? `${(successfulTurns.reduce((sum, turn) => sum + turn.latency_ms, 0) / successfulTurns.length / 1000).toFixed(1)}s` : 'Unavailable';
   const isScanRunning = ['RUNNING', 'SCANNING', 'QUEUED'].includes(scanStatus);
@@ -239,7 +255,7 @@ export default function FindingsInspector({
             <span className={`scan-status ${scanStatus.toLowerCase()}`}>
               {scanStatus.replace(/_/g, ' ')}
             </span>
-            <span>{targetName} · {summary?.scan_category || currentScanHistory?.category || "Category unavailable"} - System Prompt Leakage</span>
+            <span>{targetName} · {categoryFullLabel}</span>
             <span>{turnsAvailable ? `${turns.length} recorded turns` : "Turn count unavailable"} · {duration}</span>
 
           </div>
@@ -408,7 +424,7 @@ export default function FindingsInspector({
             </div>
             <aside className="results-secondary">
               <section className="results-panel"><h2>Assessment Information</h2><dl className="results-details">
-                {[[Globe2, 'Target', targetName], [Shield, 'Assessment Type', summary?.scan_category || currentScanHistory?.category || 'Unavailable'], [Clock, 'Started At', formatDate(summary?.started_at)], [Clock, 'Completed At', formatDate(summary?.completed_at)], [Clock, 'Duration', duration], [Globe2, 'Application URL', summary?.target_url || 'Unavailable'], [Info, 'Outcome', scanStatus.replace(/_/g, ' ')]].map(([Icon, label, value]) => {
+                {[[Globe2, 'Target', targetName], [Shield, 'Assessment Type', categoryFullLabel], [Clock, 'Started At', formatDate(summary?.started_at)], [Clock, 'Completed At', formatDate(summary?.completed_at)], [Clock, 'Duration', duration], [Globe2, 'Application URL', summary?.target_url || 'Unavailable'], [Info, 'Outcome', scanStatus.replace(/_/g, ' ')]].map(([Icon, label, value]) => {
                   const RowIcon = Icon as typeof Globe2;
                   return <div key={String(label)}><dt><RowIcon size={17}/>{String(label)}</dt><dd>{String(value)}</dd></div>;
                 })}
@@ -422,7 +438,7 @@ export default function FindingsInspector({
               </dl><p className="results-note">Grade reflects recorded findings, not proof of security or complete coverage.</p></section>
             </aside>
           </div>
-          <p className="results-note">Scope: OWASP LLM08 - Hidden Context Exposure. Other categories were not tested. Only persisted turns are shown; unused budget is not a pending test case.</p>
+          <p className="results-note">Scope: OWASP {categoryFullLabel}. Other categories were not tested. Only persisted turns are shown; unused budget is not a pending test case.</p>
         </>
       )}
 
@@ -518,7 +534,7 @@ export default function FindingsInspector({
             turns.map(turn => (
               <div key={turn.turn_index} className="turn-replay-card">
                 <div className="turn-replay-header">
-                  <strong>Attempt #{turn.turn_index} · {turn.strategy || 'LLM08'}</strong>
+                  <strong>Attempt #{turn.turn_index} · {turn.strategy || activeCategory}</strong>
                   <span className="dashboard-muted">{turn.latency_ms} ms</span>
                 </div>
 
@@ -547,7 +563,7 @@ export default function FindingsInspector({
                   >
                     {turn.verdict.exploited ? <AlertTriangle size={15} /> : <CheckCircle2 size={15} />}
                     <strong>
-                      {turn.verdict.exploited ? 'Potential prompt disclosure detected' : 'No prompt disclosure detected'}
+                      {turn.verdict.exploited ? 'Vulnerability exploit detected' : 'No exploit detected'}
                     </strong>
                     {turn.verdict.rationale && <span style={{ opacity: 0.9 }}>— {turn.verdict.rationale}</span>}
                   </div>
@@ -566,7 +582,7 @@ export default function FindingsInspector({
             <div className="timeline-node-content">
               <strong>Assessment record</strong>
               <p style={{ margin: '0.25rem 0 0', fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-                Target: {targetName} · Category: OWASP LLM08
+                Target: {targetName} · Category: OWASP {categoryFullLabel}
               </p>
             </div>
           </div>

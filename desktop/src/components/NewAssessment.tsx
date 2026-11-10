@@ -10,12 +10,46 @@ const steps = [
   ['Review & Run', 'Confirm and start'],
 ];
 
+const CATEGORIES = [
+  {
+    id: 'LLM01',
+    label: 'LLM01 · Prompt Injection',
+    name: 'Prompt Injection',
+    description: 'Tests direct instruction overrides, delimiter hijacking, XML smuggling, translation injection, and PromptInject vectors against prompt adherence safeguards.',
+  },
+  {
+    id: 'LLM03',
+    label: 'LLM03 · Excessive Agency',
+    name: 'Excessive Agency',
+    description: 'Probes tool capability discovery, arbitrary shell command execution, database query abuse, and unrestricted environment inspection.',
+  },
+  {
+    id: 'LLM07',
+    label: 'LLM07 · System Prompt Disclosure',
+    name: 'System Prompt Disclosure',
+    description: "Tests verbatim system prompt and planted canary extraction using Garak's 9 disclosure vectors, including roleplay, encoding, and schema forcing.",
+  },
+  {
+    id: 'LLM08',
+    label: 'LLM08 · Hidden Context Exposure',
+    name: 'Hidden Context Exposure',
+    description: 'Tests vector and RAG context leakage, raw chunk exfiltration, internal database document IDs, and Many-Shot context saturation (MSJ).',
+  },
+  {
+    id: 'LLM10',
+    label: 'LLM10 · Improper Output Handling',
+    name: 'Improper Output Handling',
+    description: 'Tests client-side Markdown tracking pixels, external hyperlink exfiltration, raw HTML tag rendering, and JavaScript URI schemes.',
+  },
+];
+
 export default function NewAssessment(props: AssessmentProps) {
   const w = useAssessmentWizard(props);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus(); }, [w.step]);
   const busy = Boolean(w.operation);
   const targetName = w.target?.name || w.name.trim() || 'Use URL hostname';
+  const selectedCat = CATEGORIES.find(c => c.id === w.category) || CATEGORIES[3];
   return <div className="assessment-page">
     <header className="assessment-heading"><span>ASSESSMENT</span><h1>New Assessment</h1><p>Configure your target, select test scope, and run an AI security scan.</p></header>
     <div className="assessment-layout">
@@ -47,13 +81,13 @@ export default function NewAssessment(props: AssessmentProps) {
         </div>}
         {w.step === 2 && <div className="assessment-fields">
           <p className="assessment-intro">Choose the scope and maximum number of attempts for this assessment.</p>
-          <label className="assessment-field">OWASP category<select value="LLM08" onChange={() => undefined}><option value="LLM08">LLM08 · Hidden Context Exposure</option></select></label>
-          <div className="assessment-inset"><h3><ShieldCheck size={20}/>Hidden Context Exposure</h3><p>Tests direct, plain-language disclosure requests against your authorized web target. Other OWASP categories are not supported by the current assessment pipeline.</p></div>
+          <label className="assessment-field">OWASP category<select value={w.category} onChange={e => w.setCategory(e.target.value)}>{CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
+          <div className="assessment-inset"><h3><ShieldCheck size={20}/>{selectedCat.name}</h3><p>{selectedCat.description}</p></div>
           <label className="assessment-field assessment-budget">Attempt budget <output>{w.budget} attempts</output><input type="range" min="1" max="10" step="1" value={w.budget} onChange={e => w.setBudget(Number(e.target.value))}/><span className="assessment-range"><span>1 attempt</span><span>10 attempts</span></span><small>This is the maximum configured budget, not a prediction of completed tests.</small></label>
         </div>}
         {w.step === 3 && <div className="assessment-fields">
           <p className="assessment-intro">Review the configuration before submitting your assessment to the engine.</p>
-          <dl className="assessment-review">{[['Target', targetName], ['Application URL', w.url], ['Target type', 'Web Application'], ['Authorization', w.consent ? 'Confirmed for this target' : 'Required'], ['Calibration', w.calibration ? 'Ready · saved selectors' : 'Required'], ['Test category', 'LLM08 · Hidden Context Exposure'], ['Attempt budget', `${w.budget} attempts`]].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+          <dl className="assessment-review">{[['Target', targetName], ['Application URL', w.url], ['Target type', 'Web Application'], ['Authorization', w.consent ? 'Confirmed for this target' : 'Required'], ['Calibration', w.calibration ? 'Ready · saved selectors' : 'Required'], ['Test category', selectedCat.label], ['Attempt budget', `${w.budget} attempts`]].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
           <p className="assessment-note"><Info size={18}/>Run scan opens the target in Playwright. Keep the browser open. Scan request history is stored locally in this browser profile.</p>
         </div>}
         {w.error && <div className="assessment-error" role="alert"><Info size={18}/>{w.error}</div>}

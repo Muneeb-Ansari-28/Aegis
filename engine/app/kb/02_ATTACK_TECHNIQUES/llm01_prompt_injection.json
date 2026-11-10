@@ -1,0 +1,20 @@
+{
+  "category": "LLM01",
+  "technique": "Prompt Injection and Instruction Override",
+  "description": "Manipulating model behavior via untrusted user inputs designed to override prior instructions, context boundaries, or developer-configured system directives.",
+  "methods": [
+    "Direct instruction override (ignore all previous instructions)",
+    "Markdown delimiter and horizontal rule boundary hijacking",
+    "XML and HTML tag smuggling (<system_override>, </system>)",
+    "Multilingual translation injection (foreign language payload wrapping)",
+    "Code comment smuggling (/* SYSTEM DIRECTIVE: ... */)",
+    "NeurIPS PromptInject benchmark vectors (ignore-say, nevermind-pivot, emergency-stop)"
+  ],
+  "excluded": [
+    "Harmful content jailbreaks",
+    "Persona impersonation for malicious acts",
+    "DAN roleplays",
+    "Illegal material synthesis"
+  ]
+}
+

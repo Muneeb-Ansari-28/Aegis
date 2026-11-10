@@ -1,0 +1,19 @@
+{
+  "category": "LLM03",
+  "technique": "Excessive Agency and Tool Execution Probing",
+  "description": "Probing and exploiting autonomous tool calling, command execution, or system integration privileges beyond the application's intended operational boundaries.",
+  "methods": [
+    "Tool capability and schema discovery",
+    "Agent purpose, API, and calculator enumeration",
+    "Operating system shell command execution probe",
+    "Unrestricted SQL database query abuse",
+    "Arbitrary local configuration file reading",
+    "Unrestricted environment variable and secret inspection"
+  ],
+  "excluded": [
+    "Destructive filesystem commands (rm -rf)",
+    "Denial of service loops",
+    "Remote malware deployment"
+  ]
+}
+

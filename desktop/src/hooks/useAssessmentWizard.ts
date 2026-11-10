@@ -25,6 +25,7 @@ export function useAssessmentWizard({ targets, refresh, onStarted, notify }: Ass
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [consent, setConsent] = useState(false);
+  const [category, setCategory] = useState('LLM08');
   const [budget, setBudget] = useState(10);
   const [calibration, setCalibration] = useState<Target['calibration_config']>();
   const [session, setSession] = useState<CalibrationSession | null>(null);
@@ -118,13 +119,13 @@ export function useAssessmentWizard({ targets, refresh, onStarted, notify }: Ass
     lock.current = true; setOperation('scan');
     const version = revision.current;
     try {
-      const scan = await api.startScan({ target_id: target!.id, category: 'LLM08', budget, authorized: consent });
+      const scan = await api.startScan({ target_id: target!.id, category, budget, authorized: consent });
       // Preserve acknowledged scans in App even if the analyst left this view while waiting.
       onStarted(scan, target);
     } catch (e) { if (version === revision.current) setError(message(e)); }
     finally { if (version === revision.current) { lock.current = false; setOperation(null); } }
   }
-  return { step, target, name, url, consent, budget, calibration, session, operation, error,
+  return { step, target, name, url, consent, category, budget, calibration, session, operation, error,
     select: (id: string) => changeTarget(targets.find(item => item.id === id)), edit,
-    setConsent, setBudget, navigate, calibrate, start };
+    setConsent, setCategory, setBudget, navigate, calibrate, start };
 }
