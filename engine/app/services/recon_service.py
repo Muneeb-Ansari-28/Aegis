@@ -3,10 +3,12 @@ import logging
 import uuid
 from typing import Optional
 from urllib.parse import urlparse
+from app.recon.local_discovery import is_loopback_host
 
 from app.adapters.playwright_web import PlaywrightWebAdapter
 from app.core.database import SessionLocal
-from app.models.entities import TargetEntity, TargetProfileEntity
+from datetime import datetime, timezone
+from app.models.entities import TargetEntity, TargetProfileEntity, ReconRunEntity
 from app.recon import (
     LocalDiscovery,
     PassiveNetworkCollector,
@@ -32,19 +34,23 @@ class ReconService:
         cls,
         target_id: str,
         project_path: Optional[str] = None,
-        run_probes: bool = True,
+        run_probes: bool = False,
+        authorized: bool = False,
     ) -> TargetProfile:
         """
         Execute full pre-scan recon for a target and persist its TargetProfile.
         """
+        if run_probes and not authorized:
+            raise PermissionError("Explicit authorization is required before active recon probes.")
         with SessionLocal() as session:
             target = session.get(TargetEntity, target_id)
             if not target:
                 raise LookupError(f"Target '{target_id}' not found.")
             target_url = target.url
             calibration_config = target.calibration_config
-            target_project_path = project_path or target.project_path
+            target_project_path = project_path
 
+        recon_run_id = str(uuid.uuid4())
         passive_data = None
         sig_matches = []
         local_target = None
@@ -63,18 +69,16 @@ class ReconService:
             except Exception as e:
                 logger.warning(f"Passive recon failed for {target_url}: {e}")
 
-        # 2. Tier 2 Localhost Discovery (if localhost or local IP)
+        # 2. Tier 2 Localhost Discovery (strictly loopback host, single target port)
         if target_url:
             parsed = urlparse(target_url)
-            if parsed.hostname in ("localhost", "127.0.0.1") and parsed.port:
+            if is_loopback_host(parsed.hostname) and parsed.port:
                 try:
                     local_target = LocalDiscovery.inspect_port(parsed.port)
-                    if local_target and not target_project_path and local_target.cwd:
-                        target_project_path = local_target.cwd
                 except Exception as e:
                     logger.debug(f"Local discovery failed for port {parsed.port}: {e}")
 
-        # 3. Tier 3 Static Analysis (if project_path available)
+        # 3. Tier 3 Static Analysis (opt-in; strictly if project_path explicitly provided)
         if target_project_path:
             try:
                 scanner = StaticProjectScanner(target_project_path)
@@ -92,7 +96,7 @@ class ReconService:
                     headless=True,
                 )
                 await adapter.open()
-                probe_runner = ProbeRunner(adapter=adapter, scan_id=f"recon-{target_id[:8]}")
+                probe_runner = ProbeRunner(adapter=adapter, recon_run_id=recon_run_id)
                 probe_result = await probe_runner.run_probes(persist_turns=True)
             except Exception as e:
                 logger.warning(f"Active probe execution failed for target {target_id}: {e}")
@@ -134,32 +138,73 @@ class ReconService:
 
         # 7. Persist to Database
         cls.save_target_profile(target_id, profile)
+
+        # 8. Persist Recon Run Entity
+        try:
+            with SessionLocal() as session:
+                stages_dict = {
+                    k: v.model_dump(mode="json") if hasattr(v, "model_dump") else v
+                    for k, v in profile.stages.items()
+                }
+                prof_dict = (
+                    profile.model_dump(mode="json")
+                    if hasattr(profile, "model_dump")
+                    else profile
+                )
+                run_entity = ReconRunEntity(
+                    id=recon_run_id,
+                    target_id=target_id,
+                    status="COMPLETED" if not profile.warnings else "PARTIAL",
+                    stages_data=stages_dict,
+                    profile_data=prof_dict,
+                    warnings=profile.warnings,
+                    completed_at=datetime.now(timezone.utc),
+                )
+                session.add(run_entity)
+                session.commit()
+        except Exception as e:
+            logger.debug(f"Could not persist recon run entity: {e}")
+
         return profile
 
     @classmethod
-    def save_target_profile(cls, target_id: str, profile: TargetProfile) -> None:
+    def save_target_profile(
+        cls,
+        target_id: str,
+        profile: TargetProfile,
+        session_factory=SessionLocal,
+    ) -> None:
         """Persist or update TargetProfile in database."""
-        with SessionLocal() as session:
+        with session_factory() as session:
             existing = (
                 session.query(TargetProfileEntity)
                 .filter(TargetProfileEntity.target_id == target_id)
                 .first()
             )
-            if existing:
-                existing.profile_data = profile.model_dump(mode="json")
+            data = (
+                profile.model_dump(mode="json")
+                if hasattr(profile, "model_dump")
+                else profile
+            )
+            if existing is not None:
+                existing.profile_data = data  # type: ignore # pyrefly: ignore[read-only]
             else:
                 entity = TargetProfileEntity(
                     id=str(uuid.uuid4()),
                     target_id=target_id,
-                    profile_data=profile.model_dump(mode="json"),
+                    profile_data=data,
                 )
                 session.add(entity)
             session.commit()
 
     @classmethod
-    def get_target_profile(cls, target_id: str) -> Optional[TargetProfile]:
+    def get_target_profile(
+        cls,
+        target_id: str,
+        session_factory=SessionLocal,
+    ) -> Optional[TargetProfile]:
         """Fetch saved TargetProfile from database."""
-        with SessionLocal() as session:
+        with session_factory() as session:
             entity = (
                 session.query(TargetProfileEntity)
                 .filter(TargetProfileEntity.target_id == target_id)

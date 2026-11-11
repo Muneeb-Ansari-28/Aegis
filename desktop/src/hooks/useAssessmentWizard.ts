@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, type CalibrationSession, type ScanRecord, type Target } from '../api/client';
+import type { TargetProfile, TestPlan } from '../types';
 
 export type AssessmentProps = {
   targets: Target[];
@@ -7,6 +8,7 @@ export type AssessmentProps = {
   onStarted: (scan: ScanRecord, target?: Target) => void;
   notify: (message: string) => void;
 };
+
 function normalizeUrl(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed) throw new Error('Enter the local target URL before continuing.');
@@ -16,6 +18,7 @@ function normalizeUrl(raw: string): string {
   if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Target URL must start with http:// or https://.');
   return value;
 }
+
 const message = (error: unknown) => error instanceof Error ? error.message : 'Something went wrong. Check that the Aegis engine is running.';
 const wait = (ms: number) => new Promise(resolve => window.setTimeout(resolve, ms));
 
@@ -24,46 +27,170 @@ export function useAssessmentWizard({ targets, refresh, onStarted, notify }: Ass
   const [target, setTarget] = useState<Target>();
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
+  const [projectPath, setProjectPath] = useState('');
   const [consent, setConsent] = useState(false);
-  const [category, setCategory] = useState('LLM08');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showAllCategories, setShowAllCategories] = useState(false);
   const [budget, setBudget] = useState(10);
   const [calibration, setCalibration] = useState<Target['calibration_config']>();
   const [session, setSession] = useState<CalibrationSession | null>(null);
-  const [operation, setOperation] = useState<'auto' | 'click' | 'scan' | null>(null);
+  const [operation, setOperation] = useState<'auto' | 'click' | 'scan' | 'recon' | null>(null);
   const [error, setError] = useState('');
+
+  // Recon & Test Plan State
+  const [reconProfile, setReconProfile] = useState<TargetProfile | null>(null);
+  const [testPlan, setTestPlan] = useState<TestPlan | null>(null);
+  const [reconLoading, setReconLoading] = useState(false);
+  const [reconError, setReconError] = useState<string | null>(null);
+
   const revision = useRef(0);
+  const reconRequest = useRef(0);
   const lock = useRef(false);
-  useEffect(() => () => { revision.current++; }, []);
+  useEffect(() => () => { revision.current++; reconRequest.current++; }, []);
+
+  async function fetchReconAndPlan(
+    targetId?: string,
+    options: { runProbes?: boolean; authorized?: boolean; projectPath?: string | null } = {},
+  ) {
+    const id = targetId || target?.id;
+    if (!id) return;
+    const requestId = ++reconRequest.current;
+    const version = revision.current;
+    const current = () => revision.current === version;
+    setReconLoading(true);
+    setReconError(null);
+    try {
+      const profile: TargetProfile = await api.runRecon(
+        id,
+        options.projectPath !== undefined ? (options.projectPath?.trim() || undefined) : (projectPath.trim() || undefined),
+        options.runProbes || false,
+        options.authorized || false,
+      );
+      if (!current()) return;
+      setReconProfile(profile);
+
+      const plan = await api.getTestPlan(id);
+      if (!current()) return;
+      setTestPlan(plan);
+      if (plan.is_complete && plan.selectable_category_ids && plan.selectable_category_ids.length > 0) {
+        setSelectedCategories(plan.selectable_category_ids);
+      } else {
+        setSelectedCategories([]);
+      }
+    } catch (err) {
+      if (current()) {
+        setReconProfile(null);
+        setTestPlan(null);
+        setSelectedCategories([]);
+        setReconError(message(err));
+      }
+    } finally {
+      if (reconRequest.current === requestId) setReconLoading(false);
+    }
+  }
 
   // A selection is a snapshot, so a background target refresh cannot replace this draft.
   function changeTarget(next?: Target) {
     if (lock.current) return;
     revision.current++;
     setTarget(next); setName(next?.name || ''); setUrl(next?.url || '');
+    setProjectPath('');
     setConsent(false); setCalibration(next?.calibration_config); setSession(null); setError('');
+    setReconProfile(null); setTestPlan(null); setReconError(null);
+    setSelectedCategories([]);
+    if (next?.id) {
+      void fetchReconAndPlan(next.id, { runProbes: false, projectPath: null });
+    }
   }
-  function edit(field: 'name' | 'url', value: string) {
+
+  function edit(field: 'name' | 'url' | 'projectPath', value: string) {
     if (lock.current) return;
     revision.current++;
+    if (field === 'projectPath') {
+      setProjectPath(value);
+      setReconProfile(null); setTestPlan(null); setReconError(null);
+      setSelectedCategories([]);
+      return;
+    }
     setTarget(undefined); setConsent(false); setCalibration(undefined); setSession(null); setError('');
+    setReconProfile(null); setTestPlan(null); setReconError(null);
     if (field === 'name') setName(value); else setUrl(value);
   }
+
   function validate() {
     const normalized = normalizeUrl(url);
     if (!consent) throw new Error('Confirm that you own this target or have written permission to test it.');
     return normalized;
   }
-  function navigate(next: number) {
+
+  async function navigate(next: number) {
     if (lock.current) return;
     setError('');
     try {
       if (next > step) {
-        setUrl(validate());
+        const normalizedUrl = validate();
+        setUrl(normalizedUrl);
         if (next > 1 && !calibration) throw new Error('Complete automatic or manual calibration before continuing.');
+        if (next === 1 && !target) {
+          lock.current = true;
+          setOperation('recon');
+          const registered = await api.createTarget({
+            name: name.trim() || new URL(normalizedUrl).hostname,
+            target_type: 'web',
+            url: normalizedUrl,
+          });
+          setTarget(registered);
+          void refresh();
+          setStep(next);
+          void fetchReconAndPlan(registered.id, { runProbes: false, projectPath });
+          return;
+        }
+        if (next >= 2 && target && !testPlan?.is_complete && !reconLoading) {
+          const runProbes = Boolean(calibration && consent);
+          void fetchReconAndPlan(target.id, { runProbes, authorized: consent });
+        }
       }
       setStep(next);
     } catch (e) { setError(message(e)); }
+    finally {
+      if (operation === 'recon' || lock.current) {
+        lock.current = false;
+        setOperation(null);
+      }
+    }
   }
+
+  function toggleCategory(catId: string) {
+    if (lock.current) return;
+    const cat = testPlan?.categories.find(c => c.category === catId);
+    if (!testPlan?.is_complete || !cat || cat.selectable !== true) {
+      setError(cat?.reason || 'Complete recon and planning before selecting scan categories.');
+      return;
+    }
+    setError('');
+    setSelectedCategories(prev => {
+      if (prev.includes(catId)) {
+        if (prev.length <= 1) {
+          setError('At least one assessment category must remain selected.');
+          return prev;
+        }
+        return prev.filter(c => c !== catId);
+      } else {
+        return [...prev, catId];
+      }
+    });
+  }
+
+  function selectAllReady() {
+    if (lock.current) return;
+    setError('');
+    if (testPlan?.selectable_category_ids && testPlan.selectable_category_ids.length > 0) {
+      setSelectedCategories([...testPlan.selectable_category_ids]);
+    } else {
+      setSelectedCategories([]);
+    }
+  }
+
   async function calibrate(interactive: boolean) {
     if (lock.current) return;
     let targetUrl: string;
@@ -104,28 +231,77 @@ export function useAssessmentWizard({ targets, refresh, onStarted, notify }: Ass
         if (progress.status !== 'completed' || !progress.calibration_config) throw new Error('Calibration timed out before both target controls were selected.');
         setCalibration(progress.calibration_config);
       }
-      void refresh(); notify('Calibration complete. Selectors saved to this target.');
+      void refresh();
+      notify('Calibration complete. Selectors saved to this target.');
+      // Active benign probes require calibration and this assessment's authorization.
+      await fetchReconAndPlan(registered.id, { runProbes: true, authorized: consent });
     } catch (e) { if (current()) setError(message(e)); }
     finally { if (current()) { lock.current = false; setOperation(null); } }
   }
+
   async function start() {
     if (lock.current) return;
     setError('');
     try {
       validate();
       if (!target || !calibration) throw new Error('Calibrate this target before starting the scan.');
+      if (reconLoading) throw new Error('Wait for reconnaissance and planning to finish.');
+      if (reconError) throw new Error(`Recon failed: ${reconError}`);
+      if (!testPlan?.is_complete || !testPlan.plan_revision) throw new Error('Complete recon and review the current test plan before starting a scan.');
+      if (selectedCategories.length === 0) throw new Error('Select at least one assessment category.');
+      if (selectedCategories.some(category => !testPlan.selectable_category_ids?.includes(category))) {
+        throw new Error('The selected categories no longer match the current test plan. Refresh the plan and choose again.');
+      }
       if (!Number.isInteger(budget) || budget < 1 || budget > 10) throw new Error('Choose an attempt budget from 1 to 10.');
     } catch (e) { setError(message(e)); return; }
     lock.current = true; setOperation('scan');
     const version = revision.current;
     try {
-      const scan = await api.startScan({ target_id: target!.id, category, budget, authorized: consent });
+      const scan = await api.startScan({
+        target_id: target!.id,
+        category: selectedCategories[0],
+        category_ids: selectedCategories,
+        budget,
+        authorized: consent,
+        plan_revision: testPlan.plan_revision,
+      });
       // Preserve acknowledged scans in App even if the analyst left this view while waiting.
       onStarted(scan, target);
     } catch (e) { if (version === revision.current) setError(message(e)); }
     finally { if (version === revision.current) { lock.current = false; setOperation(null); } }
   }
-  return { step, target, name, url, consent, category, budget, calibration, session, operation, error,
-    select: (id: string) => changeTarget(targets.find(item => item.id === id)), edit,
-    setConsent, setCategory, setBudget, navigate, calibrate, start };
+
+  return {
+    step,
+    target,
+    name,
+    url,
+    projectPath,
+    consent,
+    category: selectedCategories[0] || '',
+    selectedCategories,
+    showAllCategories,
+    budget,
+    calibration,
+    session,
+    operation,
+    error,
+    reconProfile,
+    testPlan,
+    reconLoading,
+    reconError,
+    select: (id: string) => changeTarget(targets.find(item => item.id === id)),
+    edit,
+    setProjectPath,
+    setConsent,
+    setCategory: (c: string) => setSelectedCategories(testPlan?.selectable_category_ids?.includes(c) ? [c] : []),
+    toggleCategory,
+    selectAllReady,
+    setShowAllCategories,
+    setBudget,
+    navigate,
+    calibrate,
+    fetchReconAndPlan,
+    start,
+  };
 }

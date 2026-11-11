@@ -10,7 +10,11 @@ from app.rag.vector_store import VectorStore
 @pytest.fixture(scope="module")
 def client():
     """FastAPI test client fixture."""
-    with TestClient(app) as test_client:
+    with TestClient(app, base_url="http://localhost") as test_client:
+        bootstrap = test_client.post(
+            "/api/v1/security/bootstrap", headers={"Origin": "http://localhost:5173"}
+        )
+        assert bootstrap.status_code == 204
         yield test_client
 
 

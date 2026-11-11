@@ -342,3 +342,11 @@ async def index_knowledge_base(
 
     logger.info(f"Successfully indexed {len(ids)} chunks. Total in collection: {vector_store.count()}")
     return len(ids)
+
+
+if __name__ == "__main__":
+    import asyncio
+    logging.basicConfig(level=logging.INFO)
+    print("Starting Aegis Knowledge Base indexing...")
+    count = asyncio.run(index_knowledge_base())
+    print(f"Indexing completed successfully. Total indexed chunks: {count}")

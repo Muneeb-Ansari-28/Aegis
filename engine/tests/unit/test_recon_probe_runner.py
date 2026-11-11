@@ -67,7 +67,8 @@ async def test_probe_runner_detects_rag_and_memory():
     assert result.analysis.rag_confidence >= 0.70
     assert result.analysis.memory_detected is True
     assert result.analysis.memory_confidence >= 0.90
-    assert result.analysis.html_rendered is True
+    assert result.analysis.html_echoed_in_text is True
+    assert result.analysis.html_rendered is False  # Text echo is not verified DOM HTML rendering
     assert "banking portal" in result.analysis.scope_summary.lower()
 
 

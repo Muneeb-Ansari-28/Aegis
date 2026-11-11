@@ -125,6 +125,49 @@ export interface AssistantChatResponse {
   mode: 'ask' | 'simplify';
 }
 
+export interface ReconStageDetail {
+  status: 'completed' | 'partial' | 'skipped' | 'failed' | 'unknown';
+  duration_ms?: number;
+  warning?: string | null;
+  details?: Record<string, any>;
+}
+
+export interface TargetProfile {
+  target_id: string;
+  has_rag?: { detected: boolean; confidence: number; evidence?: string[] };
+  has_memory?: { detected: boolean; confidence: number; evidence?: string[] };
+  renders_html?: { detected: boolean; confidence: number; evidence?: string[] };
+  stages?: Record<string, ReconStageDetail>;
+  warnings?: string[];
+  inferred_at?: string;
+}
+
+export interface CategoryPlan {
+  category: string;
+  name: string;
+  priority: number;
+  status: string;
+  budget: number;
+  implementation_status?: 'implemented' | 'under_development';
+  testability?: 'ready' | 'partial' | 'not_testable' | 'not_tested';
+  applicability?: 'applicable' | 'not_applicable' | 'unknown';
+  selectable?: boolean;
+  reason?: string | null;
+  applicable_prompt_ids?: string[];
+  planned_prompt_ids?: string[];
+}
+
+export interface TestPlan {
+  target_id: string;
+  target_url?: string | null;
+  total_budget: number;
+  categories: CategoryPlan[];
+  selectable_category_ids?: string[];
+  plan_revision?: string;
+  is_complete?: boolean;
+  notes?: string[];
+}
+
 export interface AssistantStatusResponse {
   status: string;
   ollama_available: boolean;

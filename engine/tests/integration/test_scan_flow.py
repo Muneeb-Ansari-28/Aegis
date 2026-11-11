@@ -40,6 +40,7 @@ async def test_orchestrator_skeleton():
     orchestrator = Orchestrator(
         scan_id="test-scan", adapter=adapter, max_budget=2,
         session_factory=lambda: MemorySession([]),
+        applicable_prompt_ids=["llm07_direct_01"],
     )
     orchestrator.attack_agent = StaticAttackAgent()
     orchestrator.evaluator = StaticEvaluator()
@@ -95,7 +96,7 @@ async def test_connector_failure_is_persisted_without_evaluation(status):
         status=status, metadata={"error": "unavailable"},
     ))
     scan_id = str(uuid.uuid4())
-    orchestrator = Orchestrator(scan_id, adapter, 2, lambda: MemorySession(rows))
+    orchestrator = Orchestrator(scan_id, adapter, 2, lambda: MemorySession(rows), applicable_prompt_ids=["llm07_direct_01"])
     orchestrator.attack_agent = StaticAttackAgent()
     orchestrator.evaluator = AsyncMock()
     queue = event_bus.subscribe(scan_id)
@@ -110,8 +111,9 @@ async def test_connector_failure_is_persisted_without_evaluation(status):
         while not queue.empty():
             events.append(queue.get_nowait())
         assert events[-1]["event"] == "scan_failed"
-        assert events[-2]["status"] == status
-        assert events[-2]["verdict"] is None
+        failed_turn = next(event for event in events if event["event"] == "turn_completed")
+        assert failed_turn["status"] == status
+        assert failed_turn["verdict"] is None
         assert "unavailable" in events[-1]["error"]
     finally:
         event_bus.unsubscribe(scan_id, queue)
@@ -155,7 +157,7 @@ async def test_orchestrator_persists_turn_finding_and_events():
     rows = []
     adapter = MockAdapter()
     scan_id = f"test-scan-{uuid.uuid4()}"
-    orchestrator = Orchestrator(scan_id, adapter, 2, lambda: MemorySession(rows))
+    orchestrator = Orchestrator(scan_id, adapter, 2, lambda: MemorySession(rows), applicable_prompt_ids=["llm07_direct_01"])
     orchestrator.attack_agent = StaticAttackAgent()
     orchestrator.evaluator = StaticEvaluator(exploited=True)
     queue = event_bus.subscribe(scan_id)
@@ -167,8 +169,10 @@ async def test_orchestrator_persists_turn_finding_and_events():
         assert rows[0].turn_index == 1
         assert rows[1].turn_id == rows[0].id
         assert (await queue.get())["event"] == "scan_started"
+        assert (await queue.get())["event"] == "category_started"
         assert (await queue.get())["event"] == "turn_started"
         assert (await queue.get())["event"] == "turn_completed"
+        assert (await queue.get())["event"] == "category_completed"
         assert (await queue.get())["event"] == "scan_completed"
     finally:
         event_bus.unsubscribe(scan_id, queue)
@@ -178,7 +182,7 @@ async def test_orchestrator_persists_turn_finding_and_events():
 async def test_orchestrator_honors_stop_between_turns():
     rows = []
     adapter = MockAdapter()
-    orchestrator = Orchestrator("stop-scan", adapter, 5, lambda: MemorySession(rows))
+    orchestrator = Orchestrator("stop-scan", adapter, 5, lambda: MemorySession(rows), applicable_prompt_ids=["llm07_direct_01"])
     orchestrator.attack_agent = StaticAttackAgent()
     orchestrator.evaluator = StaticEvaluator()
     original_send = adapter.send_prompt

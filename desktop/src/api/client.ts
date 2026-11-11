@@ -6,9 +6,45 @@ import type {
   AssistantChatRequest,
   AssistantChatResponse,
   AssistantStatusResponse,
+  TestPlan,
+  TargetProfile,
 } from '../types';
 
-const BASE_URL = 'http://localhost:8765/api/v1';
+const API_HOST = window.location.hostname === '127.0.0.1' ? '127.0.0.1' : 'localhost';
+const BASE_URL = `http://${API_HOST}:8765/api/v1`;
+let sessionBootstrap: Promise<void> | undefined;
+
+async function ensureApiSession(): Promise<void> {
+  if (!sessionBootstrap) {
+    sessionBootstrap = fetch(`${BASE_URL}/security/bootstrap`, {
+      method: 'POST',
+      credentials: 'include',
+    }).then(response => {
+      if (!response.ok) throw new Error(`Could not establish the local Aegis session (${response.status}).`);
+    }).catch(error => {
+      sessionBootstrap = undefined;
+      throw error;
+    });
+  }
+  await sessionBootstrap;
+}
+
+async function fetchWithApiSession(path: string, init?: RequestInit): Promise<Response> {
+  await ensureApiSession();
+  const fetchRequest = () => fetch(`${BASE_URL}${path}`, {
+    ...init,
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...init?.headers },
+  });
+  let response = await fetchRequest();
+  if (response.status === 401) {
+    // The engine process token changes on restart; refresh the HttpOnly cookie once.
+    sessionBootstrap = undefined;
+    await ensureApiSession();
+    response = await fetchRequest();
+  }
+  return response;
+}
 
 export interface TargetCalibration {
   input_selector: string;
@@ -38,7 +74,19 @@ export interface ScanRecord {
   target_id: string;
   status: string;
   category: string;
+  category_ids?: string[];
   budget: number;
+  plan_revision?: string | null;
+  category_results?: CategoryRunStatus[];
+}
+export interface CategoryRunStatus {
+  category: string;
+  name?: string;
+  status: string;
+  attempts: number;
+  budget: number;
+  exploited: boolean;
+  error?: string | null;
 }
 export interface ScanTurn {
   turn_index: number;
@@ -53,10 +101,9 @@ export interface ScanTurn {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${BASE_URL}${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
-  });
+  const response = path.startsWith('/health')
+    ? await fetch(`${BASE_URL}${path}`, init)
+    : await fetchWithApiSession(path, init);
   if (!response.ok) {
     let message = `Engine request failed (${response.status})`;
     try {
@@ -79,8 +126,22 @@ export const api = {
   beginInteractiveCalibration: (id: string, timeoutSec: number) => request<CalibrationSession>(`/targets/${id}/calibrate/interactive?timeout_sec=${timeoutSec}`, { method: 'POST' }),
   calibrationStatus: (id: string, sessionId: string) => request<CalibrationSession>(`/targets/${id}/calibrate/interactive/${sessionId}`),
   saveCalibration: (id: string, calibration: TargetCalibration) => request<{ status: string; target_id: string }>(`/targets/${id}/calibrate`, { method: 'POST', body: JSON.stringify(calibration) }),
-  startScan: (payload: { target_id: string; category: string; budget: number; authorized: boolean }) => request<ScanRecord>('/scans/start', { method: 'POST', body: JSON.stringify(payload) }),
-  scanStatus: (id: string) => request<{ scan_id: string; status: string; category?: string; current_attempt: number; budget: number; exploited: boolean }>(`/scans/${id}`),
+  runRecon: (targetId: string, projectPath?: string, runProbes = false, authorized = false) =>
+    request<TargetProfile>(`/targets/${targetId}/recon`, {
+      method: 'POST',
+      body: JSON.stringify({ project_path: projectPath || null, run_probes: runProbes, authorized }),
+    }),
+  getTargetProfile: (targetId: string) => request<TargetProfile>(`/targets/${targetId}/profile`),
+  getTestPlan: (targetId: string) => request<TestPlan>(`/targets/${targetId}/plan`, { method: 'POST' }),
+  startScan: (payload: {
+    target_id: string;
+    category?: string;
+    category_ids?: string[];
+    budget: number;
+    authorized: boolean;
+    plan_revision?: string;
+  }) => request<ScanRecord>('/scans/start', { method: 'POST', body: JSON.stringify(payload) }),
+  scanStatus: (id: string) => request<{ scan_id: string; status: string; category?: string; category_ids: string[]; category_results: CategoryRunStatus[]; current_attempt: number; budget: number; exploited: boolean }>(`/scans/${id}`),
   scanTurns: (id: string) => request<ScanTurn[]>(`/scans/${id}/turns`),
   stopScan: (id: string) => request<{ status: string; scan_id: string }>(`/scans/${id}/stop`, { method: 'POST' }),
   findings: (scanId: string) => request<FindingResponse[]>(`/findings/${scanId}`),
@@ -89,7 +150,7 @@ export const api = {
   reportMeta: (scanId: string) => request<ReportMeta>(`/reports/${scanId}/meta`),
   generateReport: (scanId: string) => request<ReportMeta>(`/reports/${scanId}/generate`, { method: 'POST' }),
   downloadReport: async (scanId: string): Promise<void> => {
-    const response = await fetch(`${BASE_URL}/reports/${scanId}/pdf`);
+    const response = await fetchWithApiSession(`/reports/${scanId}/pdf`);
     if (!response.ok) {
       const err = await response.json().catch(() => ({ detail: 'Report download failed' }));
       throw new Error(err.detail || 'Report download failed');

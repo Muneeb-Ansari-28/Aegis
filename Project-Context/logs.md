@@ -1027,3 +1027,37 @@ feature was implemented = Local-first RAG AI Assistant with OWASP 2026 Knowledge
   - Feed cards display category-aware prompt tags and generalized verdict badges (`Vulnerability exploit detected` / `No exploit detected`) — by "Muneeb" at 23:18, 2026-11-10
 
 - `UPDATED` Dynamic Findings Inspector & Evidence Replay (`desktop/src/views/FindingsInspector.tsx`, `desktop/src/api/client.ts`). Replaced static `OWASP LLM08` and `System Prompt Leakage` strings with dynamic category resolution (`CATEGORY_NAMES` map, `summary?.scan_category`, `history.category`) across Overview metrics, Assessment Information, Evidence prompt replay headers, and the audit Timeline. Verified clean desktop production build (`tsc && vite build`) — by "Muneeb" at 23:21, 2026-11-10
+
+---
+
+### Week 5 — Profile-Guided Multi-Category Scan Workflow & Recon/Planner Audit Hardening
+
+#### Day 34 — 2026-11-12
+
+- `IMPLEMENTED` Canonical OWASP GenAI Top 10 (2026) Category Catalog (`engine/app/agents/planner/category_catalog.py`, `engine/app/schemas/test_plan.py`). Mapped all 10 canonical categories (LLM01-LLM10) with official titles, legacy aliases, prerequisites, and implementation states. Added `implementation_status`, `testability`, `applicability`, `selectable`, `planned_prompt_ids`, and deterministic SHA-256 `plan_revision`. LLM08 is marked implemented; others under development — by "Muneeb" at 01:10, 2026-11-12
+
+- `REFACTORED` Multi-Tier Reconnaissance Hardening & Truthful Evidence Contracts (`engine/app/recon/`).
+  - Tier 1: Strict origin scoping for headers/scripts, bounded endpoint checks, guaranteed `try...finally` browser cleanup.
+  - Tier 2: IPv4/IPv6 loopback verification rejecting remote/private addresses; CLI credential redaction (`--api-key`, `--token`, `--password`, `--secret`).
+  - Tier 3: 512 KB per-file cap, deterministic file sorting, read-only `.env` key parsing (keys only, no values), and explicit status/warnings.
+  - Tier 4: Safe absence preservation where timeouts/errors yield low-confidence unknown rather than negative absence; separated text HTML echoing from verified DOM rendering.
+  - Profile corroboration: ruling out RAG strictly requires both completed Tier 3 static scan and active probes — by "Muneeb" at 01:25, 2026-11-12
+
+- `IMPLEMENTED` Recon Evidence Isolation & Persistence (`engine/app/models/entities.py`, `engine/app/services/recon_service.py`, `engine/app/recon/probe_runner.py`). Added `ReconRunEntity` and `ReconTurnEntity`. Active probe turns persist cleanly to `recon_turns` under `recon_run_id` without polluting `scan_turns` with synthetic scan IDs. Verified via `test_recon_persistence.py` — by "Muneeb" at 01:35, 2026-11-12
+
+- `IMPLEMENTED` Server-Side Scan Revalidation & Interrupted Scan Recovery (`engine/app/services/scan_service.py`, `engine/app/schemas/scan.py`, `engine/app/api/v1/router.py`). Revalidates all requested `category_ids` against `test_plan.selectable_category_ids`, rejecting under-development categories and detecting mismatched plan revisions. Engine startup lifespan automatically recovers lingering scans into `INTERRUPTED` state — by "Muneeb" at 01:45, 2026-11-12
+
+- `IMPLEMENTED` Truthful Reporting & Local API Security Hardening (`engine/app/agents/reporting_agent.py`, `engine/app/services/report_service.py`, `engine/app/api/v1/router.py`, `engine/app/api/v1/websocket.py`).
+  - Executive summary marks `FAILED`, `STOPPED`, `INTERRUPTED`, or zero-turn scans as `INCONCLUSIVE`, refusing to claim clean resilience for unfinished work.
+  - Path-traversal validation in `get_report_path` confines file operations strictly beneath AppData `reports/`.
+  - Restricted CORS and WebSocket origin verification to loopback origins — by "Muneeb" at 01:50, 2026-11-12
+
+- `IMPLEMENTED` Readiness Reporting & Knowledge Base Ingestion (`engine/app/api/v1/assistant.py`, `engine/app/llm/ollama_client.py`, `engine/app/rag/indexer.py`, `scripts/setup_models.ps1`). Added model availability checking (`has_model`), updated status to require daemon + model + indexed KB, updated `setup_models.ps1` to pull configured tags (`llama3.2:latest`, `nomic-embed-text:latest`), and added CLI entrypoint to `indexer.py` — by "Muneeb" at 02:00, 2026-11-12
+
+- `IMPLEMENTED` Desktop Multi-Category Wizard & Profile Indicators (`desktop/src/`).
+  - Added optional local project path input in Step 0 with read-only privacy notice.
+  - Added real-time recon stage indicators (Passive observation, Loopback discovery, Static inspection, Active probes) and capability tags in Step 1.
+  - Replaced single category select with full multi-category selector in Step 2: "Run all ready categories" action and "Show all 10 categories" toggle with disabled under-development badges.
+  - Updated Step 3 review summary and Live Scan telemetry to dynamically reflect all selected categories. Verified clean Vite build (`tsc && vite build`) — by "Muneeb" at 02:08, 2026-11-12
+
+- `FIXED` ProfileBuilder Type Annotations (`engine/app/recon/profile_builder.py`). Added `EvidenceSource` and `StageStatus` literal types with `_coerce_stage_status` helper function, resolving 8 type errors across stage assignments and evidence sources. Passed `mypy` with 0 issues — by "Muneeb" at 02:10, 2026-11-12

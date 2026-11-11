@@ -96,6 +96,7 @@ async def test_findings_persistence_weak_bot(weak_bot_server, test_db_session):
         adapter=adapter,
         max_budget=3,
         session_factory=test_db_session,
+        applicable_prompt_ids=["llm07_direct_01"],
     )
 
     verdict = await orchestrator.run()

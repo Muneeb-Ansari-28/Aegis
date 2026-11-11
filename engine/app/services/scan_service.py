@@ -2,7 +2,7 @@
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Dict, List
+from typing import Dict, List, Optional
 import uuid
 
 from app.adapters.playwright_web import PlaywrightWebAdapter
@@ -11,7 +11,8 @@ from app.core.config import get_settings
 from app.core.database import SessionLocal
 from app.core.events import event_bus
 from app.models.entities import FindingEntity, ScanEntity, ScanTurnEntity
-from app.schemas.scan import ScanCreate, ScanResponse, ScanStatusResponse, ScanTurnResponse
+from app.schemas.scan import CategoryRunStatus, ScanCreate, ScanResponse, ScanStatusResponse, ScanTurnResponse
+from app.schemas.target_profile import TargetProfile
 from app.services.target_service import TargetService
 
 logger = logging.getLogger(__name__)
@@ -35,12 +36,22 @@ class ScanService:
         """Validate an authorized local target and dispatch its visible Playwright scan."""
         if not data.authorized:
             raise ValueError("Confirm authorization before starting a scan.")
-        category = (data.category or "LLM08").upper()
-        if category not in cls.SUPPORTED_CATEGORIES:
-            raise ValueError(
-                f"OWASP category '{data.category}' is not supported. "
-                f"Choose from: {', '.join(sorted(cls.SUPPORTED_CATEGORIES))}."
-            )
+
+        category_ids = data.category_ids
+        if not category_ids:
+            raise ValueError("Select at least one category to scan.")
+
+        normalized_cats = [c.upper() for c in category_ids]
+        if len(normalized_cats) != len(set(normalized_cats)):
+            raise ValueError("Duplicate category IDs provided in scan request.")
+
+        for cat in normalized_cats:
+            if cat not in cls.SUPPORTED_CATEGORIES:
+                raise ValueError(
+                    f"OWASP category '{cat}' is not recognized. "
+                    f"Choose from: {', '.join(sorted(cls.SUPPORTED_CATEGORIES))}."
+                )
+
         if data.budget > get_settings().MAX_ATTEMPTS_PER_CATEGORY:
             raise ValueError(
                 f"Prompt budget cannot exceed {get_settings().MAX_ATTEMPTS_PER_CATEGORY}."
@@ -56,40 +67,99 @@ class ScanService:
         if target.calibration_config is None:
             raise ValueError("Calibrate the target before starting a scan.")
 
+        if not data.plan_revision:
+            raise ValueError("A current test plan revision is required. Run recon and review the plan before scanning.")
+
+        # Retrieve the latest recon profile and generate the authoritative plan.
+        from app.services.recon_service import ReconService
+        from app.agents.planner.rules import TestPlanner
+        profile = ReconService.get_target_profile(target.id, session_factory=SessionLocal)
+        if profile is None:
+            raise ValueError("Recon has not produced a target profile. Run recon before starting a scan.")
+        test_plan = TestPlanner.build_test_plan(profile)
+        if not test_plan.is_complete:
+            raise ValueError("Recon or planning is incomplete. Complete the required recon stages before scanning.")
+
+        # A plan revision is mandatory and is always checked against the current profile.
+        if test_plan.plan_revision != data.plan_revision:
+            raise ValueError(
+                f"Plan revision mismatch: The test plan has changed "
+                f"(current: {test_plan.plan_revision[:8]}, requested: {data.plan_revision[:8]}). "
+                f"Please refresh and review the plan."
+            )
+
+        # Revalidate every requested category against the plan's selectable_category_ids
+        for cat_id in normalized_cats:
+            if cat_id not in test_plan.selectable_category_ids:
+                cat_def = next((c for c in test_plan.categories if c.category == cat_id), None)
+                status_str = cat_def.implementation_status if cat_def else "unknown"
+                reason_str = cat_def.reason if cat_def else "Category not ready for automated scanning"
+                raise ValueError(
+                    f"Category '{cat_id}' is not selectable in the current test plan (status: {status_str}, reason: {reason_str}). "
+                    f"Only ready categories can be scanned: {', '.join(test_plan.selectable_category_ids)}."
+                )
+
+        primary_cat = normalized_cats[0]
+        selected_plans = [
+            item.model_copy(update={"budget": data.budget})
+            for item in test_plan.categories
+            if item.category in normalized_cats
+        ]
         scan_id = str(uuid.uuid4())
+        total_budget = data.budget * len(selected_plans)
+        initial_results = [
+            CategoryRunStatus(
+                category=item.category,
+                name=item.name,
+                status="QUEUED",
+                attempts=0,
+                budget=item.budget,
+                exploited=False,
+            )
+            for item in selected_plans
+        ]
         response = ScanResponse(
             scan_id=scan_id,
             target_id=target.id,
             status="QUEUED",
-            category=category,
-            budget=data.budget,
-        )
-        adapter = PlaywrightWebAdapter(
-            target_url=target.url,
-            selectors=target.calibration_config,
-            headless=False,
-        )
-        orchestrator = Orchestrator(
-            scan_id=scan_id,
-            adapter=adapter,
-            max_budget=data.budget,
-            category=category,
+            category=primary_cat,
+            category_ids=normalized_cats,
+            budget=total_budget,
+            plan_revision=test_plan.plan_revision,
+            category_results=initial_results,
         )
 
-        # Retrieve TargetProfile and generate TestPlan if present
-        from app.services.recon_service import ReconService
-        from app.agents.planner.rules import TestPlanner
-        profile = ReconService.get_target_profile(target.id)
-        test_plan = TestPlanner.build_test_plan(profile) if profile else None
+        def adapter_factory() -> PlaywrightWebAdapter:
+            return PlaywrightWebAdapter(
+                target_url=target.url,
+                selectors=target.calibration_config,
+                headless=False,
+            )
+
+        def persist_category_results(results: List[dict]) -> None:
+            response.category_results = [CategoryRunStatus.model_validate(item) for item in results]
+            with SessionLocal() as session:
+                entity = session.get(ScanEntity, scan_id)
+                if entity is not None:
+                    entity.category_results = results  # type: ignore # pyrefly: ignore[read-only]
+                    session.commit()
+
+        orchestrator = Orchestrator(
+            scan_id=scan_id,
+            adapter_factory=adapter_factory,
+            category_plans=selected_plans,
+            category_update_callback=persist_category_results,
+        )
 
         with SessionLocal() as session:
             session.add(ScanEntity(
                 id=scan_id,
                 target_id=target.id,
                 status="QUEUED",
-                category=data.category,
-                budget=data.budget,
+                category=",".join(normalized_cats),
+                budget=total_budget,
                 test_plan=test_plan.model_dump(mode="json") if test_plan else None,
+                category_results=[item.model_dump(mode="json") for item in initial_results],
             ))
             session.commit()
 
@@ -100,8 +170,10 @@ class ScanService:
             "scan_id": scan_id,
             "event": "scan_queued",
             "status": "QUEUED",
-            "category": data.category,
-            "budget": data.budget,
+            "category": primary_cat,
+            "category_ids": normalized_cats,
+            "budget": total_budget,
+            "category_results": [item.model_dump(mode="json") for item in initial_results],
         })
         cls._tasks[scan_id] = asyncio.create_task(cls._run_scan(scan_id, orchestrator))
         return response
@@ -110,22 +182,72 @@ class ScanService:
     async def _run_scan(cls, scan_id: str, orchestrator: Orchestrator) -> None:
         """Run an orchestrator, update its persisted lifecycle state, and retain outcome."""
         try:
+            with SessionLocal() as session:
+                entity = session.get(ScanEntity, scan_id)
+                if entity is not None:
+                    entity.status = "RUNNING"  # type: ignore # pyrefly: ignore[read-only]
+                    session.commit()
+
+            if scan_id in cls._scans:
+                cls._scans[scan_id].status = "RUNNING"
+
             verdict = await orchestrator.run()
             cls._exploited[scan_id] = bool(verdict and verdict.exploited)
         except Exception:
             logger.exception("Scan %s failed", scan_id)
         finally:
-            response = cls._scans[scan_id]
-            response.status = orchestrator.state.value
+            response = cls._scans.get(scan_id)
+            if response:
+                response.status = orchestrator.state.value
+                response.category_results = [
+                    CategoryRunStatus.model_validate(item)
+                    for item in orchestrator.category_results
+                ]
             with SessionLocal() as session:
                 entity = session.get(ScanEntity, scan_id)
                 if entity is not None:
                     entity.status = orchestrator.state.value  # type: ignore # pyrefly: ignore[read-only]
                     entity.current_attempt = orchestrator.current_attempt  # type: ignore # pyrefly: ignore[read-only]
-                    if orchestrator.state.value in {"COMPLETED", "STOPPED", "FAILED"}:
+                    entity.category_results = orchestrator.category_results  # type: ignore # pyrefly: ignore[read-only]
+                    if orchestrator.state.value in {"COMPLETED", "PARTIAL", "STOPPED", "FAILED"}:
                         entity.completed_at = datetime.now(timezone.utc)  # type: ignore # pyrefly: ignore[read-only]
                     session.commit()
             cls._tasks.pop(scan_id, None)
+
+    @classmethod
+    def recover_interrupted_scans(cls, session_factory=SessionLocal) -> int:
+        """
+        On engine startup, identify previously queued/running scans whose
+        in-process task no longer exists and mark them INTERRUPTED.
+        """
+        with session_factory() as session:
+            dangling = (
+                session.query(ScanEntity)
+                .filter(ScanEntity.status.in_(["QUEUED", "RUNNING"]))
+                .all()
+            )
+            count = len(dangling)
+            for scan in dangling:
+                scan.status = "INTERRUPTED"  # type: ignore # pyrefly: ignore[read-only]
+                scan.completed_at = datetime.now(timezone.utc)  # type: ignore # pyrefly: ignore[read-only]
+                scan.category_results = [  # type: ignore # pyrefly: ignore[read-only]
+                    {
+                        **result,
+                        **(
+                            {
+                                "status": "INTERRUPTED",
+                                "error": "Engine restarted before this category completed.",
+                            }
+                            if result.get("status") in {"QUEUED", "RUNNING"}
+                            else {}
+                        ),
+                    }
+                    for result in (scan.category_results or [])
+                ]
+            session.commit()
+            if count > 0:
+                logger.info(f"Recovered {count} interrupted scan(s) to INTERRUPTED state.")
+            return count
 
     @classmethod
     async def get_scan_status(
@@ -145,9 +267,11 @@ class ScanService:
                 scan_id=scan_id,
                 status=orchestrator.state.value,
                 category=response.category,
+                category_ids=response.category_ids,
                 current_attempt=orchestrator.current_attempt,
                 budget=response.budget,
                 exploited=cls._exploited.get(scan_id, False),
+                category_results=response.category_results,
             )
         with session_factory() as session:
             entity = session.get(ScanEntity, scan_id)
@@ -159,13 +283,20 @@ class ScanService:
                 .first()
                 is not None
             )
+            cat_raw = getattr(entity, "category", "LLM08") or "LLM08"
+            cat_list = [c.strip() for c in cat_raw.split(",") if c.strip()]
             return ScanStatusResponse(
                 scan_id=scan_id,
                 status=entity.status,
-                category=getattr(entity, "category", "LLM08") or "LLM08",
+                category=cat_list[0] if cat_list else "LLM08",
+                category_ids=cat_list,
                 current_attempt=entity.current_attempt,
                 budget=entity.budget,
                 exploited=exploited,
+                category_results=[
+                    CategoryRunStatus.model_validate(item)
+                    for item in (entity.category_results or [])
+                ],
             )
 
     @classmethod
@@ -174,16 +305,6 @@ class ScanService:
     ) -> List[ScanTurnResponse]:
         """
         Return persisted turns for a scan ordered by turn index.
-
-        Args:
-            scan_id: UUID of the scan.
-            session_factory: Injectable SQLAlchemy session factory.
-
-        Returns:
-            List of ScanTurnResponse rows; empty when no turn was persisted.
-
-        Raises:
-            LookupError: When the scan does not exist.
         """
         with session_factory() as session:
             if session.get(ScanEntity, scan_id) is None:
@@ -205,8 +326,6 @@ class ScanService:
                             else "success"),
                     latency_ms=row.latency_ms or 0,
                     strategy=row.strategy,
-                    # Old versions evaluated connector diagnostics. Do not
-                    # replay those legacy verdicts as genuine assessments.
                     verdict=None if row.response.startswith(("[CONNECTOR_ERROR]", "[CONNECTOR_TIMEOUT]")) else row.verdict,
                     created_at=(
                         row.created_at.isoformat() if row.created_at else None

@@ -1,6 +1,30 @@
 # Aegis Project Status
 
-## Current review snapshot - 2026-11-07 (Baseline Security Engine: Deterministic Evaluator, Buff Mutators, Cost Estimator, Prompt Library Expansion)
+## Current review snapshot - 2026-11-12 (Profile-Guided Multi-Category Workflow, Canonical OWASP 2026 Catalog, Recon & Audit Hardening)
+
+The Aegis assessment pipeline and recon architecture have been upgraded and hardened in full compliance with `docs/superpowers/plans/2026-11-11-recon-planner-and-audit-fixes.md` and `docs/superpowers/plans/2026-11-11-profile-guided-multi-category-scan-workflow.md`:
+- **Canonical OWASP 2026 Category Catalog**: Created `engine/app/agents/planner/category_catalog.py` modeling all 10 canonical OWASP GenAI Top 10 (2026) categories (`LLM01` through `LLM10`) with authoritative names, legacy aliases, prerequisites, and implementation states (`LLM08` implemented; others `under_development`).
+- **Deterministic Test Planner & Revision Contract**: Updated `TestPlan` schema with `implementation_status`, `testability`, `applicability`, `selectable`, `planned_prompt_ids`, and SHA-256 `plan_revision`. Revalidation in `ScanService` strictly rejects unselectable or under-development categories, and detects stale or manipulated plan revisions.
+- **Truthful Multi-Tier Reconnaissance**:
+  - `PassiveNetworkCollector`: Strict origin filtering (ignoring 3rd party scripts), bounded timeouts, explicit Playwright context cleanup in `try...finally`.
+  - `LocalDiscovery`: Loopback IP verification via `ipaddress` rejecting remote/private addresses; command-line credential redaction (`--api-key`, `--token`, `--password`, `--secret`).
+  - `StaticProjectScanner`: Bounded 512 KB file cap, deterministic sorting, read-only `.env` key parsing (keys only, no values), and explicit `status` / `warnings`.
+  - `ProbeRunner`: Preserved unknown states on timeout/error (does not infer negative absence); separated text HTML echoing from verified DOM rendering.
+- **Recon Run Provenance & Persistence**: Created `ReconRunEntity` and `ReconTurnEntity` models. Probe turns persist cleanly to `recon_turns` under `recon_run_id` without polluting `scan_turns` with synthetic scan IDs.
+- **Truthful Reporting & System Hardening**:
+  - `ReportingAgent` explicitly marks `FAILED`, `STOPPED`, `INTERRUPTED`, or zero-turn scans as **INCONCLUSIVE**, refusing to declare clean resilience when tests did not complete.
+  - Report download enforces path traversal boundaries restricted to local AppData.
+  - Local API and WebSocket CORS restricted to loopback origins.
+  - Startup lifespan recovers interrupted scans into terminal `INTERRUPTED` state.
+- **Desktop Multi-Category Assessment Wizard**:
+  - Step 0 includes optional local project folder input for Tier 3 inspection with privacy guidance.
+  - Step 1 displays real-time recon stage indicators (Passive observation, Loopback discovery, Static inspection, Active probes) with capability tags.
+  - Step 2 features multi-category selector with "Run all ready categories" action and "Show all 10 categories" disclosure toggle.
+  - Step 3 provides detailed review summary and multi-category scan launch.
+  - Live scan telemetry dynamically highlights selected categories and per-category progress.
+- **Verification Evidence**: 100% test pass rate across all unit and integration test suites (95+ tests passing); desktop Vite build passing with 0 errors.
+
+## Prior review snapshot - 2026-11-07 (Baseline Security Engine: Deterministic Evaluator, Buff Mutators, Cost Estimator, Prompt Library Expansion)
 
 The baseline security and evaluation capabilities have been upgraded using reverse-engineered patterns from **NVIDIA Garak** and **Agentic Security**:
 - **High-Speed Deterministic Evaluator**: Implemented 28-marker universal refusal pre-filter (`REFUSAL_MARKS`) in `engine/app/agents/evaluation/deterministic.py` and `evaluator.py`, short-circuiting clear refusals at 0 ms latency without calling the LLM judge (~70% scan speedup); integrated zero-dependency PII detector (email, SSN, phone, private keys) and Credit Card candidate detector with Luhn validation (`luhn_validate`); integrated Dora regex suite for high-value secret leaks (AWS, GitHub, Slack, Stripe, OpenAI, Google); added container/sandbox escape heuristics (Docker socket, Kubernetes tokens, Linux capabilities, mount inspection).

@@ -5,17 +5,42 @@ LLM fuzzy classification, and localhost discovery tiers into a normalized Target
 Enforces the core rule: 'Unknown is not absent'.
 """
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from app.recon.classifier import ClassifierOutput
 from app.recon.fingerprint import SignatureMatch
 from app.recon.local_discovery import LocalTarget
 from app.recon.network_collector import PassiveReconData
 from app.recon.probe_runner import ProbeRunResult
-from app.recon.schemas import FieldEvidence, TargetProfile
+from app.recon.schemas import FieldEvidence, TargetProfile, ReconStageDetail
 from app.recon.static_scanner import StaticScanResult
 
 logger = logging.getLogger(__name__)
+
+EvidenceSource = Literal[
+    "passive",
+    "probe",
+    "classifier",
+    "tier2_psutil",
+    "tier3_static",
+    "corroborated",
+    "fallback",
+]
+
+StageStatus = Literal["completed", "partial", "skipped", "failed", "unknown"]
+
+
+def _coerce_stage_status(val: Any) -> StageStatus:
+    """Safely coerce any status string to a valid StageStatus literal."""
+    if val == "partial":
+        return "partial"
+    if val == "skipped":
+        return "skipped"
+    if val == "failed":
+        return "failed"
+    if val == "unknown":
+        return "unknown"
+    return "completed"
 
 
 def combine_confidences(c1: float, c2: float) -> float:
@@ -114,7 +139,7 @@ class ProfileBuilder:
         # 3. RAG Capabilities
         rag_detected = False
         rag_confidence = 0.0
-        rag_source = "fallback"
+        rag_source: EvidenceSource = "fallback"
 
         if self.static_result and self.static_result.has_rag:
             rag_detected = True
@@ -145,13 +170,23 @@ class ProfileBuilder:
                 rag_source = "probe"
 
         if not rag_detected:
-            # Affirmative negative if static scan ran and found zero vector DBs/manifests
-            if self.static_result and not self.static_result.has_rag and self.probe_result and not self.probe_result.analysis.rag_detected:
+            # Affirmative negative ONLY if static scan completed without RAG AND active probe completed without RAG
+            tier3_clean = (
+                self.static_result is not None
+                and getattr(self.static_result, "status", None) == "completed"
+                and not self.static_result.has_rag
+            )
+            probe_clean = (
+                self.probe_result is not None
+                and getattr(self.probe_result, "status", None) == "completed"
+                and not self.probe_result.analysis.rag_detected
+            )
+            if tier3_clean and probe_clean:
                 rag_confidence = 0.88
-                evidence_rag.append("Tier 3 static scan and active probes found no RAG components.")
+                evidence_rag.append("Tier 3 static scan and active probes completed and found no RAG components.")
             else:
                 rag_confidence = 0.40  # Unknown, low confidence per safe-fallback principle
-                evidence_rag.append("No affirmative RAG signals observed (unknown).")
+                evidence_rag.append("No affirmative RAG signals observed (unknown; insufficient negative evidence).")
 
         has_rag = FieldEvidence(
             detected=rag_detected,
@@ -164,7 +199,7 @@ class ProfileBuilder:
         vdb_detected = False
         vdb_name = None
         vdb_confidence = 0.0
-        vdb_source = "fallback"
+        vdb_source: EvidenceSource = "fallback"
 
         if self.static_result and self.static_result.has_vector_db:
             vdb_detected = True
@@ -192,7 +227,7 @@ class ProfileBuilder:
         # 5. Tools & Function Calling
         tools_detected = False
         tools_confidence = 0.0
-        tools_source = "fallback"
+        tools_source: EvidenceSource = "fallback"
 
         if self.static_result and self.static_result.has_tools:
             tools_detected = True
@@ -224,7 +259,7 @@ class ProfileBuilder:
         # 6. Conversation Memory
         mem_detected = False
         mem_confidence = 0.0
-        mem_source = "fallback"
+        mem_source: EvidenceSource = "fallback"
 
         if self.probe_result:
             mem_detected = self.probe_result.analysis.memory_detected
@@ -259,7 +294,7 @@ class ProfileBuilder:
         stream_detected = False
         stream_value = None
         stream_confidence = 0.0
-        stream_source = "fallback"
+        stream_source: EvidenceSource = "fallback"
 
         for s in self.signature_matches:
             if s.implies.get("streaming"):
@@ -309,6 +344,66 @@ class ProfileBuilder:
             source="probe" if md_detected else "fallback",
         )
 
+        stages: Dict[str, ReconStageDetail] = {}
+        all_warnings: List[str] = []
+
+        # Tier 1 stage
+        if self.passive_data:
+            p_status = _coerce_stage_status(getattr(self.passive_data, "status", "completed"))
+            p_warns = getattr(self.passive_data, "warnings", [])
+            stages["tier1_passive"] = ReconStageDetail(
+                status=p_status,
+                warning="; ".join(p_warns) if p_warns else None,
+                details={"well_known_count": len(self.passive_data.well_known_found)},
+            )
+            all_warnings.extend(p_warns)
+        else:
+            stages["tier1_passive"] = ReconStageDetail(status="skipped")
+
+        # Tier 2 stage
+        if self.local_target:
+            stages["tier2_local"] = ReconStageDetail(
+                status="completed",
+                details={"pid": self.local_target.pid, "port": self.local_target.port},
+            )
+        else:
+            stages["tier2_local"] = ReconStageDetail(status="skipped")
+
+        # Tier 3 stage
+        if self.static_result:
+            s_status = _coerce_stage_status(getattr(self.static_result, "status", "completed"))
+            s_warns = getattr(self.static_result, "warnings", [])
+            stages["tier3_static"] = ReconStageDetail(
+                status=s_status,
+                warning="; ".join(s_warns) if s_warns else None,
+                details={"project_path": self.static_result.project_path},
+            )
+            all_warnings.extend(s_warns)
+        else:
+            stages["tier3_static"] = ReconStageDetail(status="skipped")
+
+        # Active probes stage
+        if self.probe_result:
+            pr_status = _coerce_stage_status(getattr(self.probe_result, "status", "completed"))
+            pr_warns = getattr(self.probe_result, "warnings", [])
+            stages["active_probes"] = ReconStageDetail(
+                status=pr_status,
+                warning="; ".join(pr_warns) if pr_warns else None,
+                details={"turns_count": len(self.probe_result.turns)},
+            )
+            all_warnings.extend(pr_warns)
+        else:
+            stages["active_probes"] = ReconStageDetail(status="skipped")
+
+        # Classifier stage
+        if self.classifier_output:
+            stages["classifier"] = ReconStageDetail(
+                status="completed",
+                details={"site_type": self.classifier_output.site_type},
+            )
+        else:
+            stages["classifier"] = ReconStageDetail(status="skipped")
+
         return TargetProfile(
             target_id=self.target_id,
             target_url=self.target_url,
@@ -327,5 +422,7 @@ class ProfileBuilder:
                 "well_known": self.passive_data.well_known_found if self.passive_data else [],
                 "signature_count": len(self.signature_matches),
             },
+            stages=stages,
+            warnings=all_warnings,
         )
 

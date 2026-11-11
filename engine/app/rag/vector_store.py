@@ -1,7 +1,6 @@
 """ChromaDB Vector Store Adapter for Aegis Knowledge Base."""
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union, cast
-import chromadb
 from app.core.paths import get_app_data_dir
 
 
@@ -15,6 +14,13 @@ class VectorStore:
         Args:
             collection_name: Name of the vector collection (default: 'aegis_kb').
         """
+        try:
+            import chromadb
+        except ImportError as exc:
+            raise RuntimeError(
+                "The knowledge-base assistant requires chromadb. Install the engine requirements and retry."
+            ) from exc
+
         self.chroma_path = Path(get_app_data_dir()) / "chroma"
         self.chroma_path.mkdir(parents=True, exist_ok=True)
         self.client = chromadb.PersistentClient(path=str(self.chroma_path))

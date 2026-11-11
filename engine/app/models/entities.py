@@ -27,6 +27,7 @@ class ScanEntity(Base):
     budget = Column(Integer, default=10)
     current_attempt = Column(Integer, default=0)
     test_plan = Column(JSON, nullable=True)
+    category_results = Column(JSON, nullable=False, default=list)
     created_at = Column(DateTime, default=utc_now)
     completed_at = Column(DateTime, nullable=True)
 
@@ -63,4 +64,28 @@ class TargetProfileEntity(Base):
     profile_data = Column(JSON, nullable=False)
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+
+class ReconRunEntity(Base):
+    __tablename__ = "recon_runs"
+    id = Column(String, primary_key=True)
+    target_id = Column(String, ForeignKey("targets.id"), nullable=False)
+    status = Column(String, default="COMPLETED")  # COMPLETED, PARTIAL, FAILED
+    stages_data = Column(JSON, nullable=True)
+    profile_data = Column(JSON, nullable=True)
+    warnings = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=utc_now)
+    completed_at = Column(DateTime, nullable=True)
+
+
+class ReconTurnEntity(Base):
+    __tablename__ = "recon_turns"
+    id = Column(String, primary_key=True)
+    recon_run_id = Column(String, ForeignKey("recon_runs.id"), nullable=False)
+    turn_index = Column(Integer, nullable=False)
+    strategy = Column(String, nullable=True)
+    prompt = Column(Text, nullable=False)
+    response = Column(Text, nullable=False)
+    latency_ms = Column(Integer, default=0)
+    created_at = Column(DateTime, default=utc_now)
 

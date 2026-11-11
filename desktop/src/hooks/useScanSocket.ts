@@ -7,6 +7,8 @@ export interface ScanEvent {
   error?: string;
   timestamp?: string;
   category?: string;
+  category_ids?: string[];
+  category_results?: import('../api/client').CategoryRunStatus[];
   attempt?: number;
   budget?: number;
   prompt?: string;
@@ -22,7 +24,8 @@ export function useScanSocket(scanId: string): ScanEvent[] {
   useEffect(() => {
     setEvents([]);
     if (!scanId) return;
-    const ws = new WebSocket(`ws://127.0.0.1:8765/api/v1/ws/telemetry/${scanId}`);
+    const wsHost = window.location.hostname === '127.0.0.1' ? '127.0.0.1' : 'localhost';
+    const ws = new WebSocket(`ws://${wsHost}:8765/api/v1/ws/telemetry/${scanId}`);
     ws.onmessage = (event: MessageEvent<string>) => {
       try {
         const item = JSON.parse(event.data) as ScanEvent;

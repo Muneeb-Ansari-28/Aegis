@@ -1,6 +1,6 @@
 """Report Data and Metadata Schemas."""
 from typing import Dict, List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ReportFinding(BaseModel):
@@ -36,6 +36,9 @@ class ReportData(BaseModel):
     target_name: str
     target_url: str
     category: str
+    category_ids: List[str] = Field(default_factory=list)
+    category_results: List[Dict[str, object]] = Field(default_factory=list)
+    excluded_categories: List[Dict[str, object]] = Field(default_factory=list)
     scan_status: str
     started_at: Optional[str] = None
     completed_at: Optional[str] = None

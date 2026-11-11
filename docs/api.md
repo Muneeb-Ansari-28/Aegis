@@ -1,36 +1,55 @@
-﻿# Aegis Engine API Reference
+# Aegis Engine API Reference
 
-Base URL: `http://localhost:8765/api/v1`
+Base URL: `http://127.0.0.1:8765/api/v1`
 
-The default scan category is `LLM07` (System Prompt Leakage). Findings are evaluated using the planted canary and known-prompt overlap checks. Only use targets you own or have written permission to assess; jailbreak techniques are outside the active scope.
+Aegis provides REST and WebSocket APIs for target management, multi-tier reconnaissance, deterministic test planning, scan execution, and audit report generation.
+
+Private APIs accept loopback Host headers only and require the Aegis UI session cookie (bootstrapped from an exact trusted local UI origin) or the process token. Untrusted browser origins are rejected. `GET /health` is public and returns readiness only.
 
 ## Endpoints
 
-- `GET /health` — Readiness and Ollama connection check
-- `POST /targets` — Register a target
-- `POST /targets/{id}/calibrate` — Calibrate DOM selectors
-- `POST /scans/start` — Start an LLM07 scan
-- `GET /scans/{id}` — Get scan status
-- `GET /scans/{id}/turns` — Replay turns, including `status` (`success`, `error`, or `timeout`) and nullable `verdict`. Connector failures are not vulnerability verdicts. Older persisted connector-error markers are recognized without changing the database schema.
-- `POST /scans/{id}/stop` — Request graceful stop at the next turn boundary
-- `GET /findings/{scan_id}` — Retrieve confirmed vulnerabilities
-- `GET /findings/{scan_id}/summary` - Severity counts, backend risk grade, persisted status and target/timestamp metadata
-- `GET /findings/detail/{finding_id}` - Finding plus linked prompt/response, strategy and latency
-- `GET /reports/{scan_id}/pdf` - Download cached PDF, or generate it when absent
-- `GET /reports/{scan_id}/meta` - Generated PDF path, byte size, timestamp and SHA-256
-- `POST /reports/{scan_id}/generate` - Explicitly generate/regenerate a PDF and return metadata
-- `WS /ws/telemetry/{scan_id}` — Live WebSocket telemetry
+### System & Health
+- `GET /health` — Readiness check and Ollama daemon connectivity.
+- `GET /assistant/status` — Operational status of RAG assistant, model availability, and indexed chunk count.
+- `POST /assistant/chat` — Conversational assistant queries grounded in OWASP Top 10 2026.
 
-Connector errors/timeouts terminate new scans as `FAILED`. A `turn_completed` event
-can carry turn `status: "error"` or `"timeout"` and `verdict: null`; only successful
-turns carry evaluated chatbot evidence. `scan_failed` includes diagnostic `error`
-text. Consumers must distinguish turn status from scan lifecycle status. Failures
-before the first turn (for example navigation failure) emit `scan_failed` without
-creating a synthetic chatbot response.
+### Targets & Calibration
+- `POST /targets` — Register a new scan target (URL and name).
+- `GET /targets` — List all registered targets.
+- `GET /targets/{id}` — Retrieve target details and calibration configuration.
+- `POST /targets/{id}/calibrate/auto` — Automatic DOM selector detection via Playwright.
+- `POST /targets/{id}/calibrate/interactive` — Start interactive two-click calibration.
+- `GET /targets/{id}/calibrate/interactive/{session_id}` — Poll interactive calibration progress.
+- `POST /targets/{id}/calibrate` — Save custom CSS selectors.
 
+### Reconnaissance & Planning
+- `POST /targets/{id}/recon` — Generate a `TargetProfile`. The JSON body supports `project_path` (explicit opt-in Tier 3 local inspection), `run_probes` (defaults to `false`), and `authorized` (must be `true` before active probes can run). Passive profiling and loopback inspection do not submit chat prompts.
+- `GET /targets/{id}/profile` — Fetch saved target capability profile.
+- `GET /targets/local/discover` — Scan active listening loopback dev ports.
+- `POST /targets/{id}/plan` — Generate deterministic `TestPlan` across all 10 OWASP 2026 categories with plan revision hash and selectable category IDs.
 
-## Results consumer and reporting limits
+### Scans & Execution
+- `POST /scans/start` — Start a scan with:
+  ```json
+  {
+    "target_id": "uuid",
+    "category": "LLM08",
+    "category_ids": ["LLM08"],
+    "plan_revision": "sha256-hash",
+    "budget": 10,
+    "authorized": true
+  }
+  ```
+  Validates authorization, saved complete recon profile, current plan revision, and that every requested canonical category ID is selectable. Budgets are per category; the total budget is multiplied by the number of selected categories.
+- `GET /scans/{id}` — Poll current scan status and attempt progress.
+- `GET /scans/{id}/turns` — Replay recorded turns with latency and evaluation verdicts.
+- `POST /scans/{id}/stop` — Graceful scan termination at the next turn boundary.
+- `WS /ws/telemetry/{scan_id}` — Real-time telemetry events (`turn_started`, `turn_completed`, `scan_completed`, `scan_failed`).
 
-The active consumer is `desktop/src/views/FindingsInspector.tsx`, using `desktop/src/api/client.ts`. `FindingResponse`, `FindingDetail`, and `FindingsSummary` are defined in `engine/app/schemas/finding.py`; PDF schemas are in `schemas/report.py`. Detail latency is nullable in the backend schema. Missing findings/scan/detail resources return 404. Report generation rejects persisted QUEUED/RUNNING states with 409; unexpected generation failures return 500. Cached PDF download does not rerun generation validation. Metadata requires an existing report file.
-
-List results are ordered by creation time; these endpoints do not offer severity/search sorting controls. An empty findings list does not prove a secure or fully evaluated target. Summary lifecycle status comes from the persisted scan row and may lag live in-memory status. Legacy error-marker verdict suppression applies to turn replay; it does not repair historical findings or cached reports. The reporting narrative's treatment of zero findings on failed/stopped scans remains a known limitation. No API change was made for the Milestone 5 UI; live acceptance is tracked in [project status](../Project-Context/Status.md).
+### Findings & Reporting
+- `GET /findings/{scan_id}` — Retrieve confirmed vulnerability findings.
+- `GET /findings/{scan_id}/summary` — Severity breakdown and risk grade.
+- `GET /findings/detail/{finding_id}` — Detailed finding with linked prompt and response.
+- `POST /reports/{scan_id}/generate` — Generate styled PDF executive report. FAILED, PARTIAL, STOPPED, INTERRUPTED, or zero-turn scans are truthfully marked as **INCONCLUSIVE**.
+- `GET /reports/{scan_id}/pdf` — Download cached PDF report. Strict path validation prevents path traversal outside the user AppData directory.
+- `GET /reports/{scan_id}/meta` — Report file metadata and SHA-256 digest.

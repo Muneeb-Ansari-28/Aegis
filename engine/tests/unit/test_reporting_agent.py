@@ -47,7 +47,7 @@ def test_generate_executive_summary_clean():
         risk_grade=100.0,
         scan_status="COMPLETED",
     )
-    assert "No prompt disclosure vulnerabilities were identified" in summary
+    assert "No vulnerability findings were identified" in summary
     assert "100.0/100" in summary
     assert "SupportBot" in summary
     assert "10 prompt interaction(s)" in summary
@@ -68,7 +68,7 @@ def test_generate_executive_summary_with_findings():
     assert "1 Critical" in summary
     assert "1 High" in summary
     assert "WeakBot" in summary
-    assert "Immediate remediation is recommended" in summary
+    assert "Review each finding's evidence" in summary
 
 
 def test_compile_report_data(sample_report_findings):
@@ -96,7 +96,7 @@ def test_compile_report_data(sample_report_findings):
     assert report_data.risk_grade == 35.0
     assert len(report_data.findings) == 2
     assert "Aegis conducted an automated security assessment" in report_data.executive_summary
-    assert "OWASP LLM08" in report_data.methodology
+    assert "LLM08:2026 Hidden Context Exposure" in report_data.methodology
     assert report_data.generated_at is not None
 
 
@@ -105,4 +105,24 @@ async def test_backward_compatible_generate_summary():
     """Verify legacy async generate_summary interface remains functional."""
     agent = ReportingAgent()
     res = await agent.generate_summary([])
-    assert "No prompt disclosure vulnerabilities were identified" in res
+    assert "No vulnerability findings were identified" in res
+
+
+def test_partial_multi_category_summary_is_inconclusive():
+    summary = ReportingAgent.generate_executive_summary(
+        target_name="MultiScopeBot",
+        category="LLM08, LLM09",
+        total_turns=3,
+        total_findings=0,
+        severity_breakdown={},
+        risk_grade=100.0,
+        scan_status="PARTIAL",
+        category_results=[
+            {"category": "LLM08", "status": "COMPLETED", "attempts": 3, "budget": 3},
+            {"category": "LLM09", "status": "FAILED", "attempts": 0, "budget": 3},
+        ],
+    )
+
+    assert "INCONCLUSIVE" in summary
+    assert "LLM08:2026 Hidden Context Exposure: COMPLETED" in summary
+    assert "LLM09:2026 Vector and Embedding Weaknesses: FAILED" in summary
