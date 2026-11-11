@@ -1,22 +1,63 @@
-﻿# Aegis User Guide
+# Aegis User Guide
 
-## Assessment scope
+## Assessment Scope & Guidelines
 
-The current scan category is OWASP LLM07 System Prompt Leakage. Use direct plain-language requests only, and scan targets you own or have written permission to assess. Jailbreaks, role impersonation, instruction overrides, obfuscation, and real-secret extraction are excluded.
+Aegis is an automated red-teaming workbench designed for authorized security assessments of LLM applications:
+- **Canonical Taxonomy**: Aligns with the **OWASP Top 10 for LLM Applications (2026)** framework.
+- **Active Execution Pipeline**: **LLM08 Hidden Context Exposure** is fully implemented with automated prompt injection and context disclosure attack vectors, canary token detection, refusal pre-filtering, and an LLM judge.
+- **Multi-Category Test Planning**: Target profiling automatically guides test scope across all 10 categories. The assessment wizard lets you select any ready category or click "Run all ready categories" (currently `LLM08`). Under-development categories remain visible with explanatory notes.
+- **Authorization Requirement**: Only assess systems you own or have explicit written permission to test. Active probes and attack vectors interact directly with target browsers and APIs.
 
 ## Getting Started
 
-1. Run `scripts/setup_models.ps1` to pull required models.
-2. Launch the engine: `cd engine && python main.py`.
-3. Launch the desktop UI: `cd desktop && npm run dev`.
+### 1. Prerequisites & Model Setup
+Install Ollama and ensure local models are pulled:
+```powershell
+.\scripts\setup_models.ps1
+```
+This pulls `llama3.2:latest` (main agent model) and `nomic-embed-text:latest` (knowledge base embeddings).
 
+To index the local security knowledge base into ChromaDB:
+```powershell
+cd engine
+..\.venv\Scripts\python -m app.rag.indexer
+```
 
-## Inspect assessment results
+### 2. Launch the Engine & Desktop Client
+Start the FastAPI backend:
+```powershell
+cd engine
+..\.venv\Scripts\python main.py
+```
+*(Runs on `http://127.0.0.1:8765`)*
 
-Open an assessment from Overview's Recent Assessments, Scan History's Inspect action, or Results & findings. The Results view uses the selected scan (falling back to active/latest local history); when multiple local records exist, use the scan selector. History is specific to this browser profile, not a complete list of engine database records.
+In a separate terminal, launch the desktop workspace:
+```powershell
+cd desktop
+npm run dev
+```
+*(Opens at `http://localhost:5173`)*
 
-Overview summarizes evaluated prompts, persisted findings and severity counts, key findings, recorded test cases, assessment metadata and metrics. Open a key finding to inspect its linked evidence; Findings expands prompt/response/remediation details, Evidence lists all returned turns, and Timeline presents their recorded timestamps/outcomes. Use Refresh to retrieve updates; this view does not continuously poll.
+## Running an Assessment
 
-Export PDF downloads the existing backend report, generating it when no file exists. The UI requires loaded metadata and a terminal scan status. There is no separate report preview or regenerate control. Errors offer retry; unavailable data must not be interpreted as zero findings or proof of security. Connector diagnostics are not evaluated chatbot responses.
+1. **Target Configuration (Step 0)**:
+   - Enter your target web application URL (e.g. `http://127.0.0.1:5173` or `http://localhost:3000`).
+   - (Optional) Provide a local project folder for Tier 3 static inspection (reads package manifests and `.env` key names locally; never transmits code).
+   - Check the target authorization confirmation box.
 
-The Milestone 5 layout is implemented and fixture-tested, but visual approval and live Results/PDF integration acceptance remain pending. See [current status and limitations](../Project-Context/Status.md) before relying on assessment or PDF conclusions.
+2. **Interface Calibration & Reconnaissance (Step 1)**:
+   - Click **Automatic calibration** to let Playwright detect the input field, submit button, and response area, or **Manual calibration** to click the target controls in the visible browser window.
+   - Passive reconnaissance and loopback inspection start after you submit the URL. The authorization you confirmed on the previous step is required before benign active probes run after calibration. Tier 3 static inspection runs only when you provide a project folder. Review each stage status and inferred capability.
+
+3. **Test Scope & Multi-Category Selection (Step 2)**:
+   - The list initially shows categories recon marked applicable; categories still under development are visible but disabled. Select ready categories or click **Run all ready categories** (currently `LLM08`).
+   - Toggle **Show all 10 categories** to inspect categories whose applicability is unknown or not applicable.
+   - Set the attempt budget per selected category (1 to 10 attempts).
+
+4. **Review & Run (Step 3)**:
+   - Confirm configuration and click **Run scan**.
+   - Monitor live prompt submissions, model responses, and verdict evaluations on the **Live scan** page.
+
+5. **Results & Reporting**:
+   - Inspect confirmed vulnerabilities in **Results & findings**.
+   - Export executive PDF audit reports with methodology, category coverage, and remediation playbooks. Partial, failed, or interrupted scans are identified as **INCONCLUSIVE**.

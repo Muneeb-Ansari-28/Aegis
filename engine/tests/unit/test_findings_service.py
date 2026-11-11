@@ -202,10 +202,10 @@ async def test_get_findings_summary_nonexistent(seeded_db):
         await FindingsService.get_findings_summary("no-such-scan", session_factory=seeded_db)
 
 
-def test_api_findings_endpoints(monkeypatch, seeded_db):
+def test_api_findings_endpoints(monkeypatch, seeded_db, authenticated_client):
     """Test API router endpoints using TestClient with mocked session factory."""
     # Monkeypatch FindingsService default session factory
-    client = TestClient(app)
+    client = authenticated_client
 
     # Patch session_factory in FindingsService methods
     orig_get_by_scan = FindingsService.get_findings_by_scan

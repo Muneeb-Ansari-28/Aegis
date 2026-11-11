@@ -4,9 +4,9 @@ import hashlib
 import logging
 from pathlib import Path
 from typing import List, Optional
+import uuid
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from xhtml2pdf import pisa
 
 from app.agents.reporting_agent import ReportingAgent
 from app.core.database import SessionLocal
@@ -27,10 +27,16 @@ class ReportService:
 
     @classmethod
     def get_report_path(cls, scan_id: str) -> Path:
-        """Resolve the output destination path for a scan's PDF report."""
-        reports_dir = get_app_data_dir() / "reports"
+        """Resolve the output destination path for a scan's PDF report with traversal guards."""
+        if not scan_id or any(c in scan_id for c in ("/\\")) or ".." in scan_id:
+            raise ValueError(f"Invalid scan ID '{scan_id}'. Path traversal characters are forbidden.")
+
+        reports_dir = (get_app_data_dir() / "reports").resolve()
         reports_dir.mkdir(parents=True, exist_ok=True)
-        return reports_dir / f"report_{scan_id}.pdf"
+        dest = (reports_dir / f"report_{scan_id}.pdf").resolve()
+        if not dest.is_relative_to(reports_dir):
+            raise ValueError(f"Path traversal detected in scan ID: {scan_id}")
+        return dest
 
     @classmethod
     async def compile_report_data(
@@ -100,11 +106,33 @@ class ReportService:
                     )
                 )
 
+            category_ids = [
+                item.strip()
+                for item in (scan.category or "LLM08").split(",")
+                if item.strip()
+            ]
+            category_results = scan.category_results or []
+            planned_categories = (scan.test_plan or {}).get("categories", [])
+            excluded_categories = [
+                {
+                    "category": item.get("category", "UNKNOWN"),
+                    "name": item.get("name", "Unknown category"),
+                    "status": item.get("status", "not_tested"),
+                    "implementation_status": item.get("implementation_status", "under_development"),
+                    "reason": item.get("reason", "Not included in the selected scan scope."),
+                }
+                for item in planned_categories
+                if item.get("category") not in category_ids
+            ]
+
             return ReportingAgent.compile_report_data(
                 scan_id=scan.id,
                 target_name=target_name,
                 target_url=target_url,
-                category=scan.category or "LLM08",
+                category=", ".join(category_ids),
+                category_ids=category_ids,
+                category_results=category_results,
+                excluded_categories=excluded_categories,
                 scan_status=scan.status or "COMPLETED",
                 started_at=scan.created_at.isoformat() if scan.created_at else None,
                 completed_at=scan.completed_at.isoformat() if scan.completed_at else None,
@@ -131,6 +159,12 @@ class ReportService:
             RuntimeError: If PDF compilation fails.
         """
         report_data = await cls.compile_report_data(scan_id, session_factory=session_factory)
+        try:
+            from xhtml2pdf import pisa
+        except ImportError as exc:
+            raise RuntimeError(
+                "PDF report generation requires xhtml2pdf. Install the engine requirements and retry."
+            ) from exc
 
         def format_timestamp(ts: Optional[str]) -> str:
             if not ts:

@@ -8,6 +8,12 @@ from app.recon.schemas import TargetProfile
 
 logger = logging.getLogger(__name__)
 
+# The currently implemented LLM08 evaluator supports direct disclosure requests.
+# More aggressive techniques remain unavailable until separately designed and reviewed.
+_ALLOWED_TECHNIQUES = {
+    "LLM08": {"direct_disclosure_request"},
+}
+
 KB_PROMPTS_ROOT = Path(__file__).parent.parent.parent / "kb" / "03_PROMPT_LIBRARY"
 
 
@@ -25,17 +31,18 @@ class PromptMetadataFilter:
         library_root: Optional[Path] = None,
     ) -> List[str]:
         """
-        Scan prompt library subdirectories (fixed, templates, adaptive) for prompts
+        Scan prompt library subdirectories (fixed, templates, variations) for prompts
         matching the specified category and satisfying profile prerequisites.
         """
         root = library_root or KB_PROMPTS_ROOT
         applicable_ids: List[str] = []
+        target_cat = (category or "").upper()
 
         if not root.exists():
             return applicable_ids
 
         # Look in all JSON files under fixed/, templates/, variations/
-        for json_path in root.glob("**/*.json"):
+        for json_path in sorted(root.glob("**/*.json")):
             try:
                 with open(json_path, "r", encoding="utf-8-sig") as f:
                     records = json.load(f)
@@ -45,26 +52,51 @@ class PromptMetadataFilter:
                 for prompt_record in records:
                     if not isinstance(prompt_record, dict):
                         continue
-                    # Match category (e.g. LLM01, LLM07, LLM08)
+
                     record_cat = prompt_record.get("category", "")
                     prompt_id = prompt_record.get("id") or prompt_record.get("prompt_id")
                     if not prompt_id:
                         continue
 
-                    # If record specifies category, check equality; if not specified, check ID prefix
-                    if record_cat:
-                        if record_cat.upper() != category.upper():
-                            continue
+                    # Category resolution with canonical 2026 / legacy 2025 support:
+                    # In 2026, LLM08 is Hidden Context Exposure (former LLM07 system prompt leakage).
+                    # Allow LLM08 to match LLM08 records and legacy LLM07 direct disclosure records.
+                    rec_cat_upper = record_cat.upper() if record_cat else ""
+                    id_upper = str(prompt_id).upper()
+
+                    matches_category = False
+                    if target_cat == "LLM08":
+                        if rec_cat_upper in ("LLM08", "LLM07") or id_upper.startswith(("LLM08", "LLM07")):
+                            matches_category = True
+                    elif target_cat == "LLM09":
+                        if rec_cat_upper == "LLM09" or id_upper.startswith("LLM09"):
+                            matches_category = True
                     else:
-                        if not prompt_id.upper().startswith(category.upper()):
-                            continue
+                        if rec_cat_upper:
+                            matches_category = (rec_cat_upper == target_cat)
+                        else:
+                            matches_category = id_upper.startswith(target_cat)
+
+                    if not matches_category:
+                        continue
+
+                    allowed_techniques = _ALLOWED_TECHNIQUES.get(target_cat)
+                    technique = prompt_record.get("technique")
+                    if allowed_techniques is not None and technique not in allowed_techniques:
+                        continue
 
                     # Evaluate 'requires' rules
                     requires = prompt_record.get("requires", {})
                     if not cls._matches_requires(requires, profile):
                         continue
 
-                    applicable_ids.append(prompt_id)
+                    # Evaluate 'applicable_when' expressions
+                    applicable_when = prompt_record.get("applicable_when")
+                    if not cls._matches_applicable_when(applicable_when, profile):
+                        continue
+
+                    if prompt_id not in applicable_ids:
+                        applicable_ids.append(prompt_id)
             except Exception as e:
                 logger.debug(f"Error reading prompts from {json_path}: {e}")
 
@@ -97,3 +129,39 @@ class PromptMetadataFilter:
 
         return True
 
+    @staticmethod
+    def _matches_applicable_when(expr: Any, profile: TargetProfile) -> bool:
+        """
+        Evaluate boolean string expressions in 'applicable_when'.
+        Supports 'true', 'false', 'has_rag', 'not has_rag', 'has_tools', 'renders_html', 'memory'.
+        """
+        if expr is None:
+            return True
+        if isinstance(expr, bool):
+            return expr
+        if not isinstance(expr, str):
+            return True
+
+        cleaned = expr.strip().lower()
+        if cleaned in ("true", "1", "always", ""):
+            return True
+        if cleaned in ("false", "0", "never"):
+            return False
+
+        if cleaned in ("has_rag", "rag"):
+            return bool(profile.has_rag.detected)
+        if cleaned in ("not has_rag", "!has_rag", "no_rag"):
+            return not bool(profile.has_rag.detected)
+
+        if cleaned in ("has_tools", "tools"):
+            return bool(profile.has_tools.detected)
+        if cleaned in ("not has_tools", "!has_tools", "no_tools"):
+            return not bool(profile.has_tools.detected)
+
+        if cleaned in ("renders_html", "html"):
+            return bool(profile.renders_html.detected)
+
+        if cleaned in ("memory", "has_memory"):
+            return bool(profile.has_conversation_memory.detected)
+
+        return True

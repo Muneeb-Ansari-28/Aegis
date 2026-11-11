@@ -7,7 +7,7 @@ from unittest.mock import patch, AsyncMock
 from app.adapters.base import BaseAdapter
 from app.agents.planner.rules import TestPlanner
 from app.core.database import SessionLocal
-from app.models.entities import TargetEntity, ScanTurnEntity
+from app.models.entities import TargetEntity, ScanTurnEntity, ReconTurnEntity
 from app.recon.network_collector import PassiveReconData, ChatCandidates
 from app.schemas.target import TargetCreate
 from app.schemas.turn_record import TurnRecord
@@ -97,7 +97,12 @@ async def test_full_recon_to_test_plan_pipeline(tmp_path):
         mock_col.return_value = mock_passive
         with patch("app.services.recon_service.PlaywrightWebAdapter", return_value=mock_adapter):
             # 3. Execute Recon Agent (Step 0a)
-            profile = await ReconService.run_recon(target.id, run_probes=True)
+            profile = await ReconService.run_recon(
+                target.id,
+                project_path=str(project_dir),
+                run_probes=True,
+                authorized=True,
+            )
 
     # 4. Verify Target Profile Assertions
     assert profile.target_id == target.id
@@ -108,13 +113,13 @@ async def test_full_recon_to_test_plan_pipeline(tmp_path):
     assert "ChromaDB" in profile.has_vector_db.value
     assert any("chromadb" in db.lower() for db in profile.has_vector_db.evidence)
     assert profile.has_conversation_memory.detected is True
-    assert profile.renders_html.detected is True
+    # Model text echoing HTML tags is not verified DOM HTML rendering
+    assert profile.renders_html.detected is False
 
-    # Verify that probe turns were persisted with category = 'RECON'
+    # Verify that probe turns were persisted in recon_turns
     with SessionLocal() as session:
         recon_turns = (
-            session.query(ScanTurnEntity)
-            .filter(ScanTurnEntity.category == "RECON")
+            session.query(ReconTurnEntity)
             .all()
         )
         assert len(recon_turns) >= 5
@@ -124,24 +129,27 @@ async def test_full_recon_to_test_plan_pipeline(tmp_path):
 
     assert test_plan.target_id == target.id
     assert test_plan.total_budget > 0
+    assert len(test_plan.categories) == 10
 
-    # Scheduled categories validation:
+    # Scheduled categories validation: Only implemented categories are scheduled/selectable
     scheduled_cats = [c.category for c in test_plan.get_scheduled_categories()]
     assert "LLM08" in scheduled_cats
-    assert "LLM01" in scheduled_cats
-    assert "LLM07" in scheduled_cats
-    assert "LLM10" in scheduled_cats
+    assert test_plan.selectable_category_ids == ["LLM08"]
 
-    # Verify RAG prioritized LLM08 and LLM01
+    # Verify LLM08 is scheduled and ready
     llm08_plan = next(c for c in test_plan.categories if c.category == "LLM08")
     assert llm08_plan.priority == 1
     assert llm08_plan.status == "scheduled"
+    assert llm08_plan.implementation_status == "implemented"
+    assert llm08_plan.selectable is True
     assert len(llm08_plan.applicable_prompt_ids) > 0
 
+    # Verify under-development categories remain not_tested and unselectable
     llm01_plan = next(c for c in test_plan.categories if c.category == "LLM01")
-    assert llm01_plan.priority == 1  # Prioritized because RAG was detected
-    assert len(llm01_plan.applicable_prompt_ids) > 0
+    assert llm01_plan.implementation_status == "under_development"
+    assert llm01_plan.selectable is False
+    assert len(llm01_plan.applicable_prompt_ids) == 0
 
-    # Verify HTML prioritized LLM10
-    llm10_plan = next(c for c in test_plan.categories if c.category == "LLM10")
-    assert llm10_plan.priority == 2
+    llm09_plan = next(c for c in test_plan.categories if c.category == "LLM09")
+    assert llm09_plan.implementation_status == "under_development"
+    assert llm09_plan.selectable is False

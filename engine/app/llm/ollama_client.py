@@ -89,3 +89,31 @@ class OllamaClient:
             resp.raise_for_status()
             data = resp.json()
             return data.get("embeddings", [])
+
+    async def list_models(self) -> List[str]:
+        """List model names available locally in Ollama."""
+        try:
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                resp = await client.get(f"{self.settings.OLLAMA_BASE_URL}/api/tags")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    return [m.get("name", "") for m in data.get("models", [])]
+                return []
+        except Exception:
+            return []
+
+    async def has_model(self, model_name: str) -> bool:
+        """Check if a specific model is pulled and available in Ollama."""
+        models = await self.list_models()
+        target = model_name.lower().strip()
+        for m in models:
+            m_low = m.lower().strip()
+            if m_low == target:
+                return True
+            if ":" not in target and m_low.startswith(f"{target}:"):
+                return True
+            if target.endswith(":latest") and m_low == target[:-7]:
+                return True
+            if m_low.endswith(":latest") and m_low[:-7] == target:
+                return True
+        return False

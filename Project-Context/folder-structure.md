@@ -29,10 +29,10 @@ The repository tree follows the plan's main structure. Active LLM assets include
 
 Pre-scan reconnaissance and test planning components:
 - `engine/app/recon/`: Multi-tier reconnaissance engine (`fingerprint.py`, `network_collector.py`, `probe_runner.py`, `classifier.py`, `local_discovery.py`, `static_scanner.py`, `profile_builder.py`, `signatures/ai_stack.yaml`).
-- `engine/app/agents/planner/`: Deterministic test planner (`rules.py`, `prompt_filter.py`).
-- `engine/app/schemas/target_profile.py`: `FieldEvidence` and `TargetProfile` schemas.
+- `engine/app/agents/planner/`: Deterministic test planner (`category_catalog.py`, `rules.py`, `prompt_filter.py`).
+- `engine/app/schemas/target_profile.py`: `FieldEvidence`, `TargetProfile`, and `ReconStageDetail` schemas.
 - `engine/app/schemas/test_plan.py`: `CategoryPlan` and `TestPlan` schemas.
-- `engine/app/services/recon_service.py`: Target profiling orchestration and persistence.
+- `engine/app/services/recon_service.py`: Target profiling orchestration and persistence (`ReconRunEntity`, `ReconTurnEntity`).
 
 Multi-category vulnerability scan engine & desktop views (2026-11-10):
 - `engine/app/agents/attack_agent.py`: Multi-category attack generation with dynamic prompt loading.

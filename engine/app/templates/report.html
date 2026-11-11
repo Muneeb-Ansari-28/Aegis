@@ -252,7 +252,7 @@
       <th style="width: 22%;">Target Name</th>
       <td style="width: 28%;">{{ report.target_name }}</td>
       <th style="width: 22%;">Vulnerability Scope</th>
-      <td style="width: 28%;">OWASP {{ report.category }} (System Prompt Leakage)</td>
+      <td style="width: 28%;">OWASP {{ report.category_ids|join(', ') }}</td>
     </tr>
     <tr>
       <th>Target URL</th>
@@ -277,6 +277,31 @@
       <td>{{ format_ts(report.completed_at) }}</td>
     </tr>
   </table>
+
+  <h2>Category Coverage</h2>
+  {% if report.category_results %}
+    <table class="summary-table">
+      <thead><tr><th>Category</th><th>Status</th><th>Attempts</th><th>Outcome</th></tr></thead>
+      <tbody>
+        {% for item in report.category_results %}
+          <tr>
+            <td>OWASP {{ item.category }}:2026 {{ item.name }}</td>
+            <td>{{ item.status }}</td>
+            <td>{{ item.attempts }} / {{ item.budget }}</td>
+            <td>{% if item.exploited %}Finding detected{% elif item.status == 'COMPLETED' %}No finding detected in completed scope{% else %}Inconclusive{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+  {% if report.excluded_categories %}
+    <p>Not tested or excluded categories:</p>
+    <ul>
+      {% for item in report.excluded_categories %}
+        <li>OWASP {{ item.category }} ({{ item.name }}): {{ item.status }} — {{ item.reason }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
 
   <!-- Severity Breakdown -->
   <h2>3. Vulnerability Distribution</h2>
@@ -368,8 +393,8 @@
   <!-- Scope Notice & Disclaimer -->
   <div class="disclaimer-text">
     <strong>DISCLAIMER &amp; SCOPE NOTICE:</strong> This report is confidential and was produced automatically by the Aegis Security Workbench.
-    Testing was performed strictly against OWASP LLM08 (Hidden Context Exposure) using authorized test protocols.
-    Clean assessment results do not guarantee absolute protection against non-tested threat categories, novel evasion techniques, or broader OWASP LLM Top 10 vulnerabilities.
+    Testing was performed only against the categories listed in this report using authorized test protocols.
+    A category marked incomplete, excluded, or under development was not tested. Clean results apply only to completed category scopes and do not guarantee protection beyond those tests.
   </div>
 
 </body>

@@ -15,6 +15,7 @@ from app.recon.local_discovery import LocalDiscovery, LocalTarget
 from app.recon.schemas import TargetProfile
 from app.agents.planner.rules import TestPlanner
 from app.schemas.test_plan import TestPlan
+from app.schemas.recon import ReconRequest
 from app.adapters.web_calibration import WebCalibration
 
 router = APIRouter()
@@ -65,8 +66,7 @@ async def get_target(target_id: str) -> TargetResponse:
 @router.post("/{target_id}/recon", response_model=TargetProfile)
 async def run_target_recon(
     target_id: str,
-    project_path: Optional[str] = None,
-    run_probes: bool = True,
+    payload: ReconRequest,
 ) -> TargetProfile:
     """
     Execute Recon Agent (Step 0a):
@@ -79,10 +79,13 @@ async def run_target_recon(
     try:
         profile = await ReconService.run_recon(
             target_id=target_id,
-            project_path=project_path,
-            run_probes=run_probes,
+            project_path=payload.project_path,
+            run_probes=payload.run_probes,
+            authorized=payload.authorized,
         )
         return profile
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(
             status_code=500,

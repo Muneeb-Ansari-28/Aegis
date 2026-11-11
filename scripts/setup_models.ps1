@@ -1,8 +1,13 @@
-# Pull required local models into Ollama
-Write-Host "Pulling models into Ollama..." -ForegroundColor Cyan
+# Pull required local models into Ollama for Aegis
+Write-Host "Pulling configured models into Ollama..." -ForegroundColor Cyan
 
-ollama pull qwen2.5:3b
-ollama pull llama-guard3:1b
-ollama pull nomic-embed-text:v1.5
+# Main LLM model for Attack, Recon, Judge, and Assistant agents
+ollama pull llama3.2:latest
 
-Write-Host "Model setup complete." -ForegroundColor Green
+# Embedding model for RAG knowledge base
+ollama pull nomic-embed-text:latest
+
+Write-Host "Model pull complete." -ForegroundColor Green
+Write-Host ""
+Write-Host "To index the knowledge base, run:" -ForegroundColor Cyan
+Write-Host "  .\.venv\Scripts\python -m app.rag.indexer (from engine directory)" -ForegroundColor White

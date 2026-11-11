@@ -1,5 +1,7 @@
 """Tier 2 Localhost Process and Port Discovery via psutil and socket probing."""
+import ipaddress
 import logging
+import re
 import socket
 from typing import Dict, List, Optional
 from pydantic import BaseModel
@@ -24,6 +26,38 @@ COMMON_DEV_PORTS = {
 }
 
 
+def is_loopback_host(host: Optional[str]) -> bool:
+    """
+    Check if a host string is a recognized IPv4 or IPv6 loopback address.
+    Rejects remote private network addresses (e.g. 192.168.x.x, 10.x.x.x).
+    """
+    if not host:
+        return False
+    clean_host = host.strip("[]").strip().lower()
+    if clean_host == "localhost":
+        return True
+    try:
+        ip = ipaddress.ip_address(clean_host)
+        return ip.is_loopback
+    except ValueError:
+        return False
+
+
+def redact_cmdline(cmd_line: str) -> str:
+    """
+    Redact secret-bearing arguments from process command line strings.
+    Handles --api-key, --api_key, --token, --password, --secret.
+    """
+    if not cmd_line:
+        return ""
+    # Matches --flag=val and --flag val
+    pattern = re.compile(
+        r"(--(?:api[-_]?key|token|password|secret|auth[-_]?token)(?:=|\s+))([^\s]+)",
+        re.IGNORECASE,
+    )
+    return pattern.sub(r"\1[REDACTED]", cmd_line)
+
+
 class LocalTarget(BaseModel):
     port: int
     pid: Optional[int] = None
@@ -32,6 +66,7 @@ class LocalTarget(BaseModel):
     cwd: Optional[str] = None
     candidate_url: str = ""
     inferred_technology: Optional[str] = None
+    permission_warning: Optional[str] = None
 
 
 class LocalDiscovery:
@@ -84,6 +119,7 @@ class LocalDiscovery:
             cmd_line = ""
             proc_cwd = None
             inferred = COMMON_DEV_PORTS.get(port)
+            perm_warning = None
 
             if pid and psutil is not None:
                 try:
@@ -91,15 +127,19 @@ class LocalDiscovery:
                     try:
                         proc_name = proc.name() or ""
                     except Exception:
-                        proc_name = ""
+                        proc_name = "[unavailable]"
+                        perm_warning = "Process name unavailable (restricted permissions)."
                     try:
                         cmd_line = " ".join(proc.cmdline() or [])
                     except Exception:
-                        cmd_line = ""
+                        cmd_line = "[unavailable]"
+                        perm_warning = "Process command line unavailable (restricted permissions)."
                     try:
                         proc_cwd = proc.cwd()
                     except Exception:
                         proc_cwd = None
+                        if not perm_warning:
+                            perm_warning = "Process working directory unavailable (restricted permissions)."
 
                     # Infer technology from process command line
                     cmd_lower = cmd_line.lower()
@@ -115,18 +155,26 @@ class LocalDiscovery:
                         inferred = "Vite"
                     elif "ollama" in cmd_lower:
                         inferred = "Ollama"
-                except Exception:
-                    pass
+                except Exception as ex:
+                    logger.debug(f"Error inspecting pid {pid}: {ex}")
+                    proc_name = "[unavailable]"
+                    cmd_line = "[unavailable]"
+                    perm_warning = "Process metadata unavailable (unprivileged access or non-admin environment)."
+            else:
+                perm_warning = "Process metadata unavailable (unprivileged access or non-admin environment)."
+
+            redacted_cmd = redact_cmdline(cmd_line)
 
             results.append(
                 LocalTarget(
                     port=port,
                     pid=pid,
                     process_name=proc_name,
-                    command_line=cmd_line,
+                    command_line=redacted_cmd,
                     cwd=proc_cwd,
                     candidate_url=f"http://localhost:{port}",
                     inferred_technology=inferred,
+                    permission_warning=perm_warning,
                 )
             )
 

@@ -108,32 +108,32 @@ def seeded_reports_db(tmp_path, monkeypatch):
     return Session
 
 
-def test_get_report_metadata_not_found(seeded_reports_db):
+def test_get_report_metadata_not_found(seeded_reports_db, authenticated_client):
     """GET /api/v1/reports/{scan_id}/meta before generation returns 404."""
-    client = TestClient(app)
+    client = authenticated_client
     response = client.get("/api/v1/reports/scan-completed-1/meta")
     assert response.status_code == 404
     assert "has not been generated yet" in response.json()["detail"]
 
 
-def test_generate_report_for_running_scan_returns_conflict(seeded_reports_db):
+def test_generate_report_for_running_scan_returns_conflict(seeded_reports_db, authenticated_client):
     """POST /api/v1/reports/{scan_id}/generate on RUNNING scan returns 409 Conflict."""
-    client = TestClient(app)
+    client = authenticated_client
     response = client.post("/api/v1/reports/scan-running-1/generate")
     assert response.status_code == 409
     assert "still in progress" in response.json()["detail"]
 
 
-def test_generate_report_for_nonexistent_scan_returns_404(seeded_reports_db):
+def test_generate_report_for_nonexistent_scan_returns_404(seeded_reports_db, authenticated_client):
     """POST /api/v1/reports/{scan_id}/generate on missing scan returns 404."""
-    client = TestClient(app)
+    client = authenticated_client
     response = client.post("/api/v1/reports/no-such-scan/generate")
     assert response.status_code == 404
 
 
-def test_generate_and_fetch_report_lifecycle(seeded_reports_db):
+def test_generate_and_fetch_report_lifecycle(seeded_reports_db, authenticated_client):
     """Test full cycle: generate report, verify meta, and download PDF."""
-    client = TestClient(app)
+    client = authenticated_client
 
     # 1. Trigger generate
     gen_response = client.post("/api/v1/reports/scan-completed-1/generate")
@@ -155,9 +155,9 @@ def test_generate_and_fetch_report_lifecycle(seeded_reports_db):
     assert pdf_response.content.startswith(b"%PDF-")
 
 
-def test_get_pdf_auto_generates_if_not_present(seeded_reports_db):
+def test_get_pdf_auto_generates_if_not_present(seeded_reports_db, authenticated_client):
     """GET /api/v1/reports/{scan_id}/pdf auto-generates if not yet created."""
-    client = TestClient(app)
+    client = authenticated_client
     pdf_response = client.get("/api/v1/reports/scan-completed-1/pdf")
     assert pdf_response.status_code == 200
     assert pdf_response.headers["content-type"] == "application/pdf"

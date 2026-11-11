@@ -83,13 +83,16 @@ async def get_assistant_status() -> AssistantStatusResponse:
     store = VectorStore()
 
     ollama_ok = await client.is_available()
+    model_ok = await client.has_model(settings.MODEL_ASSISTANT) if ollama_ok else False
     chunk_count = store.count()
 
-    overall_status = "ready" if (ollama_ok and chunk_count > 0) else "degraded"
+    # Ready only when daemon reachable, configured assistant model available, and KB indexed
+    overall_status = "ready" if (ollama_ok and model_ok and chunk_count > 0) else "degraded"
 
     return AssistantStatusResponse(
         status=overall_status,
         ollama_available=ollama_ok,
+        model_available=model_ok,
         kb_chunks_indexed=chunk_count,
         embed_model=settings.MODEL_EMBED,
         assistant_model=settings.MODEL_ASSISTANT,

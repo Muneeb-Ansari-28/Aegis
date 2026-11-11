@@ -47,6 +47,7 @@ class AssistantStatusResponse(BaseModel):
 
     status: str = Field(..., description="Operational status ('ready' or 'degraded')")
     ollama_available: bool = Field(..., description="Whether Ollama daemon is reachable")
+    model_available: bool = Field(default=False, description="Whether the configured assistant model is available in Ollama")
     kb_chunks_indexed: int = Field(..., description="Total knowledge chunks indexed in vector store")
     embed_model: str = Field(..., description="Configured embedding model")
     assistant_model: str = Field(..., description="Configured conversational assistant model")

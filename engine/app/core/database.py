@@ -25,6 +25,7 @@ def init_db():
             for stmt in [
                 "ALTER TABLE targets ADD COLUMN project_path VARCHAR",
                 "ALTER TABLE scans ADD COLUMN test_plan JSON",
+                "ALTER TABLE scans ADD COLUMN category_results JSON DEFAULT '[]'",
                 "ALTER TABLE scan_turns ADD COLUMN category VARCHAR DEFAULT 'UNKNOWN'",
                 "ALTER TABLE scan_turns ADD COLUMN attempt_in_category INTEGER DEFAULT 0",
             ]:

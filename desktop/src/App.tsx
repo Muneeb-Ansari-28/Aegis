@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { AlertTriangle, ArrowUpRight, Bot, Check, CircleHelp, Command, Globe2, History, LoaderCircle, Radio, Search, Settings2, Shield, ShieldAlert, ShieldCheck, SlidersHorizontal, Sparkles, Square, UserRound, X } from 'lucide-react';
-import { api, assist, type ScanRecord, type ScanTurn, type Target } from './api/client';
+import { api, assist, type CategoryRunStatus, type ScanRecord, type ScanTurn, type Target } from './api/client';
 import { useScanSocket, type ScanEvent } from './hooks/useScanSocket';
 import Overview from './components/Overview';
 import NewAssessment from './components/NewAssessment';
@@ -276,10 +276,11 @@ function LiveScanPage({scan,targetName,onStatus,onInspectResults}:{scan:ScanReco
   const [savedTurns,setSavedTurns]=useState<ScanTurn[]>([]);
   const [status,setStatus]=useState(scan.status);
   const [category,setCategory]=useState(scan.category || 'LLM08');
+  const [categoryResults,setCategoryResults]=useState<CategoryRunStatus[]>(scan.category_results || []);
   const [attempt,setAttempt]=useState(0);
   const [stopBusy,setStopBusy]=useState(false);
   const [error,setError]=useState('');
-  const finished=['COMPLETED','STOPPED','FAILED'].includes(status.toUpperCase());
+  const finished=['COMPLETED','PARTIAL','STOPPED','FAILED','INTERRUPTED'].includes(status.toUpperCase());
   useEffect(()=>{
     let alive=true;
     const poll=async()=>{try{
@@ -288,6 +289,7 @@ function LiveScanPage({scan,targetName,onStatus,onInspectResults}:{scan:ScanReco
       setStatus(next.status);
       setAttempt(next.current_attempt);
       if (next.category) setCategory(next.category);
+      setCategoryResults(next.category_results || []);
       onStatus(next.status);
       try {
         setSavedTurns(await api.scanTurns(scan.scan_id));
@@ -308,6 +310,7 @@ function LiveScanPage({scan,targetName,onStatus,onInspectResults}:{scan:ScanReco
       if(event.event==='turn_started'||event.event==='turn_completed')setAttempt(current=>Math.max(current,event.attempt||0));
       if(event.event.startsWith('scan_')&&event.status)setStatus(event.status);
       if(event.category)setCategory(event.category);
+      if(Array.isArray(event.category_results))setCategoryResults(event.category_results as CategoryRunStatus[]);
       if(event.event==='scan_failed'&&event.error)setError(event.error);
     }
   },[events]);
@@ -327,14 +330,22 @@ function LiveScanPage({scan,targetName,onStatus,onInspectResults}:{scan:ScanReco
   const savedAttempts = new Set(persistedTurns.map(turn => turn.attempt));
   const turns = [...persistedTurns, ...liveTurns.filter(turn => !savedAttempts.has(turn.attempt))]
     .sort((a,b)=>(b.attempt||0)-(a.attempt||0));
-  const activeCategory = category || scan.category || 'LLM08';
+  const activeCategory = category || scan.category || (scan.category_ids?.[0]) || 'LLM08';
+  const selectedCategoryIds = (scan.category_ids && scan.category_ids.length > 0)
+    ? scan.category_ids
+    : [activeCategory];
   const progress=Math.min(100,Math.round((attempt/Math.max(scan.budget,1))*100));
+  const resultByCategory = new Map(categoryResults.map(result => [result.category, result]));
   return <div className="page-content live-page"><Heading eyebrow="LIVE ASSESSMENT" title="Scan activity" sub={`${targetName} · ${activeCategory} · Playwright browser is open`} action={finished ? <button className="button primary" onClick={()=>onInspectResults?.(scan.scan_id)}><ShieldAlert size={15}/>Inspect findings</button> : <button className="button secondary" onClick={()=>void stop()} disabled={stopBusy}>{stopBusy?<LoaderCircle className="spin" size={15}/>:<Square size={14}/>}Stop scan</button>}/>
-    <div className="live-summary panel"><div className="live-state"><span className={cx('status-dot',finished?'':'online')}/><div><strong>{status.replace(/_/g,' ')}</strong><small>{targetName} · scan {scan.scan_id.slice(0,8)}</small></div></div><div className="live-progress"><div><span>Attempts</span><strong>{attempt} / {scan.budget}</strong></div><div className="progress-track"><i style={{width:`${progress}%`}}/></div></div><div className="live-category-badge"><ShieldCheck size={16}/><span>{activeCategory} active</span></div></div>
+    <div className="live-summary panel"><div className="live-state"><span className={cx('status-dot',finished?'':'online')}/><div><strong>{status.replace(/_/g,' ')}</strong><small>{targetName} · scan {scan.scan_id.slice(0,8)}</small></div></div><div className="live-progress"><div><span>Attempts</span><strong>{attempt} / {scan.budget}</strong></div><div className="progress-track"><i style={{width:`${progress}%`}}/></div></div><div className="live-category-badge"><ShieldCheck size={16}/><span>{selectedCategoryIds.length > 1 ? `${activeCategory} active (${selectedCategoryIds.length} categories)` : `${activeCategory} active`}</span></div></div>
     <div className="live-grid"><section className="panel live-feed"><div className="panel-head"><div><h3>Prompt activity</h3><p>Prompts and chatbot replies from this browser session</p></div><span className={cx('live-indicator',!finished&&'live')}>{!finished&&<i/>}{finished?'ENDED':'LIVE'}</span></div>{error&&<div className="error-box"><AlertTriangle size={15}/>{error}</div>}{turns.length?turns.map(event=><article className="turn-card" key={`${event.attempt}-${event.event}`}><div className="turn-heading"><span className="turn-number">Attempt {event.attempt||'—'}</span><span className={cx('scan-status',(connectorFailed(event)?'failed':event.event==='turn_completed'?'completed':'running'))}>{connectorFailed(event)?'Connector failed':event.event==='turn_completed'?'Response received':'Sending prompt'}</span></div><div className="turn-section"><small>PROMPT · {event.strategy||activeCategory}</small><p>{event.prompt||'Waiting for prompt details…'}</p></div>{event.event==='turn_completed'?<><div className="turn-section response"><small>{connectorFailed(event)?'CONNECTOR ERROR - Not evaluated':'CHATBOT RESPONSE'} {event.latency_ms!=null?`· ${event.latency_ms} ms`:''}</small><p>{event.response||'(No response text returned)'}</p></div>{!connectorFailed(event)&&event.verdict&&<div className="turn-verdict"><ShieldCheck size={14}/>{event.verdict.exploited?'Vulnerability exploit detected':'No exploit detected'}{event.verdict.rationale&&<span>{event.verdict.rationale}</span>}</div>}</>:<div className="turn-wait"><LoaderCircle size={14} className="spin"/>Waiting for the chatbot response…</div>}</article>):<div className="live-empty"><LoaderCircle size={18} className="spin"/><strong>Waiting for the first prompt</strong><span>Prompts will appear here as the scan runs.</span></div>}</section>
       <aside className="live-aside"><section className="panel category-panel"><div className="panel-head"><div><h3>OWASP categories</h3><p>Scan module progress</p></div></div>{OWASP.map(([id,title])=>{
+        const isSelected = selectedCategoryIds.includes(id);
         const isCurrent = id === activeCategory;
-        return <div className={cx('category-row',isCurrent&&'current')} key={id}><span className="category-check">{isCurrent?(status.toUpperCase()==='COMPLETED'?<Check size={13}/>:finished?<X size={13}/>:<LoaderCircle size={13} className="spin"/>):<span/>}</span><div><strong>{id}</strong><small>{title}</small></div><em>{isCurrent?status.toUpperCase()==='COMPLETED'?'Done':status.toUpperCase()==='FAILED'?'Failed':status.toUpperCase()==='STOPPED'?'Stopped':finished?'Ended':'Active':'Not enabled'}</em></div>;
+        const result = resultByCategory.get(id);
+        const categoryStatus = result?.status || (isCurrent && status.toUpperCase() === 'RUNNING' ? 'RUNNING' : isSelected ? 'QUEUED' : 'NOT_SELECTED');
+        const categoryIcon = categoryStatus === 'COMPLETED' ? <Check size={13}/> : ['FAILED','STOPPED','SKIPPED','INTERRUPTED'].includes(categoryStatus) ? <X size={13}/> : categoryStatus === 'RUNNING' ? <LoaderCircle size={13} className="spin"/> : <span/>;
+        return <div className={cx('category-row',isCurrent&&'current',isSelected&&'selected')} key={id}><span className="category-check">{categoryIcon}</span><div><strong>{id}</strong><small>{title}{result ? ` · ${result.attempts}/${result.budget} attempts` : ''}</small></div><em>{categoryStatus === 'COMPLETED' ? 'Done' : categoryStatus === 'FAILED' ? 'Failed' : categoryStatus === 'STOPPED' ? 'Stopped' : categoryStatus === 'SKIPPED' ? 'Skipped' : categoryStatus === 'RUNNING' ? 'Active' : isSelected ? 'Queued' : 'Not selected'}</em></div>;
       })}</section><div className="panel browser-note"><div className="browser-note-icon"><Globe2 size={16}/></div><div><strong>Target browser</strong><p>Playwright is interacting with the local site in a separate visible browser window. Keep it open while the scan runs.</p></div></div></aside></div>
   </div>;
 }

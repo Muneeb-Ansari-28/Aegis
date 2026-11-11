@@ -26,7 +26,7 @@ The Recon Agent (`engine/app/recon/`) profiles the target before vulnerability s
 1. **Tier 1 — Network & Web Profiling**:
    - **Passive Fingerprinting** (`PassiveNetworkCollector`): Inspects HTTP traffic, headers (e.g. `server`, `x-powered-by`), WebSocket frames, DOM globals, loaded scripts, well-known endpoints (`/openapi.json`), and DOM input/submit/response candidate detection.
    - **Technology Signatures** (`ai_stack.yaml` & `SignatureMatcher`): Versioned regex and header rules identifying OpenAI, Ollama, LangServe, Streamlit, Gradio, Chainlit, SSE, Vercel AI SDK, RAG payload keys, and session memory.
-   - **Active Benign Probing** (`ProbeRunner`): Dispatches 5–8 non-hostile inquiry prompts (scope, RAG citation probe, memory recall with token `AegisCyan42`, output rendering, tool invocation query). All probe interactions are recorded as `scan_turns` with `category="RECON"`.
+   - **Active Benign Probing** (`ProbeRunner`): Dispatches 5–8 non-hostile inquiry prompts (scope, RAG citation probe, memory recall with token `AegisCyan42`, output rendering, tool invocation query). All probe interactions are recorded as `recon_turns` under a dedicated `ReconRunEntity`.
    - **Site Type Classification** (`SiteTypeClassifier`): Structured fuzzy classifier backed by local Ollama (`llama3.2` / `qwen3:4b`) using `JSONGuard` with deterministic keyword fallback.
 2. **Tier 2 — Localhost Discovery** (`LocalDiscovery`):
    - Scans common AI and application development ports (`3000, 5173, 8000, 8501, 7860, 11434, 1234, 8001, 8002`) using `psutil` to map running processes, command lines, and active servers.
@@ -41,7 +41,7 @@ The Test Planner (`engine/app/agents/planner/`) determines the execution plan fo
 
 1. **Pure-Python Rule Engine** (`rules.py`):
    - Zero LLM involvement in test planning logic.
-   - Generates a prioritized list of OWASP categories with per-category turn budgets ($N \le 10$):
+   - Generates a plan across all 10 canonical OWASP GenAI Top 10 (2026) categories with per-category budgets and deterministic SHA-256 `plan_revision`. `LLM08` is implemented and selectable; others are modeled as `under_development`.
      - `LLM08` (Hidden Context / RAG Leakage): prioritized when RAG or vector DBs are detected.
      - `LLM01` (Prompt Injection): prioritized when custom system instructions or delimiters are detected.
      - `LLM03` (Excessive Agency): prioritized when agentic tool calling or API integrations are detected.
