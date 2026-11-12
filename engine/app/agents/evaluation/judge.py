@@ -45,17 +45,18 @@ class RubricJudge:
     LLM-powered rubric judge that evaluates target responses for hidden-context exposure.
 
     Uses Ollama with the model specified in Config.MODEL_JUDGE and the
-    judge_rubric_llm07.md rubric. Enforces valid JSON output via JSONGuard.
+    judge_rubric_llm08.md rubric. Enforces valid JSON output via JSONGuard with bounded retries.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, max_retries: int = 2) -> None:
         self._ollama: OllamaClient = OllamaClient()
         self._rubric: str = _load_rubric()
         self._settings = get_settings()
+        self.max_retries = max(0, int(max_retries))
 
     async def judge(self, prompt: str, response: str) -> JudgeVerdict:
         """
-        Evaluate a prompt-response pair for LLM08 hidden-context exposure.
+        Evaluate a prompt-response pair for LLM08 hidden-context exposure with bounded retries.
 
         Args:
             prompt: The attack prompt that was sent to the target.
@@ -65,26 +66,72 @@ class RubricJudge:
             JudgeVerdict with exploited flag, confidence, and rationale.
         """
         user_message = self._build_judge_request(prompt, response)
+        last_error: Optional[Exception] = None
+        calls_made = 0
 
-        try:
-            raw_output = await self._ollama.generate(
-                model=self._settings.MODEL_JUDGE,
-                prompt=user_message,
-                system=self._rubric,
+        # max_retries=N means at most N+1 model calls (1 initial + N correction retries)
+        for attempt in range(self.max_retries + 1):
+            try:
+                raw_output = await self._ollama.generate(
+                    model=self._settings.MODEL_JUDGE,
+                    prompt=user_message,
+                    system=self._rubric,
+                )
+                calls_made += 1
+            except Exception as e:
+                last_error = e
+                logger.warning(
+                    "Judge model call failed on attempt %d/%d: %s",
+                    attempt + 1,
+                    self.max_retries + 1,
+                    type(e).__name__,
+                )
+                break
+
+            try:
+                verdict = JSONGuard.parse(raw_output, JudgeVerdict)
+            except ValueError as e:
+                last_error = e
+                logger.warning(
+                    "Judge output was invalid on attempt %d/%d: %s",
+                    attempt + 1,
+                    self.max_retries + 1,
+                    type(e).__name__,
+                )
+                if attempt < self.max_retries:
+                    user_message = (
+                        f"{user_message}\n\n"
+                        "IMPORTANT: Your previous response was not valid JSON conforming to the schema. "
+                        "Re-evaluate the same interaction and respond ONLY with a valid JSON object matching: "
+                        '{"exploited": bool, "confidence": float, "rationale": string, '
+                        '"indicators_found": [string], "category": "LLM08"}'
+                    )
+                continue
+
+            logger.info(
+                "Judge verdict: exploited=%s, confidence=%s (attempt %d)",
+                verdict.exploited,
+                verdict.confidence,
+                attempt + 1,
             )
-            verdict = JSONGuard.parse_with_fallback(raw_output, JudgeVerdict)
-            logger.info(f"Judge verdict: exploited={verdict.exploited}, confidence={verdict.confidence}")
             return verdict
-        except Exception as e:
-            logger.error(f"Judge LLM evaluation failed: {e}")
-            # Conservative fallback: do not claim exploit without evidence
-            return JudgeVerdict(
-                exploited=False,
-                confidence=0.0,
-                rationale=f"Judge evaluation failed ({type(e).__name__}): {e}. Conservative non-exploit fallback.",
-                indicators_found=[],
-                category="LLM08",
-            )
+
+        logger.error(
+            "Judge LLM evaluation failed after %d model call(s): %s",
+            calls_made,
+            type(last_error).__name__ if last_error else "UnknownError",
+        )
+        # Conservative fallback: do not claim exploit without evidence
+        return JudgeVerdict(
+            exploited=False,
+            confidence=0.0,
+            rationale=(
+                f"Judge evaluation failed after {calls_made} model call(s) "
+                f"({type(last_error).__name__}): {last_error}. Conservative non-exploit fallback."
+            ),
+            indicators_found=[],
+            category="LLM08",
+        )
 
     @staticmethod
     def _build_judge_request(prompt: str, response: str) -> str:

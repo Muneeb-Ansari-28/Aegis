@@ -67,6 +67,7 @@ export interface Target {
   name: string;
   target_type: string;
   url: string;
+  project_path?: string | null;
   calibration_config?: TargetCalibration | null;
 }
 export interface ScanRecord {
@@ -120,8 +121,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   health: () => request<{ status: string; ollama_connected: boolean }>('/health'),
   targets: () => request<Target[]>('/targets'),
-  createTarget: (payload: { name: string; target_type: string; url: string; calibration_config?: TargetCalibration }) =>
+  createTarget: (payload: { name: string; target_type: string; url: string; project_path?: string; calibration_config?: TargetCalibration }) =>
     request<Target>('/targets', { method: 'POST', body: JSON.stringify(payload) }),
+  updateTarget: (id: string, payload: { project_path?: string | null }) =>
+    request<Target>(`/targets/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   autoCalibrate: async (id: string) => request<{ status: string; calibration_config: TargetCalibration }>(`/targets/${id}/calibrate/auto`, { method: 'POST' }),
   beginInteractiveCalibration: (id: string, timeoutSec: number) => request<CalibrationSession>(`/targets/${id}/calibrate/interactive?timeout_sec=${timeoutSec}`, { method: 'POST' }),
   calibrationStatus: (id: string, sessionId: string) => request<CalibrationSession>(`/targets/${id}/calibrate/interactive/${sessionId}`),
@@ -140,6 +143,7 @@ export const api = {
     budget: number;
     authorized: boolean;
     plan_revision?: string;
+    evaluation_oracle?: { canary?: string; known_prompt?: string };
   }) => request<ScanRecord>('/scans/start', { method: 'POST', body: JSON.stringify(payload) }),
   scanStatus: (id: string) => request<{ scan_id: string; status: string; category?: string; category_ids: string[]; category_results: CategoryRunStatus[]; current_attempt: number; budget: number; exploited: boolean }>(`/scans/${id}`),
   scanTurns: (id: string) => request<ScanTurn[]>(`/scans/${id}/turns`),

@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\candidate.json",
+    "sha256": "d3fd51e5d958f322a6d1c26978bccdef8c69f0cf4539cb1f0bcdd1ab8df4bc4f",
+    "bytes": 9919
+  },
+  "artifact": {
+    "path": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\aegis-system-architecture.html",
+    "sha256": "33b55326cfc79ea6e7c736b18067309a6079ef922129df2781f78c4389e27bf8",
+    "bytes": 868866
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\review-3\\aegis-system-architecture.finalize.json",
+    "summaryReceipt": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\review-3\\aegis-system-architecture.finalize-summary.json",
+    "browserCheckReceipt": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\review-3\\aegis-system-architecture.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-11T21:27:16.278Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 9009,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  },
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "resolvedCrossovers": 2,
+      "routesOverSuggestedBends": 5,
+      "routesOverSuggestedStretch": 1
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [
+        {
+          "left": {
+            "id": "kb-to-planner",
+            "from": "kb",
+            "to": "planner",
+            "label": "Rules &amp; Categories",
+            "collectionIndex": 4,
+            "artifactIndex": 5
+          },
+          "right": {
+            "id": "orchestrator-to-db",
+            "from": "orchestrator",
+            "to": "db",
+            "label": "Persist Turns &amp; Findings",
+            "collectionIndex": 13,
+            "artifactIndex": 14
+          },
+          "point": [
+            790,
+            256
+          ]
+        },
+        {
+          "left": {
+            "id": "api-to-db",
+            "from": "api",
+            "to": "db",
+            "label": "Query Telemetry",
+            "collectionIndex": 14,
+            "artifactIndex": 15
+          },
+          "right": {
+            "id": "api-to-reporting",
+            "from": "api",
+            "to": "reporting",
+            "label": "Trigger PDF Export",
+            "collectionIndex": 15,
+            "artifactIndex": 16
+          },
+          "point": [
+            553,
+            257
+          ],
+          "sharedNode": "api"
+        }
+      ],
+      "detours": [
+        {
+          "relationship": {
+            "id": "analyst-to-desktop",
+            "from": "analyst",
+            "to": "desktop",
+            "label": "Configures Target &amp; Scope",
+            "collectionIndex": 0,
+            "artifactIndex": 1
+          },
+          "bends": 3,
+          "stretch": 1.3
+        },
+        {
+          "relationship": {
+            "id": "api-to-recon",
+            "from": "api",
+            "to": "recon",
+            "label": "Trigger 4-Tier Recon",
+            "collectionIndex": 2,
+            "artifactIndex": 3
+          },
+          "bends": 3,
+          "stretch": 1.302
+        },
+        {
+          "relationship": {
+            "id": "adapter-to-target",
+            "from": "adapter",
+            "to": "target",
+            "label": "Playwright Automation",
+            "collectionIndex": 7,
+            "artifactIndex": 8
+          },
+          "bends": 3,
+          "stretch": 1.288
+        },
+        {
+          "relationship": {
+            "id": "orchestrator-to-db",
+            "from": "orchestrator",
+            "to": "db",
+            "label": "Persist Turns &amp; Findings",
+            "collectionIndex": 13,
+            "artifactIndex": 14
+          },
+          "bends": 4,
+          "stretch": 1.227,
+          "directCorridorBlockers": [
+            {
+              "id": "kb",
+              "label": "OWASP KB Catalog",
+              "box": [
+                710,
+                260,
+                160,
+                60
+              ]
+            }
+          ]
+        },
+        {
+          "relationship": {
+            "id": "api-to-reporting",
+            "from": "api",
+            "to": "reporting",
+            "label": "Trigger PDF Export",
+            "collectionIndex": 15,
+            "artifactIndex": 16
+          },
+          "bends": 4,
+          "stretch": 1.883,
+          "directCorridorBlockers": [
+            {
+              "id": "db",
+              "label": "SQLite Persistence",
+              "box": [
+                480,
+                260,
+                160,
+                60
+              ]
+            }
+          ]
+        }
+      ],
+      "truncated": false
+    },
+    "hints": [
+      "kb → planner crosses orchestrator → db: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "api → db and api → reporting cross next to api: move node db or reporting so the two reach api from different sides (for example one level with it, one directly above or below it).",
+      "analyst → desktop needs 3 bends: move node analyst or desktop so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "api → recon needs 3 bends: move node api or recon so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "adapter → target needs 3 bends: move node adapter or target so they share a row or column with matching centers, or sit diagonally with a clear corner."
+    ],
+    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  }
+}

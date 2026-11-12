@@ -1,6 +1,6 @@
 """Judge Verdict JSON Contract."""
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 class JudgeVerdict(BaseModel):
     """Evaluation result including deterministic system-prompt disclosure evidence."""
@@ -9,5 +9,5 @@ class JudgeVerdict(BaseModel):
     rationale: str
     indicators_found: List[str] = Field(default_factory=list)
     canary_detected: bool = False
-    overlap_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    overlap_score: Optional[float] = Field(default=None, ge=0.0, le=1.0)
     category: str = "LLM08"

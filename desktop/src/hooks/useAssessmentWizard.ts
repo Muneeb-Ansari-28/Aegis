@@ -94,7 +94,7 @@ export function useAssessmentWizard({ targets, refresh, onStarted, notify }: Ass
     if (lock.current) return;
     revision.current++;
     setTarget(next); setName(next?.name || ''); setUrl(next?.url || '');
-    setProjectPath('');
+    setProjectPath(next?.project_path || '');
     setConsent(false); setCalibration(next?.calibration_config); setSession(null); setError('');
     setReconProfile(null); setTestPlan(null); setReconError(null);
     setSelectedCategories([]);
@@ -138,12 +138,23 @@ export function useAssessmentWizard({ targets, refresh, onStarted, notify }: Ass
             name: name.trim() || new URL(normalizedUrl).hostname,
             target_type: 'web',
             url: normalizedUrl,
+            project_path: projectPath.trim() || undefined,
           });
           setTarget(registered);
           void refresh();
           setStep(next);
           void fetchReconAndPlan(registered.id, { runProbes: false, projectPath });
           return;
+        }
+        if (next === 1 && target) {
+          const trimmed = projectPath.trim();
+          if ((target.project_path || '') !== trimmed) {
+            const updated = await api.updateTarget(target.id, {
+              project_path: trimmed || null,
+            });
+            setTarget(updated);
+            void refresh();
+          }
         }
         if (next >= 2 && target && !testPlan?.is_complete && !reconLoading) {
           const runProbes = Boolean(calibration && consent);
@@ -200,7 +211,22 @@ export function useAssessmentWizard({ targets, refresh, onStarted, notify }: Ass
     const current = () => revision.current === version;
     setError(''); setSession(null); setCalibration(undefined); setOperation(interactive ? 'click' : 'auto');
     try {
-      const registered = target || await api.createTarget({ name: name.trim() || new URL(targetUrl).hostname, target_type: 'web', url: targetUrl });
+      let registered = target;
+      if (!registered) {
+        registered = await api.createTarget({
+          name: name.trim() || new URL(targetUrl).hostname,
+          target_type: 'web',
+          url: targetUrl,
+          project_path: projectPath.trim() || undefined,
+        });
+      } else {
+        const trimmed = projectPath.trim();
+        if ((registered.project_path || '') !== trimmed) {
+          registered = await api.updateTarget(registered.id, {
+            project_path: trimmed || null,
+          });
+        }
+      }
       if (!current()) return;
       setTarget(registered); void refresh();
       if (!interactive) {

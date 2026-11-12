@@ -1,5 +1,6 @@
 """Deterministic scan state machine with persistence and telemetry."""
 import asyncio
+import inspect
 import logging
 import uuid
 from datetime import datetime, timezone
@@ -32,7 +33,9 @@ class Orchestrator:
         applicable_prompt_ids: Optional[List[str]] = None,
         category_plans: Optional[List[CategoryPlan]] = None,
         adapter_factory: Optional[Callable[[], BaseAdapter]] = None,
-        category_update_callback: Optional[Callable[[List[Dict[str, Any]]], None]] = None,
+        category_update_callback: Optional[Callable[[List[Dict[str, Any]]], Any]] = None,
+        canary: Optional[str] = None,
+        known_prompt: Optional[str] = None,
     ) -> None:
         """Create a scan runner with one or more server-approved category plans."""
         if category_plans:
@@ -61,11 +64,13 @@ class Orchestrator:
         self.category = self.category_plans[0].category.upper()
         self.current_category = self.category
         self.state = ScanState.QUEUED
+        self.canary = canary
+        self.known_prompt = known_prompt
         self.attack_agent: Any = AttackAgent(
             category=self.category,
             applicable_prompt_ids=self.category_plans[0].planned_prompt_ids,
         )
-        self.evaluator: Any = Evaluator()
+        self.evaluator: Any = Evaluator(canary=canary, known_prompt=known_prompt)
         self._session_factory = session_factory
         self._category_update_callback = category_update_callback
         self._stop_requested = asyncio.Event()
@@ -97,7 +102,15 @@ class Orchestrator:
     def _persist_turn(self, turn, verdict) -> None:
         """Store a turn and, when exploited, its linked finding transactionally."""
         with self._session_factory() as session:
-            cat = getattr(turn, "category", self.category) or self.category
+            active_cat = (getattr(self, "current_category", None) or self.category or "UNKNOWN").upper().strip()
+            turn_cat = getattr(turn, "category", None)
+            if isinstance(turn_cat, str):
+                turn_cat = turn_cat.strip()
+            if not turn_cat or turn_cat.upper() == "UNKNOWN":
+                cat = active_cat
+            else:
+                cat = turn_cat.upper()
+
             row = ScanTurnEntity(
                 id=turn.turn_id or str(uuid.uuid4()), scan_id=self.scan_id,
                 turn_index=turn.turn_index,
@@ -110,7 +123,11 @@ class Orchestrator:
             )
             session.add(row)
             if verdict and verdict.exploited:
-                verdict_cat = verdict.category or cat
+                verdict_cat = getattr(verdict, "category", None)
+                if not verdict_cat or (isinstance(verdict_cat, str) and verdict_cat.strip().upper() == "UNKNOWN"):
+                    verdict_cat = cat
+                else:
+                    verdict_cat = verdict_cat.strip().upper()
                 severity = RiskScorer.compute_severity(verdict_cat, verdict.confidence)
                 session.add(FindingEntity(
                     id=str(uuid.uuid4()), scan_id=self.scan_id, turn_id=row.id,
@@ -120,22 +137,29 @@ class Orchestrator:
                 ))
             session.commit()
 
-    def _publish_category_results(self) -> None:
+    async def _persist_turn_async(self, turn, verdict) -> None:
+        """Persist a turn away from the event loop using a short-lived DB session."""
+        await asyncio.to_thread(self._persist_turn, turn, verdict)
+
+    async def _publish_category_results(self) -> None:
         if self._category_update_callback:
-            self._category_update_callback([dict(item) for item in self.category_results])
+            result = self._category_update_callback([dict(item) for item in self.category_results])
+            if inspect.isawaitable(result):
+                await result
 
     async def _run_category(self, plan: CategoryPlan, index: int) -> Optional[JudgeVerdict]:
         result = self.category_results[index]
         result["status"] = "RUNNING"
         result["name"] = plan.name
+        self.category = plan.category.upper()
         self.current_category = plan.category
         if index > 0:
             self.attack_agent = AttackAgent(
                 category=plan.category,
                 applicable_prompt_ids=plan.planned_prompt_ids,
             )
-            self.evaluator = Evaluator()
-        self._publish_category_results()
+            self.evaluator = Evaluator(canary=self.canary, known_prompt=self.known_prompt)
+        await self._publish_category_results()
         await self._emit("category_started", category=plan.category, budget=plan.budget)
 
         adapter = self.adapter_factory() if self.adapter_factory else self.adapter
@@ -164,17 +188,28 @@ class Orchestrator:
                     prompt=prompt,
                     strategy=strategy,
                 )
-                turn = await adapter.send_prompt(prompt, attempt_in_category)
+                try:
+                    turn = await adapter.send_prompt(
+                        prompt,
+                        attempt_in_category,
+                        scan_id=self.scan_id,
+                        strategy=strategy,
+                    )
+                except TypeError as err:
+                    if "unexpected keyword argument" in str(err):
+                        turn = await adapter.send_prompt(prompt, attempt_in_category)
+                    else:
+                        raise
                 turn.scan_id = self.scan_id
                 turn.turn_index = self.current_attempt
                 turn.attempt_in_category = attempt_in_category
                 turn.strategy = strategy
                 turn.category = plan.category
-                if turn.status != "success" and not turn.response.startswith("[CONNECTOR_"):
+                if turn.status != "success" and not (turn.response or "").startswith("[CONNECTOR_"):
                     marker = "TIMEOUT" if turn.status == "timeout" else "ERROR"
-                    turn.response = f"[CONNECTOR_{marker}] {turn.response}"
+                    turn.response = f"[CONNECTOR_{marker}] {turn.response or ''}".strip()
                 category_verdict = await self.evaluator.evaluate(turn) if turn.status == "success" else None
-                self._persist_turn(turn, category_verdict)
+                await self._persist_turn_async(turn, category_verdict)
                 result["attempts"] = attempt_in_category
                 result["exploited"] = bool(category_verdict and category_verdict.exploited)
                 await self._emit(
@@ -209,7 +244,7 @@ class Orchestrator:
                 result["error"] = result.get("error") or f"Adapter close failed: {exc}"
 
         result["status"] = result_status
-        self._publish_category_results()
+        await self._publish_category_results()
         await self._emit(
             "category_completed",
             category=plan.category,
@@ -235,7 +270,7 @@ class Orchestrator:
                 if self._stop_requested.is_set():
                     for remaining in self.category_results[index:]:
                         remaining["status"] = "STOPPED"
-                    self._publish_category_results()
+                    await self._publish_category_results()
                     break
                 verdict = await self._run_category(plan, index)
                 if verdict and first_finding is None:

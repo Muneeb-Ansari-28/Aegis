@@ -36,8 +36,8 @@ def init_db():
                     pass
 
 
-# Ensure schema is initialized at import time
-init_db()
+# Ensure schema is initialized when init_db() is called by the application lifespan
+
 
 
 def get_db():

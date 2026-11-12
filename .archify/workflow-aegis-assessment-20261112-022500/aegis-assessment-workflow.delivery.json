@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "45f49701-4805-4df5-a117-e697db48132d",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "D:\\vs_code_files\\Aegis\\.archify\\workflow-aegis-assessment-20261112-022500\\candidate.json",
+  "output": "D:\\vs_code_files\\Aegis\\.archify\\workflow-aegis-assessment-20261112-022500\\aegis-assessment-workflow.html",
+  "specification": {
+    "sha256": "2e42690af3eeec4cab2b2d7a240864cab6386812821a54746bde16523f42becf",
+    "bytes": 8821
+  },
+  "artifact": {
+    "sha256": "8749282fb4d1a5375188837537b92ee66f238b416287ef8e7e68cf7b0cedb44c",
+    "bytes": 855936
+  }
+}

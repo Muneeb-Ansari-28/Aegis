@@ -1,4 +1,5 @@
 """Report generation service using Jinja2 templates and xhtml2pdf."""
+import asyncio
 from datetime import datetime, timezone
 import hashlib
 import logging
@@ -28,7 +29,7 @@ class ReportService:
     @classmethod
     def get_report_path(cls, scan_id: str) -> Path:
         """Resolve the output destination path for a scan's PDF report with traversal guards."""
-        if not scan_id or any(c in scan_id for c in ("/\\")) or ".." in scan_id:
+        if not scan_id or any(c in scan_id for c in ("/", "\\")) or ".." in scan_id:
             raise ValueError(f"Invalid scan ID '{scan_id}'. Path traversal characters are forbidden.")
 
         reports_dir = (get_app_data_dir() / "reports").resolve()
@@ -55,90 +56,93 @@ class ReportService:
         Raises:
             LookupError: If the scan does not exist.
         """
-        with session_factory() as session:
-            scan = session.get(ScanEntity, scan_id)
-            if scan is None:
-                raise LookupError(f"Scan '{scan_id}' was not found.")
+        def _sync() -> ReportData:
+            with session_factory() as session:
+                scan = session.get(ScanEntity, scan_id)
+                if scan is None:
+                    raise LookupError(f"Scan '{scan_id}' was not found.")
 
-            if scan.status in ("QUEUED", "RUNNING"):
-                raise ValueError(
-                    f"Scan '{scan_id}' is still in progress ({scan.status}). Wait for completion before generating a report."
-                )
-
-            target: Optional[TargetEntity] = None
-            if scan.target_id:
-                target = session.get(TargetEntity, scan.target_id)
-
-            target_name = target.name if target else "Target System"
-            target_url = target.url if target else "http://localhost"
-
-            turns = (
-                session.query(ScanTurnEntity)
-                .filter(ScanTurnEntity.scan_id == scan_id)
-                .order_by(ScanTurnEntity.turn_index)
-                .all()
-            )
-            turn_map = {turn.id: turn for turn in turns}
-
-            finding_entities = (
-                session.query(FindingEntity)
-                .filter(FindingEntity.scan_id == scan_id)
-                .order_by(FindingEntity.created_at)
-                .all()
-            )
-
-            report_findings: List[ReportFinding] = []
-            for f in finding_entities:
-                linked_turn = turn_map.get(f.turn_id)
-                report_findings.append(
-                    ReportFinding(
-                        id=f.id,
-                        category=f.category,
-                        severity=f.severity,
-                        confidence=f.confidence,
-                        description=f.description,
-                        remediation=f.remediation,
-                        turn_index=linked_turn.turn_index if linked_turn else 1,
-                        prompt=linked_turn.prompt if linked_turn else "(Evidence prompt not recorded)",
-                        response=linked_turn.response if linked_turn else "(Evidence response not recorded)",
-                        latency_ms=linked_turn.latency_ms if linked_turn else 0,
-                        strategy=linked_turn.strategy if linked_turn else None,
+                if scan.status in ("QUEUED", "RUNNING"):
+                    raise ValueError(
+                        f"Scan '{scan_id}' is still in progress ({scan.status}). Wait for completion before generating a report."
                     )
+
+                target: Optional[TargetEntity] = None
+                if scan.target_id:
+                    target = session.get(TargetEntity, scan.target_id)
+
+                target_name = target.name if target else "Target System"
+                target_url = target.url if target else "http://localhost"
+
+                turns = (
+                    session.query(ScanTurnEntity)
+                    .filter(ScanTurnEntity.scan_id == scan_id)
+                    .order_by(ScanTurnEntity.turn_index)
+                    .all()
+                )
+                turn_map = {turn.id: turn for turn in turns}
+
+                finding_entities = (
+                    session.query(FindingEntity)
+                    .filter(FindingEntity.scan_id == scan_id)
+                    .order_by(FindingEntity.created_at)
+                    .all()
                 )
 
-            category_ids = [
-                item.strip()
-                for item in (scan.category or "LLM08").split(",")
-                if item.strip()
-            ]
-            category_results = scan.category_results or []
-            planned_categories = (scan.test_plan or {}).get("categories", [])
-            excluded_categories = [
-                {
-                    "category": item.get("category", "UNKNOWN"),
-                    "name": item.get("name", "Unknown category"),
-                    "status": item.get("status", "not_tested"),
-                    "implementation_status": item.get("implementation_status", "under_development"),
-                    "reason": item.get("reason", "Not included in the selected scan scope."),
-                }
-                for item in planned_categories
-                if item.get("category") not in category_ids
-            ]
+                report_findings: List[ReportFinding] = []
+                for f in finding_entities:
+                    linked_turn = turn_map.get(f.turn_id)
+                    report_findings.append(
+                        ReportFinding(
+                            id=f.id,
+                            category=f.category,
+                            severity=f.severity,
+                            confidence=f.confidence,
+                            description=f.description,
+                            remediation=f.remediation,
+                            turn_index=linked_turn.turn_index if linked_turn else 1,
+                            prompt=linked_turn.prompt if linked_turn else "(Evidence prompt not recorded)",
+                            response=linked_turn.response if linked_turn else "(Evidence response not recorded)",
+                            latency_ms=linked_turn.latency_ms if linked_turn else 0,
+                            strategy=linked_turn.strategy if linked_turn else None,
+                        )
+                    )
 
-            return ReportingAgent.compile_report_data(
-                scan_id=scan.id,
-                target_name=target_name,
-                target_url=target_url,
-                category=", ".join(category_ids),
-                category_ids=category_ids,
-                category_results=category_results,
-                excluded_categories=excluded_categories,
-                scan_status=scan.status or "COMPLETED",
-                started_at=scan.created_at.isoformat() if scan.created_at else None,
-                completed_at=scan.completed_at.isoformat() if scan.completed_at else None,
-                turns_count=len(turns),
-                findings=report_findings,
-            )
+                category_ids = [
+                    item.strip()
+                    for item in (scan.category or "LLM08").split(",")
+                    if item.strip()
+                ]
+                category_results = scan.category_results or []
+                planned_categories = (scan.test_plan or {}).get("categories", [])
+                excluded_categories = [
+                    {
+                        "category": item.get("category", "UNKNOWN"),
+                        "name": item.get("name", "Unknown category"),
+                        "status": item.get("status", "not_tested"),
+                        "implementation_status": item.get("implementation_status", "under_development"),
+                        "reason": item.get("reason", "Not included in the selected scan scope."),
+                    }
+                    for item in planned_categories
+                    if item.get("category") not in category_ids
+                ]
+
+                return ReportingAgent.compile_report_data(
+                    scan_id=scan.id,
+                    target_name=target_name,
+                    target_url=target_url,
+                    category=", ".join(category_ids),
+                    category_ids=category_ids,
+                    category_results=category_results,
+                    excluded_categories=excluded_categories,
+                    scan_status=scan.status or "COMPLETED",
+                    started_at=scan.created_at.isoformat() if scan.created_at else None,
+                    completed_at=scan.completed_at.isoformat() if scan.completed_at else None,
+                    turns_count=len(turns),
+                    findings=report_findings,
+                )
+
+        return await asyncio.to_thread(_sync)
 
     @classmethod
     async def generate_report(
@@ -189,12 +193,15 @@ class ReportService:
 
         out_path = cls.get_report_path(scan_id)
 
-        with open(out_path, "wb") as pdf_file:
-            pisa_status = pisa.CreatePDF(rendered_html, dest=pdf_file)
-            if pisa_status.err:
-                raise RuntimeError(
-                    f"xhtml2pdf encountered errors rendering PDF for scan '{scan_id}': {pisa_status.err}"
-                )
+        def _sync_render_pdf():
+            with open(out_path, "wb") as pdf_file:
+                pisa_status = pisa.CreatePDF(rendered_html, dest=pdf_file)
+                if pisa_status.err:
+                    raise RuntimeError(
+                        f"xhtml2pdf encountered errors rendering PDF for scan '{scan_id}': {pisa_status.err}"
+                    )
+
+        await asyncio.to_thread(_sync_render_pdf)
 
         logger.info("Successfully generated PDF report for scan '%s' at %s", scan_id, out_path)
         return out_path
@@ -217,14 +224,17 @@ class ReportService:
         if not report_path.exists():
             raise LookupError(f"Report for scan '{scan_id}' has not been generated yet.")
 
-        stat = report_path.stat()
-        file_bytes = report_path.read_bytes()
-        sha256 = hashlib.sha256(file_bytes).hexdigest()
+        def _sync_read_meta() -> ReportMeta:
+            stat = report_path.stat()
+            file_bytes = report_path.read_bytes()
+            sha256 = hashlib.sha256(file_bytes).hexdigest()
 
-        return ReportMeta(
-            scan_id=scan_id,
-            report_path=str(report_path),
-            file_size_bytes=stat.st_size,
-            created_at=datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
-            sha256=sha256,
-        )
+            return ReportMeta(
+                scan_id=scan_id,
+                report_path=str(report_path),
+                file_size_bytes=stat.st_size,
+                created_at=datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+                sha256=sha256,
+            )
+
+        return await asyncio.to_thread(_sync_read_meta)

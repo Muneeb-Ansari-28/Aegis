@@ -1,3 +1,4 @@
+import asyncio
 from typing import Optional
 import pytest
 from unittest.mock import AsyncMock
@@ -96,6 +97,9 @@ async def test_orchestrator_executes_each_category_with_its_own_plan(monkeypatch
             return f"direct prompt for {self.category}", "planned"
 
     class SafeEvaluator:
+        def __init__(self, *args, **kwargs):
+            pass
+
         async def evaluate(self, turn):
             return JudgeVerdict(
                 exploited=False, confidence=0.0, rationale="No finding",
@@ -119,15 +123,116 @@ async def test_orchestrator_executes_each_category_with_its_own_plan(monkeypatch
                      selectable=True, implementation_status="implemented", testability="ready",
                      planned_prompt_ids=["direct-99"]),
     ]
+    callback_results = []
+
+    async def update_category_results(results):
+        await asyncio.sleep(0)
+        callback_results.append(results)
+
     orch = Orchestrator(
         scan_id="multi-category", adapter=adapter, max_budget=1,
         session_factory=MemorySession, category_plans=categories,
+        category_update_callback=update_category_results,
     )
 
     await orch.run()
 
     assert [row.category for row in rows] == ["LLM08", "LLM99"]
+    assert all(row.scan_id == "multi-category" for row in rows)
+    assert all(row.strategy == "planned" for row in rows)
     assert [result["category"] for result in orch.category_results] == ["LLM08", "LLM99"]
     assert all(result["status"] == "COMPLETED" for result in orch.category_results)
+    assert callback_results[-1] == orch.category_results
     assert [agent.prompt_ids for agent in created_agents] == [["direct-08"], ["direct-99"]]
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_persist_turn_category_sentinel_fallbacks():
+    """Verify that _persist_turn treats None, '', and 'UNKNOWN' as missing and falls back to active category."""
+    rows = []
+
+    class MemorySession:
+        def __enter__(self): return self
+        def __exit__(self, *args): return False
+        def add(self, row): rows.append(row)
+        def commit(self): pass
+
+    adapter = DummyAdapter()
+    profile = TargetProfile(target_id="target-1")
+    prompt_ids = PromptMetadataFilter.get_applicable_prompts("LLM08", profile)
+    orch = Orchestrator(
+        scan_id="sentinel-test", adapter=adapter, max_budget=1,
+        category="LLM08", applicable_prompt_ids=prompt_ids,
+        session_factory=MemorySession,
+    )
+
+    class DummyTurn:
+        def __init__(self, category):
+            self.turn_id = "t-1"
+            self.turn_index = 1
+            self.attempt_in_category = 1
+            self.prompt = "test prompt"
+            self.response = "test response"
+            self.latency_ms = 10
+            self.strategy = "test"
+            self.timestamp = None
+            self.category = category
+
+    # 1. None category -> falls back to LLM08
+    orch._persist_turn(DummyTurn(None), None)
+    assert rows[-1].category == "LLM08"
+
+    # 2. Empty string category -> falls back to LLM08
+    orch._persist_turn(DummyTurn(""), None)
+    assert rows[-1].category == "LLM08"
+
+    # 3. UNKNOWN category -> falls back to LLM08
+    orch._persist_turn(DummyTurn("UNKNOWN"), None)
+    assert rows[-1].category == "LLM08"
+
+    # 4. Whitespace category -> falls back to LLM08
+    orch._persist_turn(DummyTurn("   "), None)
+    assert rows[-1].category == "LLM08"
+
+    # 5. Explicit valid category preserved
+    orch._persist_turn(DummyTurn("LLM09"), None)
+    assert rows[-1].category == "LLM09"
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_persists_turn_in_worker_thread():
+    import threading
+
+    event_loop_thread = threading.get_ident()
+    session_threads = []
+
+    class MemorySession:
+        def __enter__(self):
+            session_threads.append(threading.get_ident())
+            return self
+        def __exit__(self, *args): return False
+        def add(self, row): pass
+        def commit(self): pass
+
+    class DummyTurn:
+        turn_id = "threaded-turn"
+        turn_index = 1
+        attempt_in_category = 1
+        category = "LLM08"
+        prompt = "prompt"
+        response = "response"
+        latency_ms = 1
+        strategy = "fixed"
+        timestamp = None
+
+    orch = Orchestrator(
+        scan_id="threaded-scan", adapter=DummyAdapter(), max_budget=1,
+        category="LLM08", applicable_prompt_ids=["llm07_direct_01"],
+        session_factory=MemorySession,
+    )
+
+    await orch._persist_turn_async(DummyTurn(), None)
+
+    assert session_threads
+    assert all(thread_id != event_loop_thread for thread_id in session_threads)
 

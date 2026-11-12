@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "647280b0-8399-44aa-a276-316ae207be42",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\candidate.json",
+  "output": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\aegis-system-architecture.html",
+  "specification": {
+    "sha256": "d3fd51e5d958f322a6d1c26978bccdef8c69f0cf4539cb1f0bcdd1ab8df4bc4f",
+    "bytes": 9919
+  },
+  "artifact": {
+    "sha256": "33b55326cfc79ea6e7c736b18067309a6079ef922129df2781f78c4389e27bf8",
+    "bytes": 868866
+  }
+}

@@ -37,4 +37,8 @@ async def telemetry_websocket(websocket: WebSocket, scan_id: str):
             event = await queue.get()
             await websocket.send_json(event)
     except WebSocketDisconnect:
+        pass
+    except Exception:
+        pass
+    finally:
         event_bus.unsubscribe(scan_id, queue)

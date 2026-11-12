@@ -1,6 +1,19 @@
 # Aegis Project Status
 
-## Current review snapshot - 2026-11-12 (Profile-Guided Multi-Category Workflow, Canonical OWASP 2026 Catalog, Recon & Audit Hardening)
+## Current review snapshot - 2026-11-12 (Audit Gaps Closure, Concurrency Hardening & Pyrefly Language Server Audit)
+
+All identified audit findings, execution order issues, and language server diagnostics across the Aegis codebase have been fixed and verified:
+- **Target Project Path Persistence**: Added PATCH /api/v1/targets/{id} and update_target service method with whitespace normalization and explicit null persistence. Updated desktop wizard to persist path edits for existing and newly created targets.
+- **Pure JSONGuard Parsing & Bounded Judge Retries**: Decoupled JSONGuard into a pure parser with markdown code-block extraction and balanced-brace depth tracking. Added bounded model retries (max_retries=2) in RubricJudge with schema correction prompts and conservative exploited=False, confidence=0.0 non-exploit fallback upon exhaustion.
+- **Anchored Refusal Detection**: Replaced whole-response substring matching with anchored opening.startswith(marker) checking after polite preamble and greeting identity stripping ('As an AI assistant,'), eliminating false positives on quoted or mid-body refusal tokens.
+- **Turn Category Sentinels & Fail-Closed Evaluation**: _persist_turn falls back to active plan category on None, '', or 'UNKNOWN'. Evaluator.evaluate() immediately fails closed with 0.0 confidence on missing, unknown, or under-development categories.
+- **Ephemeral Per-Scan Evaluation Oracles**: Added optional evaluation_oracle (canary, known_prompt) to ScanCreate. Retained across category runs in Orchestrator without database persistence or target fixture contamination.
+- **Asynchronous DB Offloading & Registry Locks**: Offloaded all synchronous SQLAlchemy and PDF operations to worker threads via asyncio.to_thread(_sync). Protected scan state with _lock and interactive calibration sessions with _calibration_lock, ensuring running task cancellation on session eviction.
+- **Scaffold Protection & Prompt Collision Rejection**: KBLoader raises DuplicatePromptIdError on prompt ID collisions. TriageFilter.check_safety() raises NotImplementedError failing closed. BuffMutationEngine documented as offline research scaffold.
+- **Language Server & Pyrefly Zero-Error Audit**: Resolved all 7 IDE Problems panel diagnostics across target_service.py, test_recon_and_planner_flow.py, test_scan_flow.py, and test_deterministic.py. pyrefly check engine/ reports 0 errors across the entire codebase.
+- **Verification Evidence**: 194/194 tests passing across full unit and integration suites; desktop Vite production build passing with 0 errors.
+
+## Prior review snapshot - 2026-11-12 (Profile-Guided Multi-Category Workflow, Canonical OWASP 2026 Catalog, Recon & Audit Hardening)
 
 The Aegis assessment pipeline and recon architecture have been upgraded and hardened in full compliance with `docs/superpowers/plans/2026-11-11-recon-planner-and-audit-fixes.md` and `docs/superpowers/plans/2026-11-11-profile-guided-multi-category-scan-workflow.md`:
 - **Canonical OWASP 2026 Category Catalog**: Created `engine/app/agents/planner/category_catalog.py` modeling all 10 canonical OWASP GenAI Top 10 (2026) categories (`LLM01` through `LLM10`) with authoritative names, legacy aliases, prerequisites, and implementation states (`LLM08` implemented; others `under_development`).

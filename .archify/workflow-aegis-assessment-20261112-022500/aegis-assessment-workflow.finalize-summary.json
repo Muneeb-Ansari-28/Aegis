@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "workflow",
+  "quality": "showcase",
+  "specification": {
+    "path": "D:\\vs_code_files\\Aegis\\.archify\\workflow-aegis-assessment-20261112-022500\\candidate.json",
+    "sha256": "2e42690af3eeec4cab2b2d7a240864cab6386812821a54746bde16523f42becf",
+    "bytes": 8821
+  },
+  "artifact": {
+    "path": "D:\\vs_code_files\\Aegis\\.archify\\workflow-aegis-assessment-20261112-022500\\aegis-assessment-workflow.html",
+    "sha256": "8749282fb4d1a5375188837537b92ee66f238b416287ef8e7e68cf7b0cedb44c",
+    "bytes": 855936
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "D:\\vs_code_files\\Aegis\\.archify\\workflow-aegis-assessment-20261112-022500\\aegis-assessment-workflow.finalize.json",
+    "summaryReceipt": "D:\\vs_code_files\\Aegis\\.archify\\workflow-aegis-assessment-20261112-022500\\aegis-assessment-workflow.finalize-summary.json",
+    "browserCheckReceipt": "D:\\vs_code_files\\Aegis\\.archify\\workflow-aegis-assessment-20261112-022500\\aegis-assessment-workflow.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-11T21:27:16.278Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 8024,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  }
+}

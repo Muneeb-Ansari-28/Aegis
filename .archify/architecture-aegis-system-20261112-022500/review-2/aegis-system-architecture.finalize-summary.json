@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "fail",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\candidate.json",
+    "sha256": "fef6c5e95309838dbbc485d7806f687d94f3727fad329622fde8346c79da1250",
+    "bytes": 9923
+  },
+  "artifact": {
+    "path": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\aegis-system-architecture.html",
+    "sha256": "33b55326cfc79ea6e7c736b18067309a6079ef922129df2781f78c4389e27bf8",
+    "bytes": 868866
+  },
+  "gates": {
+    "validate": "fail",
+    "deliver": "not-run",
+    "check": "not-run",
+    "browser-check": "not-run"
+  },
+  "failedStage": "validate",
+  "diagnostics": [
+    {
+      "code": "composition/label-gap",
+      "severity": "error",
+      "message": "Label \"Rules & Categories\" has only 80px between \"kb\" and \"planner\"; it needs at least 113px to stay beside its route — increase that clear gap or place the connected nodes on another readable row, preserving the label.",
+      "subject": {
+        "diagramType": "architecture",
+        "collection": "connections",
+        "id": "kb-to-planner",
+        "from": "kb",
+        "to": "planner"
+      },
+      "evidence": {
+        "clearGapPx": 80,
+        "minimumGapPx": 113,
+        "labelWidthPx": 96.39999999999999,
+        "obstacles": [
+          "planner",
+          "kb"
+        ]
+      },
+      "supportedFixes": [
+        "increase the clear gap between the connected nodes to at least 113px",
+        "reposition the connected nodes together while preserving the full relationship label"
+      ]
+    },
+    {
+      "code": "composition/label-gap",
+      "severity": "error",
+      "message": "Label \"Aggregate Findings\" has only 90px between \"reporting\" and \"db\"; it needs at least 113px to stay beside its route — increase that clear gap or place the connected nodes on another readable row, preserving the label.",
+      "subject": {
+        "diagramType": "architecture",
+        "collection": "connections",
+        "id": "reporting-to-db",
+        "from": "reporting",
+        "to": "db"
+      },
+      "evidence": {
+        "clearGapPx": 90,
+        "minimumGapPx": 113,
+        "labelWidthPx": 96.39999999999999,
+        "obstacles": [
+          "reporting",
+          "db"
+        ]
+      },
+      "supportedFixes": [
+        "increase the clear gap between the connected nodes to at least 113px",
+        "reposition the connected nodes together while preserving the full relationship label"
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 2,
+    "shown": 2,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\review-2\\aegis-system-architecture.finalize.json",
+    "summaryReceipt": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\review-2\\aegis-system-architecture.finalize-summary.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-11T21:27:16.278Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 3071,
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  },
+  "nextAction": {
+    "action": "edit-in-place",
+    "candidate": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\candidate.json",
+    "constraint": "Preserve unaffected semantics and geometry; apply each diagnostic's supportedFixes, or the fix its message names, and do not replace the whole candidate.",
+    "then": "finalize-once"
+  }
+}

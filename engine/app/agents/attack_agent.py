@@ -11,43 +11,11 @@ from typing import Dict, List, Tuple, Optional
 from app.core.config import get_settings
 from app.llm.ollama_client import OllamaClient
 from app.agents.planner.category_catalog import get_category_definition
+from app.kb.loader import KBLoader
 
 logger = logging.getLogger(__name__)
 
-_KB_DIR = Path(__file__).parent.parent / "kb" / "03_PROMPT_LIBRARY"
-_KB_FIXED_DIR = _KB_DIR / "fixed"
-_KB_TEMPLATES_DIR = _KB_DIR / "templates"
-
 _ATTACK_SYSTEM_PROMPT_PATH = Path(__file__).parent / "prompts" / "attack_system.md"
-
-
-def _load_prompts_by_id() -> Dict[str, str]:
-    """Load prompt text keyed by the exact IDs supplied by the planner."""
-    prompts: Dict[str, str] = {}
-    if not _KB_DIR.exists():
-        return prompts
-    for file_path in sorted(_KB_DIR.glob("**/*.json")):
-        try:
-            records = json.loads(file_path.read_text(encoding="utf-8-sig"))
-            if not isinstance(records, list):
-                continue
-            for record in records:
-                if not isinstance(record, dict):
-                    continue
-                prompt_id = record.get("id") or record.get("prompt_id")
-                if not isinstance(prompt_id, str):
-                    continue
-                text = record.get("prompt")
-                if not isinstance(text, str):
-                    text = record.get("template")
-                    if isinstance(text, str):
-                        for key, value in record.get("variables", {}).items():
-                            text = text.replace(f"{{{key}}}", str(value))
-                if isinstance(text, str) and text.strip():
-                    prompts[prompt_id] = text.strip()
-        except Exception as exc:
-            logger.warning("Failed to read prompt library file %s: %s", file_path.name, exc)
-    return prompts
 
 
 def _load_prompts_for_category(category: str, prompt_ids: List[str]) -> List[str]:
@@ -60,11 +28,11 @@ def _load_prompts_for_category(category: str, prompt_ids: List[str]) -> List[str
     if not prompt_ids:
         raise ValueError(f"A non-empty planner-approved prompt IDs list is required for {definition.id}.")
 
-    library = _load_prompts_by_id()
-    missing = [prompt_id for prompt_id in prompt_ids if prompt_id not in library]
+    resolved = KBLoader.load_prompts_by_ids(prompt_ids, category=definition.id)
+    missing = [prompt_id for prompt_id in prompt_ids if prompt_id not in resolved]
     if missing:
         raise ValueError(f"Planner prompt IDs are missing from the library: {', '.join(missing)}")
-    return [library[prompt_id] for prompt_id in prompt_ids]
+    return [resolved[prompt_id] for prompt_id in prompt_ids]
 
 
 def _load_attack_system_prompt(category: str = "LLM08") -> str:

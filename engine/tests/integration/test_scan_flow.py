@@ -1,4 +1,6 @@
+import asyncio
 import uuid
+from typing import Optional
 import pytest
 from unittest.mock import AsyncMock
 from app.agents.orchestrator import Orchestrator
@@ -16,7 +18,14 @@ class MockAdapter(BaseAdapter):
     async def open(self) -> None:
         self.opened = True
 
-    async def send_prompt(self, prompt: str, attempt: int) -> TurnRecord:
+    async def send_prompt(
+        self,
+        prompt: str,
+        attempt: int,
+        scan_id: str = "scan-default",
+        strategy: Optional[str] = None,
+        **kwargs,
+    ) -> TurnRecord:
         return TurnRecord(
             turn_id=f"turn-{attempt}",
             scan_id="test-scan",
@@ -45,6 +54,7 @@ async def test_orchestrator_skeleton():
     orchestrator.attack_agent = StaticAttackAgent()
     orchestrator.evaluator = StaticEvaluator()
     verdict = await orchestrator.run()
+    assert verdict is None
     assert orchestrator.state.value == "COMPLETED"
     assert adapter.opened is True
     assert adapter.closed is True
@@ -124,14 +134,20 @@ async def test_replay_preserves_success_and_marks_legacy_connector_errors():
     """Old misleading verdicts are suppressed without rewriting existing rows."""
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
     from app.core.database import Base
-    from app.models.entities import ScanEntity, ScanTurnEntity
+    from app.models.entities import ScanEntity, ScanTurnEntity, TargetEntity
     from app.services.scan_service import ScanService
 
-    engine = create_engine("sqlite:///:memory:")
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     Base.metadata.create_all(engine)
     sessions = sessionmaker(bind=engine)
     with sessions() as session:
+        session.add(TargetEntity(id="test", name="Test Target", url="http://localhost:8000"))
         session.add(ScanEntity(id="replay", target_id="test", status="FAILED"))
         for index, response in enumerate([
             "Genuine answer", "[CONNECTOR_ERROR] hidden", "[CONNECTOR_TIMEOUT] no reply",
@@ -168,12 +184,12 @@ async def test_orchestrator_persists_turn_finding_and_events():
         assert len(rows) == 2
         assert rows[0].turn_index == 1
         assert rows[1].turn_id == rows[0].id
-        assert (await queue.get())["event"] == "scan_started"
-        assert (await queue.get())["event"] == "category_started"
-        assert (await queue.get())["event"] == "turn_started"
-        assert (await queue.get())["event"] == "turn_completed"
-        assert (await queue.get())["event"] == "category_completed"
-        assert (await queue.get())["event"] == "scan_completed"
+        assert (await asyncio.wait_for(queue.get(), timeout=2.0))["event"] == "scan_started"
+        assert (await asyncio.wait_for(queue.get(), timeout=2.0))["event"] == "category_started"
+        assert (await asyncio.wait_for(queue.get(), timeout=2.0))["event"] == "turn_started"
+        assert (await asyncio.wait_for(queue.get(), timeout=2.0))["event"] == "turn_completed"
+        assert (await asyncio.wait_for(queue.get(), timeout=2.0))["event"] == "category_completed"
+        assert (await asyncio.wait_for(queue.get(), timeout=2.0))["event"] == "scan_completed"
     finally:
         event_bus.unsubscribe(scan_id, queue)
 
@@ -187,8 +203,14 @@ async def test_orchestrator_honors_stop_between_turns():
     orchestrator.evaluator = StaticEvaluator()
     original_send = adapter.send_prompt
 
-    async def send_and_stop(prompt, attempt):
-        result = await original_send(prompt, attempt)
+    async def send_and_stop(
+        prompt: str,
+        attempt: int,
+        scan_id: str = "scan-default",
+        strategy: Optional[str] = None,
+        **kwargs,
+    ) -> TurnRecord:
+        result = await original_send(prompt, attempt, scan_id=scan_id, strategy=strategy, **kwargs)
         orchestrator.stop()
         return result
 

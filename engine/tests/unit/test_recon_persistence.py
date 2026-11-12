@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.adapters.base import BaseAdapter
 from app.core.database import Base
@@ -21,7 +22,11 @@ from app.schemas.turn_record import TurnRecord
 
 @pytest.fixture
 def mem_db():
-    engine = create_engine("sqlite:///:memory:")
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     Base.metadata.create_all(engine)
     session_factory = sessionmaker(bind=engine)
     yield session_factory
@@ -103,3 +108,34 @@ async def test_two_recon_runs_separate_identities_and_turns(mem_db):
         assert len(turns_run2) == 6
         assert set(t.recon_run_id for t in turns_run1) == {run1_id}
         assert set(t.recon_run_id for t in turns_run2) == {run2_id}
+
+
+@pytest.mark.asyncio
+async def test_calibrate_target_loads_from_db_when_cache_empty(monkeypatch):
+    from app.services.target_service import TargetService
+    from app.schemas.target import TargetCalibrationConfig
+    from app.core.database import SessionLocal
+
+    target_id = str(uuid.uuid4())
+    with SessionLocal() as session:
+        session.add(TargetEntity(id=target_id, name="Uncached Target", target_type="web", url="http://127.0.0.1:8000"))
+        session.commit()
+
+    # Clear in-memory cache to simulate restart
+    TargetService._targets.pop(target_id, None)
+
+    cfg = TargetCalibrationConfig(
+        input_selector="#chat-input",
+        submit_selector="#chat-submit",
+        response_selector="#chat-response",
+    )
+    result = await TargetService.calibrate_target(target_id, cfg)
+    assert result is not None
+    assert result["status"] == "calibrated"
+
+    # Verify cached and DB state
+    cached = await TargetService.get_target(target_id)
+    assert cached is not None
+    assert cached.calibration_config is not None
+    assert cached.calibration_config.input_selector == "#chat-input"
+

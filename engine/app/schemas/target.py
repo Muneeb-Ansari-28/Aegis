@@ -80,6 +80,11 @@ class TargetCreate(BaseModel):
         return stripped
 
 
+class TargetUpdate(BaseModel):
+    """Request body for PATCH /targets/{target_id}."""
+    project_path: Optional[str] = Field(default=None, description="Optional local project folder path for Tier 3 static analysis.")
+
+
 class TargetResponse(BaseModel):
     """Response body for target endpoints."""
     id: str

@@ -1,0 +1,327 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Aegis Multi-Category Security Assessment Workflow",
+    "output": ".archify/workflow-aegis-assessment-20261112-022500/aegis-assessment-workflow.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/Muneeb-Ansari-28/Aegis.git",
+      "revision": "3489d31631483928a36c68aa16575364048701ab"
+    }
+  },
+  "lanes": [
+    { "id": "analyst", "label": "Analyst & Desktop UI" },
+    { "id": "control", "label": "Engine Control & Recon" },
+    { "id": "executor", "label": "Attack Execution" },
+    { "id": "eval", "label": "Evaluation & Reports" }
+  ],
+  "phases": [
+    { "id": "phase_intake", "label": "Target Intake & Calibration", "fromCol": 0, "toCol": 1, "variant": "default" },
+    { "id": "phase_recon", "label": "Recon & Deterministic Plan", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "phase_execution", "label": "Multi-Category Attack & Report", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [
+    { "id": "wizard_group", "label": "Analyst Setup", "lane": "analyst", "fromCol": 0, "toCol": 3, "variant": "emphasis" },
+    { "id": "engine_group", "label": "Engine Discovery", "lane": "control", "fromCol": 1, "toCol": 3, "variant": "security" },
+    { "id": "attack_group", "label": "Execution Loop", "lane": "executor", "fromCol": 4, "toCol": 4, "variant": "emphasis" },
+    { "id": "eval_group", "label": "Verification & Reporting", "lane": "eval", "fromCol": 5, "toCol": 5, "variant": "security" }
+  ],
+  "mainPath": [
+    "user_input",
+    "calibration",
+    "recon",
+    "planner",
+    "scope",
+    "orchestrator",
+    "browser",
+    "evaluator",
+    "reporting"
+  ],
+  "nodes": [
+    {
+      "id": "user_input",
+      "lane": "analyst",
+      "col": 0,
+      "type": "external",
+      "label": "Target Intake",
+      "sublabel": "URL + target path",
+      "sources": [
+        {
+          "path": "desktop/src/components/NewAssessment.tsx",
+          "line": 28,
+          "end_line": 60,
+          "label": "Assessment Wizard Intake"
+        }
+      ]
+    },
+    {
+      "id": "calibration",
+      "lane": "control",
+      "col": 1,
+      "type": "backend",
+      "label": "Calibrator",
+      "sublabel": "DOM verification",
+      "sources": [
+        {
+          "path": "engine/app/adapters/playwright_web.py",
+          "line": 85,
+          "end_line": 120,
+          "label": "open_chat_surface calibration"
+        }
+      ]
+    },
+    {
+      "id": "recon",
+      "lane": "control",
+      "col": 2,
+      "type": "backend",
+      "label": "Multi-Tier Recon",
+      "sublabel": "4-tier discovery",
+      "sources": [
+        {
+          "path": "engine/app/services/recon_service.py",
+          "line": 26,
+          "end_line": 65,
+          "label": "Reconnaissance Service Orchestration"
+        }
+      ]
+    },
+    {
+      "id": "profile",
+      "lane": "eval",
+      "col": 2,
+      "type": "backend",
+      "label": "Profile Builder",
+      "sublabel": "Unknown is not absent",
+      "sources": [
+        {
+          "path": "engine/app/recon/profile_builder.py",
+          "line": 20,
+          "end_line": 60,
+          "label": "Deterministic Profile Builder"
+        }
+      ]
+    },
+    {
+      "id": "planner",
+      "lane": "control",
+      "col": 3,
+      "type": "backend",
+      "label": "Test Planner",
+      "sublabel": "10-category rules",
+      "sources": [
+        {
+          "path": "engine/app/agents/planner/rules.py",
+          "line": 29,
+          "end_line": 70,
+          "label": "Deterministic Test Planner Engine"
+        }
+      ]
+    },
+    {
+      "id": "scope",
+      "lane": "analyst",
+      "col": 3,
+      "type": "frontend",
+      "label": "Scope Selector",
+      "sublabel": "Multi-category toggle",
+      "sources": [
+        {
+          "path": "desktop/src/components/NewAssessment.tsx",
+          "line": 150,
+          "end_line": 220,
+          "label": "Multi-category Selector UI"
+        }
+      ]
+    },
+    {
+      "id": "orchestrator",
+      "lane": "executor",
+      "col": 4,
+      "type": "backend",
+      "label": "Orchestrator",
+      "sublabel": "Category dispatch",
+      "sources": [
+        {
+          "path": "engine/app/agents/orchestrator.py",
+          "line": 22,
+          "end_line": 65,
+          "label": "Orchestrator Category Loop"
+        }
+      ]
+    },
+    {
+      "id": "browser",
+      "lane": "control",
+      "col": 4,
+      "type": "backend",
+      "label": "Playwright Web",
+      "sublabel": "DOM automation",
+      "sources": [
+        {
+          "path": "engine/app/adapters/playwright_web.py",
+          "line": 154,
+          "end_line": 210,
+          "label": "PlaywrightWebAdapter Turn"
+        }
+      ]
+    },
+    {
+      "id": "evaluator",
+      "lane": "eval",
+      "col": 5,
+      "type": "security",
+      "label": "Dual Evaluator",
+      "sublabel": "Filter + Judge",
+      "sources": [
+        {
+          "path": "engine/app/agents/evaluation/evaluator.py",
+          "line": 8,
+          "end_line": 45,
+          "label": "Evaluator Pipeline"
+        }
+      ]
+    },
+    {
+      "id": "reporting",
+      "lane": "control",
+      "col": 5,
+      "type": "backend",
+      "label": "Reporting Engine",
+      "sublabel": "PDF narrative",
+      "sources": [
+        {
+          "path": "engine/app/agents/reporting_agent.py",
+          "line": 18,
+          "end_line": 50,
+          "label": "Reporting Agent Narrative"
+        }
+      ]
+    },
+    {
+      "id": "telemetry",
+      "lane": "analyst",
+      "col": 5,
+      "type": "frontend",
+      "label": "Live Telemetry",
+      "sublabel": "Stream & pills",
+      "sources": [
+        {
+          "path": "desktop/src/App.tsx",
+          "line": 274,
+          "end_line": 320,
+          "label": "LiveScanPage Telemetry"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "start-calib",
+      "from": "user_input",
+      "to": "calibration",
+      "label": "Configure target",
+      "variant": "default"
+    },
+    {
+      "id": "calib-recon",
+      "from": "calibration",
+      "to": "recon",
+      "label": "Calibrated target",
+      "variant": "emphasis"
+    },
+    {
+      "id": "recon-planner",
+      "from": "recon",
+      "to": "planner",
+      "label": "TargetProfile",
+      "variant": "emphasis"
+    },
+    {
+      "id": "recon-profile",
+      "from": "recon",
+      "to": "profile",
+      "label": "Evidence tiers",
+      "variant": "default"
+    },
+    {
+      "id": "plan-scope",
+      "from": "planner",
+      "to": "scope",
+      "label": "10-Category readiness",
+      "variant": "emphasis"
+    },
+    {
+      "id": "scope-dispatch",
+      "from": "scope",
+      "to": "orchestrator",
+      "label": "Selected categories",
+      "variant": "emphasis"
+    },
+    {
+      "id": "dispatch-browser",
+      "from": "orchestrator",
+      "to": "browser",
+      "label": "Prompt payload",
+      "variant": "emphasis"
+    },
+    {
+      "id": "browser-eval",
+      "from": "browser",
+      "to": "evaluator",
+      "label": "TurnRecord",
+      "variant": "security"
+    },
+    {
+      "id": "eval-reporting",
+      "from": "evaluator",
+      "to": "reporting",
+      "label": "Verified findings",
+      "variant": "emphasis"
+    },
+    {
+      "id": "eval-telemetry",
+      "from": "evaluator",
+      "to": "telemetry",
+      "label": "Live progress",
+      "variant": "dashed"
+    },
+    {
+      "id": "eval-dispatch",
+      "from": "evaluator",
+      "to": "orchestrator",
+      "label": "Attempt verdict",
+      "variant": "dashed",
+      "role": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Target Intake & Calibration",
+      "items": [
+        "Wizard accepts target URL with optional local project folder for static codebase scanning",
+        "Interface calibrator verifies chat composer presence, submit controls, and launcher readiness"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Reconnaissance & Deterministic Planning",
+      "items": [
+        "4-tier reconnaissance merges network headers, local processes, source files, and benign probes",
+        "Deterministic planner evaluates all 10 OWASP GenAI categories with Unknown is not absent safe fallback",
+        "Plan revision hash enforces strict agreement between UI selection and backend test execution"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Attack Loop, Dual Evaluation & Reporting",
+      "items": [
+        "Orchestrator runs selected categories sequentially with per-category attempt limits and telemetry",
+        "Dual-role evaluation pairs deterministic refusal/canary filtering with local Ollama rubric judging",
+        "Executive narrative and finding catalog exported as verified PDF and JSON artifacts"
+      ]
+    }
+  ]
+}
