@@ -6,7 +6,7 @@ using non-LLM Python logic and the 'Unknown ≠ Absent' safe-fallback policy.
 import hashlib
 import json
 import logging
-from typing import List
+from typing import List, Literal
 
 from app.agents.planner.category_catalog import get_category_catalog
 from app.agents.planner.prompt_filter import PromptMetadataFilter
@@ -145,6 +145,8 @@ class TestPlanner:
         - Else (unknown): unknown (unknown != absent).
         Implementation status is currently under development.
         """
+        applicability: Literal["applicable", "not_applicable", "unknown"]
+        status: Literal["scheduled", "not_applicable", "not_tested"]
         if profile.has_rag.detected and profile.has_rag.confidence >= 0.6:
             applicability = "applicable"
             status = "not_tested"
@@ -177,77 +179,88 @@ class TestPlanner:
     @classmethod
     def _plan_llm03(cls, profile: TargetProfile, cat_def) -> CategoryPlan:
         """LLM03: Excessive Agency. Tool Agency Rule."""
-        if profile.has_tools.detected and profile.has_tools.confidence >= 0.6:
+        applicability: Literal["applicable", "not_applicable", "unknown"]
+        status: Literal["scheduled", "not_applicable", "not_tested"]
+        if profile.has_tools.detected:
             applicability = "applicable"
-            reason = "External tools/APIs detected on target; pipeline under development."
+            reason = "Active assessment scope: external tools/APIs detected; testing tool execution and privilege boundaries."
             priority = 1
+            selectable = True
+            status = "scheduled"
+            budget = 6
         elif not profile.has_tools.detected and profile.has_tools.confidence >= 0.85:
             applicability = "not_applicable"
             reason = "Not applicable (recon: affirmative proof target does not expose external tools)."
             priority = 10
+            selectable = False
+            status = "not_applicable"
+            budget = 0
         else:
             applicability = "unknown"
-            reason = "Tool agency presence undetermined; pipeline under development."
+            reason = "Tool agency presence undetermined; external tools required to evaluate excessive agency."
             priority = 5
+            selectable = False
+            status = "not_tested"
+            budget = 0
 
-        status = "not_applicable" if applicability == "not_applicable" else "not_tested"
         return CategoryPlan(
             category="LLM03",
             name=cat_def.name,
             priority=priority,
-            budget=0,
+            budget=budget,
             status=status,
-            implementation_status="under_development",
-            testability="not_tested",
+            implementation_status="implemented",
+            testability="ready" if selectable else "not_tested",
             applicability=applicability,
-            selectable=False,
+            selectable=selectable,
             reason=reason,
         )
 
     @classmethod
     def _plan_llm10(cls, profile: TargetProfile, cat_def) -> CategoryPlan:
         """LLM10: Improper Output Handling. Rendering Rule."""
+        applicability: Literal["applicable", "not_applicable", "unknown"]
         if profile.renders_html.detected:
             priority = 2
-            reason = "HTML tag rendering detected; pipeline under development."
+            reason = "Active assessment scope: HTML rendering detected; testing output sanitization and markup injection."
             applicability = "applicable"
         elif profile.renders_markdown.detected:
             priority = 4
-            reason = "Markdown rendering detected; pipeline under development."
+            reason = "Active assessment scope: Markdown rendering detected; testing tracking pixel and link injection."
             applicability = "applicable"
         else:
             priority = 6
-            reason = "Standard output sanitization checks; pipeline under development."
-            applicability = "unknown"
+            reason = "Active assessment scope: testing output sanitization and hyperlink formatting."
+            applicability = "applicable"
 
         return CategoryPlan(
             category="LLM10",
             name=cat_def.name,
             priority=priority,
-            budget=0,
-            status="not_tested",
-            implementation_status="under_development",
-            testability="not_tested",
+            budget=4,
+            status="scheduled",
+            implementation_status="implemented",
+            testability="ready",
             applicability=applicability,
-            selectable=False,
+            selectable=True,
             reason=reason,
         )
 
     @classmethod
     def _plan_llm01(cls, profile: TargetProfile, cat_def) -> CategoryPlan:
-        """LLM01: Prompt Injection."""
+        """LLM01: Prompt Injection. Active implemented assessment scope."""
         priority = 1 if profile.has_rag.detected else 2
         return CategoryPlan(
             category="LLM01",
             name=cat_def.name,
             priority=priority,
-            budget=0,
-            status="not_tested",
-            implementation_status="under_development",
-            testability="not_tested",
+            budget=8,
+            status="scheduled",
+            implementation_status="implemented",
+            testability="ready",
             applicability="applicable",
-            selectable=False,
-            reason="Prompt injection testing pipeline under development.",
+            selectable=True,
+            reason="Active assessment scope: testing instruction adherence and prompt injection safeguards.",
         )
 
     @classmethod

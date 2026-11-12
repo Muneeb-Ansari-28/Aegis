@@ -140,11 +140,16 @@ def test_selectable_categories_restricted_to_implemented():
     profile = make_profile(has_rag=True, has_tools=True, renders_html=True)
     plan = TestPlanner.build_test_plan(profile)
 
-    # Only implemented categories with complete pipelines can be selectable
-    assert plan.selectable_category_ids == ["LLM08"]
+    # Implemented categories with complete pipelines and matching prerequisites are selectable
+    assert plan.selectable_category_ids == ["LLM01", "LLM03", "LLM08", "LLM10"]
     selectable = plan.get_selectable_categories()
-    assert len(selectable) == 1
-    assert selectable[0].category == "LLM08"
+    assert len(selectable) == 4
+    assert [c.category for c in selectable] == ["LLM01", "LLM03", "LLM08", "LLM10"]
+
+    # Under-development categories must never be selectable
+    under_dev = [c for c in plan.categories if c.implementation_status == "under_development"]
+    assert len(under_dev) == 6
+    assert all(not c.selectable for c in under_dev)
 
 
 def test_prompt_metadata_filter_requires_and_applicable_when():

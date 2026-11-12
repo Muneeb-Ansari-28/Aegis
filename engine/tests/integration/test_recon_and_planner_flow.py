@@ -167,10 +167,12 @@ async def test_full_recon_to_test_plan_pipeline(tmp_path, mem_db):
         assert test_plan.total_budget > 0
         assert len(test_plan.categories) == 10
 
-        # Scheduled categories validation: Only implemented categories are scheduled/selectable
+        # Scheduled categories validation: Implemented categories with matching profile are scheduled/selectable
         scheduled_cats = [c.category for c in test_plan.get_scheduled_categories()]
         assert "LLM08" in scheduled_cats
-        assert test_plan.selectable_category_ids == ["LLM08"]
+        assert "LLM01" in scheduled_cats
+        assert "LLM10" in scheduled_cats
+        assert test_plan.selectable_category_ids == ["LLM01", "LLM08", "LLM10"]
 
         # Verify LLM08 is scheduled and ready
         llm08_plan = next(c for c in test_plan.categories if c.category == "LLM08")
@@ -180,12 +182,18 @@ async def test_full_recon_to_test_plan_pipeline(tmp_path, mem_db):
         assert llm08_plan.selectable is True
         assert len(llm08_plan.applicable_prompt_ids) > 0
 
-        # Verify under-development categories remain not_tested and unselectable
+        # Verify LLM01 is scheduled and ready
         llm01_plan = next(c for c in test_plan.categories if c.category == "LLM01")
-        assert llm01_plan.implementation_status == "under_development"
-        assert llm01_plan.selectable is False
-        assert len(llm01_plan.applicable_prompt_ids) == 0
+        assert llm01_plan.implementation_status == "implemented"
+        assert llm01_plan.selectable is True
+        assert len(llm01_plan.applicable_prompt_ids) > 0
 
+        # Verify under-development categories remain not_tested and unselectable
         llm09_plan = next(c for c in test_plan.categories if c.category == "LLM09")
         assert llm09_plan.implementation_status == "under_development"
         assert llm09_plan.selectable is False
+        assert len(llm09_plan.applicable_prompt_ids) == 0
+
+        llm04_plan = next(c for c in test_plan.categories if c.category == "LLM04")
+        assert llm04_plan.implementation_status == "under_development"
+        assert llm04_plan.selectable is False

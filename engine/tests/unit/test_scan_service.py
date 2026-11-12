@@ -94,10 +94,10 @@ async def test_start_scan_rejects_under_development_category(mem_db):
     target_id = str(uuid.uuid4())
     plan = add_target_and_profile(mem_db, target_id)
 
-    # Attempting to scan LLM01 (which is under_development, non-selectable)
+    # Attempting to scan LLM04 (which is under_development, non-selectable)
     data = ScanCreate(
         target_id=target_id,
-        category_ids=["LLM01"],
+        category_ids=["LLM04"],
         plan_revision=plan.plan_revision,
         authorized=True,
     )

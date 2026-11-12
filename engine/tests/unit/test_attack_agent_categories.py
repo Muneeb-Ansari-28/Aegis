@@ -47,7 +47,7 @@ def test_attack_agent_rejects_missing_or_unimplemented_prompt_scope():
     with pytest.raises(ValueError, match="prompt IDs"):
         AttackAgent(category="LLM08", applicable_prompt_ids=[])
     with pytest.raises(ValueError, match="not implemented"):
-        AttackAgent(category="LLM01", applicable_prompt_ids=["llm01_injection_01"])
+        AttackAgent(category="LLM04", applicable_prompt_ids=["llm04_sample_01"])
 
 
 @pytest.mark.asyncio
