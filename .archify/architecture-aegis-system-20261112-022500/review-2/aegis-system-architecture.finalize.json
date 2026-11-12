@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "fail",
+  "type": "architecture",
+  "quality": "showcase",
+  "startedAt": "2026-11-11T21:28:38.663Z",
+  "specification": {
+    "path": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\candidate.json",
+    "sha256": "fef6c5e95309838dbbc485d7806f687d94f3727fad329622fde8346c79da1250",
+    "bytes": 9923
+  },
+  "artifact": {
+    "path": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\aegis-system-architecture.html",
+    "sha256": "33b55326cfc79ea6e7c736b18067309a6079ef922129df2781f78c4389e27bf8",
+    "bytes": 868866
+  },
+  "stages": {
+    "validate": {
+      "status": "fail",
+      "exitCode": 1,
+      "durationMs": null,
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "C:\\Users\\Hp\\.gemini\\config\\skills\\archify\\bin\\archify.mjs",
+        "deliver",
+        "architecture",
+        "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\candidate.json",
+        "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\aegis-system-architecture.html",
+        "--quality",
+        "showcase",
+        "--repo-root",
+        "D:\\vs_code_files\\Aegis",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": false,
+        "command": "deliver",
+        "receiptId": "75ceac71-dc42-46c0-b7de-d7b545df8d88",
+        "stage": "render",
+        "type": "architecture",
+        "input": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\candidate.json",
+        "output": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\aegis-system-architecture.html",
+        "error": "Architecture layout validation failed:\n- Label \"Rules & Categories\" has only 80px between \"kb\" and \"planner\"; it needs at least 113px to stay beside its route — increase that clear gap or place the connected nodes on another readable row, preserving the label.\n- Label \"Aggregate Findings\" has only 90px between \"reporting\" and \"db\"; it needs at least 113px to stay beside its route — increase that clear gap or place the connected nodes on another readable row, preserving the label.",
+        "diagnostics": [
+          {
+            "code": "composition/label-gap",
+            "severity": "error",
+            "message": "Label \"Rules & Categories\" has only 80px between \"kb\" and \"planner\"; it needs at least 113px to stay beside its route — increase that clear gap or place the connected nodes on another readable row, preserving the label.",
+            "subject": {
+              "diagramType": "architecture",
+              "collection": "connections",
+              "id": "kb-to-planner",
+              "from": "kb",
+              "to": "planner"
+            },
+            "evidence": {
+              "clearGapPx": 80,
+              "minimumGapPx": 113,
+              "labelWidthPx": 96.39999999999999,
+              "obstacles": [
+                "planner",
+                "kb"
+              ]
+            },
+            "supportedFixes": [
+              "increase the clear gap between the connected nodes to at least 113px",
+              "reposition the connected nodes together while preserving the full relationship label"
+            ]
+          },
+          {
+            "code": "composition/label-gap",
+            "severity": "error",
+            "message": "Label \"Aggregate Findings\" has only 90px between \"reporting\" and \"db\"; it needs at least 113px to stay beside its route — increase that clear gap or place the connected nodes on another readable row, preserving the label.",
+            "subject": {
+              "diagramType": "architecture",
+              "collection": "connections",
+              "id": "reporting-to-db",
+              "from": "reporting",
+              "to": "db"
+            },
+            "evidence": {
+              "clearGapPx": 90,
+              "minimumGapPx": 113,
+              "labelWidthPx": 96.39999999999999,
+              "obstacles": [
+                "reporting",
+                "db"
+              ]
+            },
+            "supportedFixes": [
+              "increase the clear gap between the connected nodes to at least 113px",
+              "reposition the connected nodes together while preserving the full relationship label"
+            ]
+          }
+        ],
+        "provenance": "failed",
+        "update": {
+          "status": "unavailable",
+          "installedVersion": null,
+          "availableVersion": null,
+          "releaseNotes": null,
+          "checkedAt": null,
+          "source": null,
+          "noticeRequired": false,
+          "noticeText": null,
+          "reason": "disabled"
+        }
+      },
+      "execution": "embedded-in-deliver"
+    },
+    "deliver": {
+      "status": "not-run",
+      "execution": "blocked-by-validate"
+    }
+  },
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  },
+  "diagnostics": [
+    {
+      "code": "composition/label-gap",
+      "severity": "error",
+      "message": "Label \"Rules & Categories\" has only 80px between \"kb\" and \"planner\"; it needs at least 113px to stay beside its route — increase that clear gap or place the connected nodes on another readable row, preserving the label.",
+      "subject": {
+        "diagramType": "architecture",
+        "collection": "connections",
+        "id": "kb-to-planner",
+        "from": "kb",
+        "to": "planner"
+      },
+      "evidence": {
+        "clearGapPx": 80,
+        "minimumGapPx": 113,
+        "labelWidthPx": 96.39999999999999,
+        "obstacles": [
+          "planner",
+          "kb"
+        ]
+      },
+      "supportedFixes": [
+        "increase the clear gap between the connected nodes to at least 113px",
+        "reposition the connected nodes together while preserving the full relationship label"
+      ]
+    },
+    {
+      "code": "composition/label-gap",
+      "severity": "error",
+      "message": "Label \"Aggregate Findings\" has only 90px between \"reporting\" and \"db\"; it needs at least 113px to stay beside its route — increase that clear gap or place the connected nodes on another readable row, preserving the label.",
+      "subject": {
+        "diagramType": "architecture",
+        "collection": "connections",
+        "id": "reporting-to-db",
+        "from": "reporting",
+        "to": "db"
+      },
+      "evidence": {
+        "clearGapPx": 90,
+        "minimumGapPx": 113,
+        "labelWidthPx": 96.39999999999999,
+        "obstacles": [
+          "reporting",
+          "db"
+        ]
+      },
+      "supportedFixes": [
+        "increase the clear gap between the connected nodes to at least 113px",
+        "reposition the connected nodes together while preserving the full relationship label"
+      ]
+    }
+  ],
+  "evidence": {
+    "receipt": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\review-2\\aegis-system-architecture.finalize.json",
+    "summaryReceipt": "D:\\vs_code_files\\Aegis\\.archify\\architecture-aegis-system-20261112-022500\\review-2\\aegis-system-architecture.finalize-summary.json"
+  },
+  "visualReview": "not-requested",
+  "failedStage": "validate",
+  "finishedAt": "2026-11-11T21:28:41.735Z",
+  "durationMs": 3071,
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-11T21:27:16.278Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  }
+}

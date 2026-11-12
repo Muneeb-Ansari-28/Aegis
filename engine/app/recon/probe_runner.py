@@ -1,4 +1,5 @@
 """Active Benign Probe Runner for Pre-Scan Target Inspection."""
+import asyncio
 import logging
 import re
 import uuid
@@ -79,12 +80,12 @@ class ProbeRunner:
         adapter: BaseAdapter,
         recon_run_id: Optional[str] = None,
         scan_id: Optional[str] = None,
-        session_factory=SessionLocal,
+        session_factory=None,
     ):
         self.adapter = adapter
         self.recon_run_id = recon_run_id or scan_id or str(uuid.uuid4())
         self.scan_id = self.recon_run_id
-        self.session_factory = session_factory
+        self.session_factory = session_factory or SessionLocal
 
     async def run_probes(self, persist_turns: bool = True) -> ProbeRunResult:
         """
@@ -119,7 +120,7 @@ class ProbeRunner:
                     warnings.append(f"Probe {p_def['id']} returned error status.")
 
                 if persist_turns:
-                    self._persist_recon_turn(turn)
+                    await asyncio.to_thread(self._persist_recon_turn, turn)
             except Exception as e:
                 failed_count += 1
                 logger.warning(f"Probe {p_def['id']} encountered error: {e}")

@@ -202,6 +202,32 @@ async def test_get_findings_summary_nonexistent(seeded_db):
         await FindingsService.get_findings_summary("no-such-scan", session_factory=seeded_db)
 
 
+@pytest.mark.asyncio
+async def test_get_findings_summary_handles_unknown_severity(seeded_db):
+    """Verify unknown severity values are safely mapped to INFO without polluting by_severity keys."""
+    session = seeded_db()
+    try:
+        custom_finding = FindingEntity(
+            id="finding-unknown-sev",
+            scan_id="scan-clean",
+            turn_id="turn-clean",
+            category="LLM08",
+            severity="NON_STANDARD_SEVERITY",
+            confidence=0.8,
+            description="Test with non-standard severity",
+            created_at=datetime.now(timezone.utc),
+        )
+        session.add(custom_finding)
+        session.commit()
+    finally:
+        session.close()
+
+    summary = await FindingsService.get_findings_summary("scan-clean", session_factory=seeded_db)
+    assert set(summary.by_severity.keys()) == {"CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"}
+    assert summary.by_severity["INFO"] == 1
+    assert summary.total_findings == 1
+
+
 def test_api_findings_endpoints(monkeypatch, seeded_db, authenticated_client):
     """Test API router endpoints using TestClient with mocked session factory."""
     # Monkeypatch FindingsService default session factory

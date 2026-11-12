@@ -174,3 +174,18 @@ async def test_get_report_metadata_nonexistent():
     """Verify non-existent report raises LookupError."""
     with pytest.raises(LookupError, match="Report for scan 'does-not-exist' has not been generated"):
         await ReportService.get_report_metadata("does-not-exist")
+
+
+def test_get_report_path_traversal_guards():
+    """Verify path traversal attempts in scan_id are rejected."""
+    with pytest.raises(ValueError, match="Path traversal characters are forbidden"):
+        ReportService.get_report_path("../secret")
+
+    with pytest.raises(ValueError, match="Path traversal characters are forbidden"):
+        ReportService.get_report_path("scan/foo")
+
+    with pytest.raises(ValueError, match="Path traversal characters are forbidden"):
+        ReportService.get_report_path("scan\\bar")
+
+    with pytest.raises(ValueError, match="Path traversal characters are forbidden"):
+        ReportService.get_report_path("")

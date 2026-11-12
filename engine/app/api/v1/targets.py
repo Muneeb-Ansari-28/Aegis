@@ -8,6 +8,7 @@ from app.schemas.target import (
     TargetCreate,
     TargetResponse,
     TargetCalibrationConfig,
+    TargetUpdate,
 )
 from app.services.target_service import TargetService
 from app.services.recon_service import ReconService
@@ -19,6 +20,7 @@ from app.schemas.recon import ReconRequest
 from app.adapters.web_calibration import WebCalibration
 
 router = APIRouter()
+_calibration_lock = asyncio.Lock()
 _calibration_sessions: Dict[str, CalibrationSessionResponse] = {}
 _calibration_tasks: Dict[str, asyncio.Task[None]] = {}
 
@@ -63,6 +65,17 @@ async def get_target(target_id: str) -> TargetResponse:
     return target
 
 
+@router.patch("/{target_id}", response_model=TargetResponse)
+async def update_target(target_id: str, payload: TargetUpdate) -> TargetResponse:
+    """
+    Partially update an existing target (e.g. project_path).
+    """
+    updated = await TargetService.update_target(target_id, payload)
+    if updated is None:
+        raise HTTPException(status_code=404, detail=f"Target '{target_id}' not found.")
+    return updated
+
+
 @router.post("/{target_id}/recon", response_model=TargetProfile)
 async def run_target_recon(
     target_id: str,
@@ -101,7 +114,7 @@ async def get_target_profile(target_id: str) -> TargetProfile:
     target = await TargetService.get_target(target_id)
     if target is None:
         raise HTTPException(status_code=404, detail=f"Target '{target_id}' not found.")
-    profile = ReconService.get_target_profile(target_id)
+    profile = await asyncio.to_thread(ReconService.get_target_profile, target_id)
     if profile is None:
         raise HTTPException(
             status_code=404,
@@ -120,7 +133,7 @@ async def generate_target_test_plan(target_id: str) -> TestPlan:
     target = await TargetService.get_target(target_id)
     if target is None:
         raise HTTPException(status_code=404, detail=f"Target '{target_id}' not found.")
-    profile = ReconService.get_target_profile(target_id)
+    profile = await asyncio.to_thread(ReconService.get_target_profile, target_id)
     if profile is None:
         # Run recon to build profile
         profile = await ReconService.run_recon(target_id=target_id, run_probes=False)
@@ -188,14 +201,35 @@ async def interactive_calibrate_target(
         status="opening_browser",
         step=0,
     )
-    _calibration_sessions[session_id] = session
-    while len(_calibration_sessions) > 50:
-        expired_id = next(iter(_calibration_sessions))
-        _calibration_sessions.pop(expired_id, None)
-        _calibration_tasks.pop(expired_id, None)
-    _calibration_tasks[session_id] = asyncio.create_task(
-        _run_interactive_calibration(session_id, target.url, timeout_sec)
-    )
+    tasks_to_cancel: List[asyncio.Task[None]] = []
+    async with _calibration_lock:
+        _calibration_sessions[session_id] = session
+        while len(_calibration_sessions) > 50:
+            # Prefer evicting finished sessions first
+            candidate_id = None
+            for sid, s in _calibration_sessions.items():
+                if sid != session_id and s.status in {"completed", "failed"}:
+                    candidate_id = sid
+                    break
+            if candidate_id is None:
+                for sid in _calibration_sessions:
+                    if sid != session_id:
+                        candidate_id = sid
+                        break
+            if candidate_id is None:
+                candidate_id = next(iter(_calibration_sessions))
+
+            _calibration_sessions.pop(candidate_id, None)
+            task = _calibration_tasks.pop(candidate_id, None)
+            if task and not task.done():
+                task.cancel()
+                tasks_to_cancel.append(task)
+
+        _calibration_tasks[session_id] = asyncio.create_task(
+            _run_interactive_calibration(session_id, target.url, timeout_sec)
+        )
+    if tasks_to_cancel:
+        await asyncio.gather(*tasks_to_cancel, return_exceptions=True)
     return session
 
 
@@ -203,17 +237,25 @@ async def _run_interactive_calibration(
     session_id: str, target_url: str, timeout_sec: int
 ) -> None:
     """Run browser capture and publish each selected control to the session record."""
-    session = _calibration_sessions[session_id]
+    async with _calibration_lock:
+        session = _calibration_sessions.get(session_id)
+        if session is None:
+            return
+        target_id = session.target_id
 
     async def update_progress(step: int) -> None:
-        session.step = step
-        session.input_selected = step >= 1
-        session.enter_selected = step >= 2
-        # Step 2 means both controls were captured, not that the session is
-        # finished. The status stays "saving_selectors" until the response area
-        # is detected and calibration_config is persisted, so clients never see
-        # status="completed" while calibration_config is still unset.
-        session.status = "saving_selectors" if step >= 2 else "capturing_controls"
+        async with _calibration_lock:
+            cur_session = _calibration_sessions.get(session_id)
+            if cur_session is None:
+                return
+            cur_session.step = step
+            cur_session.input_selected = step >= 1
+            cur_session.enter_selected = step >= 2
+            # Step 2 means both controls were captured, not that the session is
+            # finished. The status stays "saving_selectors" until the response area
+            # is detected and calibration_config is persisted, so clients never see
+            # status="completed" while calibration_config is still unset.
+            cur_session.status = "saving_selectors" if step >= 2 else "capturing_controls"
 
     try:
         config = await WebCalibration().calibrate_interactive(
@@ -221,14 +263,28 @@ async def _run_interactive_calibration(
             timeout_sec=timeout_sec,
             progress_callback=update_progress,
         )
-        await TargetService.calibrate_target(session.target_id, config)
-        session.calibration_config = config
-        session.status = "completed"
+        await TargetService.calibrate_target(target_id, config)
+        async with _calibration_lock:
+            cur_session = _calibration_sessions.get(session_id)
+            if cur_session is not None:
+                cur_session.calibration_config = config
+                cur_session.status = "completed"
+    except asyncio.CancelledError:
+        async with _calibration_lock:
+            cur_session = _calibration_sessions.get(session_id)
+            if cur_session is not None:
+                cur_session.status = "failed"
+                cur_session.error = "Interactive calibration was cancelled."
+        raise
     except Exception as exc:
-        session.status = "failed"
-        session.error = str(exc) or type(exc).__name__
+        async with _calibration_lock:
+            cur_session = _calibration_sessions.get(session_id)
+            if cur_session is not None:
+                cur_session.status = "failed"
+                cur_session.error = str(exc) or type(exc).__name__
     finally:
-        _calibration_tasks.pop(session_id, None)
+        async with _calibration_lock:
+            _calibration_tasks.pop(session_id, None)
 
 
 @router.get(
@@ -239,10 +295,11 @@ async def get_interactive_calibration_status(
     target_id: str, session_id: str
 ) -> CalibrationSessionResponse:
     """Return click checklist progress for an active or completed calibration."""
-    session = _calibration_sessions.get(session_id)
-    if session is None or session.target_id != target_id:
-        raise HTTPException(status_code=404, detail="Calibration session not found.")
-    return session
+    async with _calibration_lock:
+        session = _calibration_sessions.get(session_id)
+        if session is None or session.target_id != target_id:
+            raise HTTPException(status_code=404, detail="Calibration session not found.")
+        return session.model_copy()
 
 
 @router.delete("/{target_id}", status_code=204)

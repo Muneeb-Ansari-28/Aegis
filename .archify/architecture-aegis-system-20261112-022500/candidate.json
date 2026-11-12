@@ -1,0 +1,397 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Aegis AI Security Architecture",
+    "output": ".archify/architecture-aegis-system-20261112-022500/aegis-system-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/Muneeb-Ansari-28/Aegis.git",
+      "revision": "3489d31631483928a36c68aa16575364048701ab"
+    }
+  },
+  "components": [
+    {
+      "id": "analyst",
+      "type": "external",
+      "label": "Security Analyst",
+      "sublabel": "Interactive Operator",
+      "pos": [50, 100],
+      "size": [140, 60]
+    },
+    {
+      "id": "desktop",
+      "type": "frontend",
+      "label": "Desktop Workbench",
+      "sublabel": "React 19 + Vite UI",
+      "tag": ":3000",
+      "sources": [
+        {
+          "path": "desktop/src/components/NewAssessment.tsx",
+          "line": 28,
+          "end_line": 60,
+          "label": "Assessment Wizard UI"
+        }
+      ],
+      "pos": [250, 100],
+      "size": [160, 60]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "FastAPI Engine",
+      "sublabel": "REST + WebSocket Control",
+      "tag": ":8765",
+      "sources": [
+        {
+          "path": "engine/app/api/v1/router.py",
+          "line": 21,
+          "end_line": 49,
+          "label": "FastAPI App & Lifespan"
+        }
+      ],
+      "pos": [480, 100],
+      "size": [160, 60]
+    },
+    {
+      "id": "recon",
+      "type": "backend",
+      "label": "Multi-Tier Recon",
+      "sublabel": "Passive / PSUtil / Static / Probes",
+      "sources": [
+        {
+          "path": "engine/app/services/recon_service.py",
+          "line": 26,
+          "end_line": 65,
+          "label": "Recon Service Orchestrator"
+        }
+      ],
+      "pos": [710, 100],
+      "size": [160, 60]
+    },
+    {
+      "id": "planner",
+      "type": "backend",
+      "label": "Deterministic Planner",
+      "sublabel": "Rule-Based TestPlan Engine",
+      "sources": [
+        {
+          "path": "engine/app/agents/planner/rules.py",
+          "line": 29,
+          "end_line": 70,
+          "label": "Deterministic Test Planner"
+        }
+      ],
+      "pos": [940, 100],
+      "size": [160, 60]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "SQLite Persistence",
+      "sublabel": "Scans / Turns / Target Profiles",
+      "tag": "aegis.db",
+      "sources": [
+        {
+          "path": "engine/app/core/database.py",
+          "line": 9,
+          "end_line": 45,
+          "label": "SQLAlchemy Database Engine"
+        }
+      ],
+      "pos": [480, 260],
+      "size": [160, 60]
+    },
+    {
+      "id": "kb",
+      "type": "database",
+      "label": "OWASP KB Catalog",
+      "sublabel": "10 Canonical Categories",
+      "sources": [
+        {
+          "path": "engine/app/agents/planner/category_catalog.py",
+          "line": 21,
+          "end_line": 65,
+          "label": "OWASP Category Catalog"
+        }
+      ],
+      "pos": [710, 260],
+      "size": [160, 60]
+    },
+    {
+      "id": "orchestrator",
+      "type": "backend",
+      "label": "Attack Orchestrator",
+      "sublabel": "Scan Execution State Machine",
+      "sources": [
+        {
+          "path": "engine/app/agents/orchestrator.py",
+          "line": 22,
+          "end_line": 65,
+          "label": "Scan Execution State Machine"
+        }
+      ],
+      "pos": [940, 260],
+      "size": [160, 60]
+    },
+    {
+      "id": "adapter",
+      "type": "backend",
+      "label": "Playwright Web Adapter",
+      "sublabel": "Browser CDP & DOM Driver",
+      "sources": [
+        {
+          "path": "engine/app/adapters/playwright_web.py",
+          "line": 154,
+          "end_line": 190,
+          "label": "Playwright Web Connector"
+        }
+      ],
+      "pos": [1170, 260],
+      "size": [160, 60]
+    },
+    {
+      "id": "target",
+      "type": "external",
+      "label": "Target Application",
+      "sublabel": "Web Chatbot Under Assessment",
+      "tag": "HTTP :PORT",
+      "pos": [1400, 260],
+      "size": [150, 60]
+    },
+    {
+      "id": "reporting",
+      "type": "backend",
+      "label": "Reporting Engine",
+      "sublabel": "PDF & Findings Synthesizer",
+      "sources": [
+        {
+          "path": "engine/app/agents/reporting_agent.py",
+          "line": 18,
+          "end_line": 50,
+          "label": "Executive Summary Generator"
+        }
+      ],
+      "pos": [480, 420],
+      "size": [160, 60]
+    },
+    {
+      "id": "evaluator",
+      "type": "security",
+      "label": "Dual-Role Evaluator",
+      "sublabel": "Refusal Filter + Rubric Judge",
+      "sources": [
+        {
+          "path": "engine/app/agents/evaluation/evaluator.py",
+          "line": 8,
+          "end_line": 45,
+          "label": "Dual-Role Evaluator Pipeline"
+        }
+      ],
+      "pos": [940, 420],
+      "size": [160, 60]
+    },
+    {
+      "id": "ollama",
+      "type": "backend",
+      "label": "Local Ollama LLM",
+      "sublabel": "Evaluation Judge (:11434)",
+      "sources": [
+        {
+          "path": "engine/app/llm/ollama_client.py",
+          "line": 7,
+          "end_line": 40,
+          "label": "Local Ollama Client"
+        }
+      ],
+      "pos": [940, 580],
+      "size": [160, 60]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Analyst Workspace",
+      "wraps": ["analyst", "desktop"]
+    },
+    {
+      "kind": "security-group",
+      "label": "Aegis Core Control Plane & Engine (:8765)",
+      "wraps": ["api", "recon", "planner", "db", "kb", "orchestrator", "adapter", "reporting", "evaluator"]
+    },
+    {
+      "kind": "region",
+      "label": "Local LLM Inference Daemon (:11434)",
+      "wraps": ["ollama"]
+    },
+    {
+      "kind": "region",
+      "label": "Target Evaluation Boundary",
+      "wraps": ["target"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "analyst-to-desktop",
+      "from": "analyst",
+      "to": "desktop",
+      "label": "Configures Target & Scope"
+    },
+    {
+      "id": "desktop-to-api",
+      "from": "desktop",
+      "to": "api",
+      "label": "REST / WebSocket :8765",
+      "variant": "emphasis"
+    },
+    {
+      "id": "api-to-recon",
+      "from": "api",
+      "to": "recon",
+      "label": "Trigger 4-Tier Recon"
+    },
+    {
+      "id": "recon-to-planner",
+      "from": "recon",
+      "to": "planner",
+      "label": "TargetProfile",
+      "variant": "emphasis"
+    },
+    {
+      "id": "kb-to-planner",
+      "from": "kb",
+      "to": "planner",
+      "label": "Rules & Categories",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "planner-to-orchestrator",
+      "from": "planner",
+      "to": "orchestrator",
+      "label": "Deterministic TestPlan",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "orchestrator-to-adapter",
+      "from": "orchestrator",
+      "to": "adapter",
+      "label": "Attack Prompt",
+      "variant": "emphasis"
+    },
+    {
+      "id": "adapter-to-target",
+      "from": "adapter",
+      "to": "target",
+      "label": "Playwright Automation",
+      "variant": "emphasis"
+    },
+    {
+      "id": "target-to-adapter",
+      "from": "target",
+      "to": "adapter",
+      "label": "Chatbot Response",
+      "variant": "dashed",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "orchestrator-to-evaluator",
+      "from": "orchestrator",
+      "to": "evaluator",
+      "label": "TurnRecord",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "evaluator-to-ollama",
+      "from": "evaluator",
+      "to": "ollama",
+      "label": "Rubric Judge Prompt",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "ollama-to-evaluator",
+      "from": "ollama",
+      "to": "evaluator",
+      "label": "Structured Verdict",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "evaluator-to-orchestrator",
+      "from": "evaluator",
+      "to": "orchestrator",
+      "label": "JudgeVerdict",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "orchestrator-to-db",
+      "from": "orchestrator",
+      "to": "db",
+      "label": "Persist Turns & Findings",
+      "variant": "dashed",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "api-to-db",
+      "from": "api",
+      "to": "db",
+      "label": "Query Telemetry",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "api-to-reporting",
+      "from": "api",
+      "to": "reporting",
+      "label": "Trigger PDF Export",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "reporting-to-db",
+      "from": "reporting",
+      "to": "db",
+      "label": "Aggregate Findings",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Client & Reconnaissance",
+      "items": [
+        "React 19 desktop workbench drives setup, calibration, and live multi-category telemetry",
+        "4-tier reconnaissance combines passive network analysis, localhost discovery, static code inspection, and benign probes"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Deterministic Planning",
+      "items": [
+        "Deterministic Python rules evaluate TargetProfile capabilities against OWASP GenAI 2026",
+        "Unknown is not absent safe fallback preserves attack readiness when evidence is inconclusive"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Attack & Dual Evaluation",
+      "items": [
+        "Orchestrator runs multi-category prompts sequentially with isolated attempt budgets",
+        "Dual-role evaluation pairs deterministic canary/secret/refusal short-circuiting with local Ollama rubric judging"
+      ]
+    }
+  ]
+}

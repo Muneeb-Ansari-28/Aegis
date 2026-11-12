@@ -4,6 +4,10 @@ Inspired by NVIDIA Garak's Buff pipeline (garak.buffs.encoding), this module
 provides zero-latency, deterministic transformations for prompt injection payloads.
 Allows testing whether target guardrails fail against encoded or smuggled representations
 without incurring LLM generation costs.
+
+EXPERIMENTAL / OFFLINE RESEARCH ONLY:
+This module is an isolated research scaffold and is NOT integrated into active
+automated scan execution pipelines.
 """
 from base64 import b64encode
 import codecs

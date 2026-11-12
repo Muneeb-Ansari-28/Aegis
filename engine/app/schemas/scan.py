@@ -13,11 +13,18 @@ class CategoryRunStatus(BaseModel):
     error: Optional[str] = None
 
 
+class EvaluationOracle(BaseModel):
+    """Optional, request-scoped expected disclosure material for a known test target."""
+    canary: Optional[str] = Field(default=None, max_length=512)
+    known_prompt: Optional[str] = Field(default=None, max_length=20000)
+
+
 class ScanCreate(BaseModel):
     target_id: str
     category: Optional[str] = None
     category_ids: Optional[List[str]] = None
     plan_revision: Optional[str] = None
+    evaluation_oracle: Optional[EvaluationOracle] = None
     budget: int = Field(default=10, ge=1, le=20)
     authorized: bool = False
 
@@ -49,7 +56,7 @@ class ScanTurnResponse(BaseModel):
     turn_index: int
     category: Optional[str] = None
     prompt: str
-    response: str
+    response: str = ""
     status: str = "success"
     latency_ms: int = 0
     strategy: Optional[str] = None

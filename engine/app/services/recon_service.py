@@ -1,5 +1,6 @@
 """Reconnaissance Service Orchestrator (Step 0a)."""
 import logging
+import asyncio
 import uuid
 from typing import Optional
 from urllib.parse import urlparse
@@ -36,19 +37,26 @@ class ReconService:
         project_path: Optional[str] = None,
         run_probes: bool = False,
         authorized: bool = False,
+        session_factory=None,
     ) -> TargetProfile:
         """
         Execute full pre-scan recon for a target and persist its TargetProfile.
         """
         if run_probes and not authorized:
             raise PermissionError("Explicit authorization is required before active recon probes.")
-        with SessionLocal() as session:
-            target = session.get(TargetEntity, target_id)
-            if not target:
-                raise LookupError(f"Target '{target_id}' not found.")
-            target_url = target.url
-            calibration_config = target.calibration_config
-            target_project_path = project_path
+        _sf = session_factory or SessionLocal
+        def _load_target():
+            with _sf() as session:
+                target = session.get(TargetEntity, target_id)
+                if not target:
+                    raise LookupError(f"Target '{target_id}' not found.")
+                return (
+                    target.url,
+                    target.calibration_config,
+                    project_path if project_path is not None else target.project_path,
+                )
+
+        target_url, calibration_config, target_project_path = await asyncio.to_thread(_load_target)
 
         recon_run_id = str(uuid.uuid4())
         passive_data = None
@@ -96,7 +104,7 @@ class ReconService:
                     headless=True,
                 )
                 await adapter.open()
-                probe_runner = ProbeRunner(adapter=adapter, recon_run_id=recon_run_id)
+                probe_runner = ProbeRunner(adapter=adapter, recon_run_id=recon_run_id, session_factory=_sf)
                 probe_result = await probe_runner.run_probes(persist_turns=True)
             except Exception as e:
                 logger.warning(f"Active probe execution failed for target {target_id}: {e}")
@@ -137,11 +145,11 @@ class ReconService:
         profile = builder.build()
 
         # 7. Persist to Database
-        cls.save_target_profile(target_id, profile)
+        await asyncio.to_thread(cls.save_target_profile, target_id, profile, _sf)
 
         # 8. Persist Recon Run Entity
-        try:
-            with SessionLocal() as session:
+        def _save_recon_run() -> None:
+            with _sf() as session:
                 stages_dict = {
                     k: v.model_dump(mode="json") if hasattr(v, "model_dump") else v
                     for k, v in profile.stages.items()
@@ -162,6 +170,9 @@ class ReconService:
                 )
                 session.add(run_entity)
                 session.commit()
+
+        try:
+            await asyncio.to_thread(_save_recon_run)
         except Exception as e:
             logger.debug(f"Could not persist recon run entity: {e}")
 
@@ -172,10 +183,11 @@ class ReconService:
         cls,
         target_id: str,
         profile: TargetProfile,
-        session_factory=SessionLocal,
+        session_factory=None,
     ) -> None:
         """Persist or update TargetProfile in database."""
-        with session_factory() as session:
+        _sf = session_factory or SessionLocal
+        with _sf() as session:
             existing = (
                 session.query(TargetProfileEntity)
                 .filter(TargetProfileEntity.target_id == target_id)
@@ -201,10 +213,11 @@ class ReconService:
     def get_target_profile(
         cls,
         target_id: str,
-        session_factory=SessionLocal,
+        session_factory=None,
     ) -> Optional[TargetProfile]:
         """Fetch saved TargetProfile from database."""
-        with session_factory() as session:
+        _sf = session_factory or SessionLocal
+        with _sf() as session:
             entity = (
                 session.query(TargetProfileEntity)
                 .filter(TargetProfileEntity.target_id == target_id)

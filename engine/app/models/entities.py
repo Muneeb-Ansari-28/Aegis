@@ -39,7 +39,7 @@ class ScanTurnEntity(Base):
     category = Column(String, default="UNKNOWN") # RECON or OWASP category (e.g. LLM01, LLM08)
     attempt_in_category = Column(Integer, default=0)
     prompt = Column(Text, nullable=False)
-    response = Column(Text, nullable=False)
+    response = Column(Text, nullable=True)
     latency_ms = Column(Integer, default=0)
     strategy = Column(String, nullable=True)
     verdict = Column(JSON, nullable=True)
@@ -85,7 +85,7 @@ class ReconTurnEntity(Base):
     turn_index = Column(Integer, nullable=False)
     strategy = Column(String, nullable=True)
     prompt = Column(Text, nullable=False)
-    response = Column(Text, nullable=False)
+    response = Column(Text, nullable=True)
     latency_ms = Column(Integer, default=0)
     created_at = Column(DateTime, default=utc_now)
 

@@ -164,11 +164,16 @@ async def test_headed_scan_uses_native_viewport(chat_site):
 async def test_calibration_storage_roundtrip_without_schema_change(chat_site, monkeypatch):
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
     from app.core.database import Base
     from app.schemas.target import TargetCreate
     from app.services.target_service import TargetService
 
-    engine = create_engine("sqlite:///:memory:")
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     Base.metadata.create_all(engine)
     monkeypatch.setattr("app.services.target_service.SessionLocal", sessionmaker(bind=engine))
     monkeypatch.setattr(TargetService, "_targets", {})

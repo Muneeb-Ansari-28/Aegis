@@ -378,6 +378,7 @@ class PlaywrightWebAdapter(BaseAdapter):
         attempt: int,
         scan_id: str = "scan-default",
         strategy: Optional[str] = None,
+        **kwargs,
     ) -> TurnRecord:
         """
         Inserts prompt into input box, submits via button or Enter key, captures settled response,

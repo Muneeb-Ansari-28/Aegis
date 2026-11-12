@@ -1,4 +1,5 @@
 """Unit tests for Active Benign Probe Runner."""
+from typing import Optional
 import pytest
 from app.adapters.base import BaseAdapter
 from app.recon.probe_runner import ProbeRunner
@@ -19,7 +20,14 @@ class MockChatAdapter(BaseAdapter):
     async def reset_session(self):
         pass
 
-    async def send_prompt(self, prompt: str, attempt: int, scan_id: str = "test", strategy: str = None) -> TurnRecord:
+    async def send_prompt(
+        self,
+        prompt: str,
+        attempt: int,
+        scan_id: str = "test",
+        strategy: Optional[str] = None,
+        **kwargs,
+    ) -> TurnRecord:
         reply = "I am a helpful assistant."
         if strategy == "probe_scope":
             reply = "I provide customer support for our banking portal."

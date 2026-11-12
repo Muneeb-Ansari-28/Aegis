@@ -1,8 +1,9 @@
 from contextlib import asynccontextmanager
+import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import health, targets, scans, findings, reports, proxy, websocket, assistant, security
-from app.core.database import Base, engine
+from app.core.database import Base, engine, init_db
 from app.models import entities as _entities
 from app.core.paths import ensure_app_dirs
 from app.services.scan_service import ScanService
@@ -11,10 +12,10 @@ from app.core.api_auth import LocalAPIAuthMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Create the declared SQLAlchemy tables and recover any interrupted scans on startup."""
+    """Ensure database schema is ready and recover any interrupted scans on startup."""
     ensure_app_dirs()
-    Base.metadata.create_all(bind=engine)
-    ScanService.recover_interrupted_scans()
+    await asyncio.to_thread(init_db)
+    await asyncio.to_thread(ScanService.recover_interrupted_scans)
     yield
 
 
@@ -25,7 +26,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware: Restricted to loopback origins and packaged desktop renderers
+# Authentication and Origin validation middleware
+app.add_middleware(LocalAPIAuthMiddleware)
+
+# CORS middleware: Must be added after auth so it becomes the outermost middleware
+# and properly sets Access-Control-Allow-Origin headers on all responses (including 401/403).
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -36,7 +41,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(LocalAPIAuthMiddleware)
 
 app.include_router(health.router, prefix="/api/v1/health", tags=["Health"])
 app.include_router(targets.router, prefix="/api/v1/targets", tags=["Targets"])

@@ -112,6 +112,7 @@ async def test_end_to_end_scan_and_pdf_evidence_fidelity(weak_bot_server, test_d
         max_budget=3,
         session_factory=test_db_session,
         applicable_prompt_ids=["llm07_direct_01"],
+        canary="AEGIS-CANARY-7731",
     )
 
     verdict = await orchestrator.run()

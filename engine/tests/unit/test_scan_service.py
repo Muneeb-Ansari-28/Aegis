@@ -16,9 +16,10 @@ from unittest.mock import AsyncMock, patch
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base
-from app.models.entities import ScanEntity, TargetEntity, TargetProfileEntity
+from app.models.entities import ScanEntity, ScanTurnEntity, TargetEntity, TargetProfileEntity
 from app.schemas.scan import ScanCreate
 from app.schemas.target_profile import ReconStageDetail, TargetProfile
 from app.agents.planner.rules import TestPlanner
@@ -56,7 +57,11 @@ def add_target_and_profile(session_factory, target_id: str):
 
 @pytest.fixture
 def mem_db():
-    engine = create_engine("sqlite:///:memory:")
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     Base.metadata.create_all(engine)
     session_factory = sessionmaker(bind=engine)
     yield session_factory
@@ -164,3 +169,38 @@ def test_recover_interrupted_scans_marks_dangling_scans(mem_db):
         assert s2.category_results[0]["status"] == "COMPLETED"
         assert s2.category_results[1]["status"] == "INTERRUPTED"
         assert s3.status == "COMPLETED"
+
+
+@pytest.mark.asyncio
+async def test_get_scan_turns_handles_none_response(mem_db):
+    target_id = "tgt-1"
+    add_target_and_profile(mem_db, target_id)
+    scan_id = "scan-null-turn-response"
+    with mem_db() as session:
+        session.add(ScanEntity(
+            id=scan_id,
+            target_id=target_id,
+            status="COMPLETED",
+            category_results=[],
+        ))
+        session.add(ScanTurnEntity(
+            id=str(uuid.uuid4()),
+            scan_id=scan_id,
+            turn_index=1,
+            category="LLM08",
+            prompt="Hello",
+            response=None,
+            latency_ms=10,
+            strategy="baseline",
+        ))
+        session.commit()
+
+    with mem_db() as session:
+        assert session.get(ScanEntity, scan_id) is not None
+
+    with patch("app.services.scan_service.SessionLocal", mem_db):
+        turns = await ScanService.get_scan_turns(scan_id)
+        assert len(turns) == 1
+        assert turns[0].response == ""
+        assert turns[0].status == "success"
+        assert turns[0].verdict is None
