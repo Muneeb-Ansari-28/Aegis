@@ -1,6 +1,16 @@
 # Aegis Project Status
 
-## Current review snapshot - 2026-11-12 (Audit Gaps Closure, Concurrency Hardening & Pyrefly Language Server Audit)
+## Current review snapshot - 2026-11-12 (Activation of Fully Constructed OWASP 2026 Categories: LLM01, LLM03, LLM08, LLM10)
+
+All 4 canonical OWASP GenAI 2026 categories that have constructed prompt libraries, attack techniques, and evaluation rules in Aegis have been brought to 100% complete, verified execution and evaluation pipelines and enabled for user selection in the Test Scope wizard:
+- **LLM01 · Prompt Injection**: Activated with 8 fixed KB prompts, 6 attack techniques, 5 evaluation rules, compliance token detector (PROMPT_INJECTION_CONFIRMED, OVERRIDE_EXECUTED, etc.), and dedicated judge rubric judge_rubric_llm01.md.
+- **LLM03 · Excessive Agency**: Activated with 6 fixed KB prompts, 6 attack techniques, 5 evaluation rules, container/sandbox escape detection (check_sandbox_escape), and dedicated judge rubric judge_rubric_llm03.md. Dynamically scheduled when external tools/APIs are detected during reconnaissance.
+- **LLM08 · Hidden Context Exposure**: Retains complete pipeline with 18 fixed KB prompts (including historical direct disclosure prompts), dual canary/overlap oracles, and judge rubric judge_rubric_llm08.md.
+- **LLM10 · Improper Output Handling**: Activated with 4 fixed KB prompts, 4 attack techniques, 4 evaluation rules, regex detection of Markdown tracking pixels, unescaped HTML elements, and javascript: URIs, and dedicated judge rubric judge_rubric_llm10.md.
+- **Untouched Categories Kept Safe**: Categories with 0 attack prompts in the KB (LLM02, LLM04, LLM05, LLM06, LLM07:2026 Misinformation, LLM09) strictly remain marked under_development and unselectable.
+- **Verification Evidence**: All 209 unit and integration tests passing (209 passed in 190.27s); desktop frontend production build passing with 0 errors (	sc && vite build).
+
+## Prior review snapshot - 2026-11-12 (Audit Gaps Closure, Concurrency Hardening & Pyrefly Language Server Audit)
 
 All identified audit findings, execution order issues, and language server diagnostics across the Aegis codebase have been fixed and verified:
 - **Target Project Path Persistence**: Added PATCH /api/v1/targets/{id} and update_target service method with whitespace normalization and explicit null persistence. Updated desktop wizard to persist path edits for existing and newly created targets.

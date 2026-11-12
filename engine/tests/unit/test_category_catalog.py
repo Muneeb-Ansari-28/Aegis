@@ -107,13 +107,17 @@ def test_category_resolver_rejects_noncanonical_prefixes(value):
 def test_implementation_status():
     catalog = get_category_catalog()
     implemented = [c.id for c in catalog if c.implementation_status == "implemented"]
-    # LLM08 has a verified end-to-end prompt, execution, and evaluation pipeline
+    # Fully constructed pipelines with prompt libraries and evaluation rubrics
+    assert "LLM01" in implemented
+    assert "LLM03" in implemented
     assert "LLM08" in implemented
+    assert "LLM10" in implemented
     # Others must be under_development until full pipeline and evidence oracles exist
     under_dev = [c.id for c in catalog if c.implementation_status == "under_development"]
-    assert "LLM01" in under_dev
-    assert "LLM03" in under_dev
+    assert "LLM02" in under_dev
+    assert "LLM04" in under_dev
+    assert "LLM05" in under_dev
+    assert "LLM06" in under_dev
     assert "LLM07" in under_dev
     assert "LLM09" in under_dev
-    assert "LLM10" in under_dev
 
