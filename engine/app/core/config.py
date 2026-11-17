@@ -16,13 +16,13 @@ class Settings(BaseSettings):
 
     # Ollama Endpoints & Models
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-    MODEL_BASE: str = "llama3.2:latest"
-    MODEL_ATTACK: str = "llama3.2:latest"
-    MODEL_JUDGE: str = "llama3.2:latest"
-    MODEL_RECON: str = "llama3.2:latest"
-    MODEL_TRIAGE: str = "llama3.2:latest"
+    MODEL_BASE: str = "hf.co/mradermacher/Huihui-Qwen3-4B-Instruct-2507-abliterated-GGUF:Q4_K_M"
+    MODEL_ATTACK: str = "hf.co/mradermacher/Huihui-Qwen3-4B-Instruct-2507-abliterated-GGUF:Q4_K_M"
+    MODEL_JUDGE: str = "hf.co/mradermacher/Huihui-Qwen3-4B-Instruct-2507-abliterated-GGUF:Q4_K_M"
+    MODEL_RECON: str = "hf.co/mradermacher/Huihui-Qwen3-4B-Instruct-2507-abliterated-GGUF:Q4_K_M"
+    MODEL_TRIAGE: str = "llama-guard3:1b"
     MODEL_EMBED: str = "nomic-embed-text:latest"
-    MODEL_ASSISTANT: str = "llama3.2:latest"
+    MODEL_ASSISTANT: str = "hf.co/mradermacher/Huihui-Qwen3-4B-Instruct-2507-abliterated-GGUF:Q4_K_M"
 
     # RAG Assistant Settings
     RAG_TOP_K: int = 5

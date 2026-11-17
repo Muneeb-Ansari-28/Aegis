@@ -26,7 +26,11 @@ PRICING_PER_1M_TOKENS: Dict[str, Dict[str, float]] = {
     # Local / On-Premise Models (Zero marginal API fee)
     "ollama": {"input": 0.00, "output": 0.00},
     "llama3.2": {"input": 0.00, "output": 0.00},
+    "qwen3": {"input": 0.00, "output": 0.00},
     "qwen3:4b": {"input": 0.00, "output": 0.00},
+    "huihui": {"input": 0.00, "output": 0.00},
+    "llama-guard": {"input": 0.00, "output": 0.00},
+    "llama-guard3": {"input": 0.00, "output": 0.00},
     "local": {"input": 0.00, "output": 0.00},
 }
 

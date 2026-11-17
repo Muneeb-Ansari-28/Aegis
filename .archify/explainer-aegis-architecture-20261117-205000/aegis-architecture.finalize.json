@@ -1,0 +1,472 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "explainer",
+  "quality": "showcase",
+  "startedAt": "2026-11-17T15:50:38.782Z",
+  "specification": {
+    "path": "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\candidate.archify.md",
+    "sha256": "0b17c33e964796135098427dc5261bc972856aaf5cecb0a2f5aa95c18a2ba3e7",
+    "bytes": 8259
+  },
+  "artifact": {
+    "path": "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\aegis-architecture.html",
+    "sha256": "389c23b553132da0f0a833493bc02de382a84e121410832661c445e227887e5c",
+    "bytes": 1021950
+  },
+  "stages": {
+    "browser-check": {
+      "status": "not-run",
+      "execution": "not-requested"
+    },
+    "validate": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": null,
+      "execution": "embedded-in-deliver",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "C:\\Users\\Hp\\.gemini\\config\\skills\\archify\\bin\\archify.mjs",
+        "deliver",
+        "explainer",
+        "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\candidate.archify.md",
+        "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\aegis-architecture.html",
+        "--quality",
+        "showcase",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": true,
+        "command": "validate",
+        "specification": {
+          "sha256": "0b17c33e964796135098427dc5261bc972856aaf5cecb0a2f5aa95c18a2ba3e7",
+          "bytes": 8259
+        },
+        "validation": {
+          "checksPassed": 4,
+          "checkCount": 4,
+          "compositionProfile": "showcase",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 0
+        }
+      }
+    },
+    "deliver": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 1156,
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "C:\\Users\\Hp\\.gemini\\config\\skills\\archify\\bin\\archify.mjs",
+        "deliver",
+        "explainer",
+        "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\candidate.archify.md",
+        "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\aegis-architecture.html",
+        "--quality",
+        "showcase",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "receiptId": "d045206d-45ce-4dab-b447-edc5f666f9e4",
+        "ok": true,
+        "command": "deliver",
+        "type": "explainer",
+        "input": "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\candidate.archify.md",
+        "output": "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\aegis-architecture.html",
+        "explainer": {
+          "preparedSha256": "80324940dc2e5e9c49d944b208620b9bc3e12604b20de3cc37086158dcd2ca89",
+          "dependencies": [
+            {
+              "kind": "diagram-spec",
+              "id": "lifecycle-flow",
+              "inline": true,
+              "sha256": "e3d7d9a33123726c90f343d376d369fd718ae9d40b68b58ab8e0f05e20da9456",
+              "bytes": 1974
+            },
+            {
+              "kind": "diagram-spec",
+              "id": "eval-funnel",
+              "inline": true,
+              "sha256": "5be54e83de6f431ba3deb433a892692bc619c32f80426881e25b823a7dec9035",
+              "bytes": 2030
+            }
+          ]
+        },
+        "specification": {
+          "sha256": "0b17c33e964796135098427dc5261bc972856aaf5cecb0a2f5aa95c18a2ba3e7",
+          "bytes": 8259
+        },
+        "artifact": {
+          "sha256": "389c23b553132da0f0a833493bc02de382a84e121410832661c445e227887e5c",
+          "bytes": 1021950
+        },
+        "validation": {
+          "checksPassed": 4,
+          "checkCount": 4,
+          "compositionProfile": "showcase",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 0
+        },
+        "update": {
+          "status": "unavailable",
+          "installedVersion": null,
+          "availableVersion": null,
+          "releaseNotes": null,
+          "checkedAt": null,
+          "source": null,
+          "noticeRequired": false,
+          "noticeText": null,
+          "reason": "disabled"
+        }
+      }
+    },
+    "check": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 509,
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "C:\\Users\\Hp\\.gemini\\config\\skills\\archify\\bin\\archify.mjs",
+        "check",
+        "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\aegis-architecture.html",
+        "--require-provenance"
+      ],
+      "receipt": {
+        "ok": true,
+        "file": "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\aegis-architecture.html",
+        "family": "explainer",
+        "artifact": {
+          "sha256": "389c23b553132da0f0a833493bc02de382a84e121410832661c445e227887e5c",
+          "bytes": 1021950
+        },
+        "checks": [
+          {
+            "name": "explainer_structure",
+            "ok": true,
+            "details": [
+              "79 unique DOM IDs"
+            ]
+          },
+          {
+            "name": "explainer_payload_identity",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "explainer_dependencies",
+            "ok": true,
+            "details": [
+              "2 frozen dependencies"
+            ]
+          },
+          {
+            "name": "explainer_native_diagrams",
+            "ok": true,
+            "details": [
+              "lifecycle-flow: pass",
+              "eval-funnel: pass"
+            ]
+          }
+        ],
+        "composition": {
+          "schemaVersion": 1,
+          "profile": "showcase",
+          "status": "pass",
+          "summary": {
+            "errors": 0,
+            "warnings": 0
+          },
+          "issues": [],
+          "nativeDiagrams": [
+            {
+              "id": "lifecycle-flow",
+              "receipt": {
+                "ok": true,
+                "file": "C:\\Users\\Hp\\AppData\\Local\\Temp\\archify-explainer-check-UKiClC\\child.html",
+                "artifact": {
+                  "sha256": "3a1fa1bfd38c0d846a35ab144ca3b0a24f4d3848699bb1c665769692ef195051",
+                  "bytes": 841346
+                },
+                "checks": [
+                  {
+                    "name": "single_svg",
+                    "ok": true,
+                    "details": [
+                      "found 1 <svg> block(s)"
+                    ]
+                  },
+                  {
+                    "name": "finite_svg",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "orthogonal_arrows",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "label_route_clearance",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "relationship_crossings",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "relationship_corridors",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "container_border_runs",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "route_rhythm",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "legend_clearance",
+                    "ok": true,
+                    "details": []
+                  }
+                ],
+                "composition": {
+                  "schemaVersion": 1,
+                  "profile": "showcase",
+                  "status": "pass",
+                  "summary": {
+                    "errors": 0,
+                    "warnings": 0
+                  },
+                  "metrics": {
+                    "properCrossings": 0,
+                    "resolvedCrossovers": 0,
+                    "ambiguousCorridors": 0,
+                    "arrowheadCollisions": 0,
+                    "containerBorderRuns": 0,
+                    "labelRouteClearanceIssues": 0,
+                    "labelCanvasOverflowIssues": 0,
+                    "minLabelRouteClearance": 27,
+                    "desktopReadabilityIssues": 0,
+                    "viewportHeightIssues": 0,
+                    "minProjectedNodeTextPx": 6.953271028037383,
+                    "maxBends": 0,
+                    "routesOverSuggestedBends": 0,
+                    "maxStretch": 1,
+                    "routesOverSuggestedStretch": 0,
+                    "minSegmentPx": 8,
+                    "minInteriorSegmentPx": null,
+                    "shortSegmentCount": 2,
+                    "shortEndpointSegmentCount": 2,
+                    "shortInteriorSegmentCount": 0,
+                    "microSegmentCount": 0
+                  },
+                  "suggestedLimits": {
+                    "bendsPerRelationship": 2,
+                    "stretch": 1.35,
+                    "segmentPx": 16,
+                    "microSegmentPx": 8
+                  },
+                  "routeReview": {
+                    "crossings": [],
+                    "detours": []
+                  },
+                  "leadingSpace": {
+                    "measured": false,
+                    "reviewSuggested": false
+                  },
+                  "desktopReadability": {
+                    "budgetBasis": "legacy-930",
+                    "readerContract": "declared-wide-v1",
+                    "availableDiagramWidth": 930,
+                    "actualBudgetPx": 930,
+                    "limit": "legacy",
+                    "requestedTargetPx": null,
+                    "requestedTargetMet": null,
+                    "hardFloorPx": 6,
+                    "hardFloorMet": true,
+                    "minimumOwner": {
+                      "kind": "edge",
+                      "id": "attack-to-connector-1",
+                      "from": "attack",
+                      "to": "connector"
+                    },
+                    "minimumSourceTextPx": 8,
+                    "minimumProjectedTextPx": 6.953271028037383,
+                    "semanticTextCount": 19
+                  },
+                  "issues": []
+                }
+              }
+            },
+            {
+              "id": "eval-funnel",
+              "receipt": {
+                "ok": true,
+                "file": "C:\\Users\\Hp\\AppData\\Local\\Temp\\archify-explainer-check-q3AOLY\\child.html",
+                "artifact": {
+                  "sha256": "f9a0caa8f9c7f75203e69212c246aa1b0f6c5b53404564e128fd174954e96f31",
+                  "bytes": 840270
+                },
+                "checks": [
+                  {
+                    "name": "single_svg",
+                    "ok": true,
+                    "details": [
+                      "found 1 <svg> block(s)"
+                    ]
+                  },
+                  {
+                    "name": "finite_svg",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "orthogonal_arrows",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "label_route_clearance",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "relationship_crossings",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "relationship_corridors",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "container_border_runs",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "route_rhythm",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "legend_clearance",
+                    "ok": true,
+                    "details": []
+                  }
+                ],
+                "composition": {
+                  "schemaVersion": 1,
+                  "profile": "showcase",
+                  "status": "pass",
+                  "summary": {
+                    "errors": 0,
+                    "warnings": 0
+                  },
+                  "metrics": {
+                    "properCrossings": 0,
+                    "resolvedCrossovers": 0,
+                    "ambiguousCorridors": 0,
+                    "arrowheadCollisions": 0,
+                    "containerBorderRuns": 0,
+                    "labelRouteClearanceIssues": 0,
+                    "labelCanvasOverflowIssues": 0,
+                    "minLabelRouteClearance": 27,
+                    "desktopReadabilityIssues": 0,
+                    "viewportHeightIssues": 0,
+                    "minProjectedNodeTextPx": 6.537785588752197,
+                    "maxBends": 0,
+                    "routesOverSuggestedBends": 0,
+                    "maxStretch": 1,
+                    "routesOverSuggestedStretch": 0,
+                    "minSegmentPx": 8,
+                    "minInteriorSegmentPx": null,
+                    "shortSegmentCount": 4,
+                    "shortEndpointSegmentCount": 4,
+                    "shortInteriorSegmentCount": 0,
+                    "microSegmentCount": 0
+                  },
+                  "suggestedLimits": {
+                    "bendsPerRelationship": 2,
+                    "stretch": 1.35,
+                    "segmentPx": 16,
+                    "microSegmentPx": 8
+                  },
+                  "routeReview": {
+                    "crossings": [],
+                    "detours": []
+                  },
+                  "leadingSpace": {
+                    "measured": false,
+                    "reviewSuggested": false
+                  },
+                  "desktopReadability": {
+                    "budgetBasis": "legacy-930",
+                    "readerContract": "declared-wide-v1",
+                    "availableDiagramWidth": 930,
+                    "actualBudgetPx": 930,
+                    "limit": "legacy",
+                    "requestedTargetPx": null,
+                    "requestedTargetMet": null,
+                    "hardFloorPx": 6,
+                    "hardFloorMet": true,
+                    "minimumOwner": {
+                      "kind": "edge",
+                      "id": "resp-to-t0-1",
+                      "from": "resp",
+                      "to": "t0"
+                    },
+                    "minimumSourceTextPx": 8,
+                    "minimumProjectedTextPx": 6.537785588752197,
+                    "semanticTextCount": 17
+                  },
+                  "issues": []
+                }
+              }
+            }
+          ]
+        },
+        "diagnostics": [],
+        "provenance": "current",
+        "deliveryReceiptId": "d045206d-45ce-4dab-b447-edc5f666f9e4"
+      }
+    }
+  },
+  "browserCheck": {
+    "requested": false,
+    "ran": false
+  },
+  "diagnostics": [],
+  "evidence": {
+    "receipt": "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\aegis-architecture.finalize.json",
+    "summaryReceipt": "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\aegis-architecture.finalize-summary.json"
+  },
+  "visualReview": "not-requested",
+  "finishedAt": "2026-11-17T15:50:40.799Z",
+  "durationMs": 2017,
+  "update": {
+    "status": "unavailable",
+    "installedVersion": null,
+    "availableVersion": null,
+    "releaseNotes": null,
+    "checkedAt": null,
+    "source": null,
+    "noticeRequired": false,
+    "noticeText": null,
+    "reason": "check-failed"
+  }
+}

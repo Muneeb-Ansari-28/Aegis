@@ -15,7 +15,7 @@ Install Ollama and ensure local models are pulled:
 ```powershell
 .\scripts\setup_models.ps1
 ```
-This pulls `llama3.2:latest` (main agent model) and `nomic-embed-text:latest` (knowledge base embeddings).
+This pulls `hf.co/mradermacher/Huihui-Qwen3-4B-Instruct-2507-abliterated-GGUF:Q4_K_M` (main agent model), `llama-guard3:1b` (triage filter), and `nomic-embed-text:latest` (knowledge base embeddings).
 
 To index the local security knowledge base into ChromaDB:
 ```powershell

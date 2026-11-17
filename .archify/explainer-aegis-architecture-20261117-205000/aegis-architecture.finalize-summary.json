@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "explainer",
+  "quality": "showcase",
+  "specification": {
+    "path": "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\candidate.archify.md",
+    "sha256": "0b17c33e964796135098427dc5261bc972856aaf5cecb0a2f5aa95c18a2ba3e7",
+    "bytes": 8259
+  },
+  "artifact": {
+    "path": "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\aegis-architecture.html",
+    "sha256": "389c23b553132da0f0a833493bc02de382a84e121410832661c445e227887e5c",
+    "bytes": 1021950
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "not-run"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\aegis-architecture.finalize.json",
+    "summaryReceipt": "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\aegis-architecture.finalize-summary.json"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 2017,
+  "browserCheck": {
+    "requested": false,
+    "ran": false
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "d045206d-45ce-4dab-b447-edc5f666f9e4",
+  "status": "current",
+  "command": "deliver",
+  "type": "explainer",
+  "input": "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\candidate.archify.md",
+  "output": "D:\\vs_code_files\\Aegis\\.archify\\explainer-aegis-architecture-20261117-205000\\aegis-architecture.html",
+  "specification": {
+    "sha256": "0b17c33e964796135098427dc5261bc972856aaf5cecb0a2f5aa95c18a2ba3e7",
+    "bytes": 8259
+  },
+  "artifact": {
+    "sha256": "389c23b553132da0f0a833493bc02de382a84e121410832661c445e227887e5c",
+    "bytes": 1021950
+  },
+  "explainer": {
+    "preparedSha256": "80324940dc2e5e9c49d944b208620b9bc3e12604b20de3cc37086158dcd2ca89",
+    "dependencies": [
+      {
+        "kind": "diagram-spec",
+        "id": "lifecycle-flow",
+        "inline": true,
+        "sha256": "e3d7d9a33123726c90f343d376d369fd718ae9d40b68b58ab8e0f05e20da9456",
+        "bytes": 1974
+      },
+      {
+        "kind": "diagram-spec",
+        "id": "eval-funnel",
+        "inline": true,
+        "sha256": "5be54e83de6f431ba3deb433a892692bc619c32f80426881e25b823a7dec9035",
+        "bytes": 2030
+      }
+    ]
+  }
+}

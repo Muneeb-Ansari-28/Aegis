@@ -1,6 +1,6 @@
-"""Stage 2 Rubric Judge for LLM07 system-prompt disclosure.
+"""Stage 2 Rubric Judge for multi-category OWASP 2026 evaluations.
 
-Uses Ollama (llama3.2) with the judge_rubric_llm07.md prompt to classify
+Uses Ollama (configured MODEL_JUDGE) with category rubrics to classify
 whether a target response reveals system instructions or the planted canary.
 Falls back to a conservative 'not exploited' verdict if the LLM is unavailable.
 """

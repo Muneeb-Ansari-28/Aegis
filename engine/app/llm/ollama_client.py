@@ -31,15 +31,19 @@ class OllamaClient:
         prompt: str,
         system: str = "",
         temperature: Optional[float] = None,
+        num_gpu: Optional[int] = None,
+        options: Optional[dict[str, Any]] = None,
     ) -> str:
         """
         Generate text completion from Ollama.
 
         Args:
-            model: Name of the Ollama model (e.g. llama3.2:latest).
+            model: Name of the Ollama model.
             prompt: User prompt text.
             system: Optional system instruction prompt.
             temperature: Sampling temperature (e.g. 0.2 for deterministic output).
+            num_gpu: Optional GPU layer allocation (0 forces CPU execution).
+            options: Optional runtime options dictionary for Ollama.
 
         Returns:
             Model response string.
@@ -53,16 +57,28 @@ class OllamaClient:
             "system": system,
             "stream": False,
         }
+        opts = dict(options or {})
         if temperature is not None:
-            payload["options"] = {"temperature": temperature}
+            opts["temperature"] = temperature
+        if num_gpu is not None:
+            opts["num_gpu"] = num_gpu
+        if opts:
+            payload["options"] = opts
 
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=180.0) as client:
             resp = await client.post(
                 f"{self.settings.OLLAMA_BASE_URL}/api/generate",
                 json=payload,
             )
             resp.raise_for_status()
-            return resp.json().get("response", "")
+            resp_data = resp.json()
+            text = resp_data.get("response", "")
+            if not text and resp_data.get("thinking"):
+                # Handle thinking/reasoning model templates where response is captured in 'thinking'
+                text = resp_data.get("thinking", "")
+                if text.startswith("assistant\n"):
+                    text = text[len("assistant\n"):]
+            return text
 
     async def embed(self, model: str, inputs: List[str]) -> List[List[float]]:
         """
