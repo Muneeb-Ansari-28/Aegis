@@ -1,78 +1,71 @@
-# Project Context
+# Aegis Project Context & Agent Governance
 
-This folder is the single source of truth for AI agents and contributors working on Aegis.
-Read all files here before implementing anything.
+This directory serves as the authoritative single source of truth for software engineers and AI coding agents working on the **Aegis** codebase.
 
-## References
+---
 
-1. [Rules](rules.md) — implementation, security, testing, logging, and completion reports.
-2. [Architecture](architecture.md) — system boundaries and delivery contracts.
-3. [Design](design.md) — active scope and implementation rationale.
-4. [Folder structure](folder-structure.md) — planned layout and current repository comparison.
-5. [Status](Status.md) — implementation and gate state.
-6. [Frontend design](frontend-design.md) - approved visual specification and current implementation notes.
-7. [Logs](logs.md) — append-only history.
+## Table of Contents
 
-## Key Project Documents
+- [Core Reference Documents](#core-reference-documents)
+- [Active Assessment Scope](#active-assessment-scope)
+- [Agent Skills & Mandatory Workflow](#agent-skills--mandatory-workflow)
+  - [Mandatory Quality Standards](#mandatory-quality-standards)
+  - [Lifecycle: Plan -> Implement -> Verify -> Report](#lifecycle-plan---implement---verify---report)
+- [Startup & Execution](#startup--execution)
 
-- `Aegis_8-Week_Plan_with_MCP.md` — delivery source for the active LLM08 scope and MCP sequence.
-- `Aegis-Architecture.pdf` — broader product architecture.
-- `Aegis-Folder-Structure-Guide.pdf` — team-facing annotated directory tree.
+---
 
-The current assessment scope is **OWASP LLM08 Hidden Context Exposure** (migrated from OWASP 2025 LLM07 System Prompt Leakage per the canonical OWASP GenAI/LLM Top 10 2026 taxonomy) using direct, plain-language
-disclosure requests against authorized web targets. Jailbreak methods remain excluded.
+## Core Reference Documents
+
+All contributors and AI agents must review these documents before introducing changes:
+
+1. **[rules.md](rules.md)**: Master engineering rules, security boundaries, testing mandates, logging conventions, and completion report requirements.
+2. **[architecture.md](architecture.md)**: Architectural specifications, agent contracts, reconnaissance tiers, test planner algorithms, and evaluation defense pipelines.
+3. **[design.md](design.md)**: Active design choices, scope boundaries, and implementation rationale.
+4. **[Status.md](Status.md)**: Current milestone implementation states, verification gates, and known limitations.
+5. **[frontend-design.md](frontend-design.md)**: Approved visual design specifications, component guidelines, and accessibility standards for the desktop workspace.
+6. **[folder-structure.md](folder-structure.md)**: Annotated repository directory structure and module layout.
+7. **[audit_findings_and_fixes.md](audit_findings_and_fixes.md)**: Record of security audits, bug remediations, and code hardening passes.
+8. **[logs.md](logs.md)**: Append-only chronological history of implementations, verification outputs, and milestone sign-offs.
+
+---
+
+## Active Assessment Scope
+
+Aegis aligns strictly with the canonical **OWASP GenAI/LLM Top 10 (2026)** framework:
+- **Active Execution Pipeline**: **OWASP LLM08: Hidden Context Exposure** (migrated from OWASP 2025 LLM07 System Prompt Leakage).
+- **Execution Strategy**: Direct, plain-language disclosure requests, planted canary tokens (`AEGIS-CANARY-7731`), prompt-overlap heuristics, refusal pre-filtering, and rubric-based judging against authorized web targets.
+- **Boundaries**: Offensive jailbreaks, role impersonation, instruction overrides, character encoding tricks, and real secret extraction are strictly excluded from the active scope. Scans must only run against authorized local or private-network targets with explicit written permission.
+
+---
 
 ## Agent Skills & Mandatory Workflow
 
-The `.agents/skills/` folder contains curated skills for AI coding agents working on Aegis.
-All agents implementing features or fixes **MUST** adhere to the rated skills below:
+The `.agents/skills/` directory contains curated agent skills. All AI agents modifying code must adhere to these governing standards:
 
-### Excellent (Core & Mandatory)
-
-These skills directly govern Aegis's core architecture and must be actively followed:
-
-- **`verification-before-completion`**: **MANDATORY.** Never claim a task, gate, or test passes without running fresh verification commands and checking terminal output.
-- **`systematic-debugging`**: Rigorous root-cause analysis for multi-process (Uvicorn/Vite), Playwright browser calibration, and SSE/WebSocket failures.
+### Mandatory Quality Standards
+- **`verification-before-completion`**: **MANDATORY.** Never claim a task, gate, or test passes without running fresh verification commands and confirming terminal output. **Evidence before assertions always.**
+- **`systematic-debugging`**: Rigorous root-cause analysis for multi-process (Uvicorn/Vite), Playwright browser calibration, and WebSocket telemetry issues.
 - **`spec-to-code-compliance`**: Validates that all changes strictly match `Project-Context/` architecture and design contracts.
-- **`modern-python`**: Code quality standard for the FastAPI backend (`engine/`) — typing, async conventions, and dependency integrity.
-- **`frontend-ui-engineering`**: Enforces responsive, accessible design for the React/Vite client (`desktop/`) per `Project-Context/frontend-design.md`.
+- **`modern-python`**: Code quality standard for the FastAPI backend (`engine/`) — type annotations, async conventions, and dependency integrity.
+- **`frontend-ui-engineering`**: Enforces responsive, accessible design for the React/Vite client (`desktop/`) per `frontend-design.md`.
 - **`test-driven-development`**: Red-green-refactor loop required for pure-logic modules, judge heuristics, and connectors.
 - **`security-and-hardening`**: Threat mitigation for LLM prompt injection, subprocess isolation, and target interaction boundaries.
-- **`api-and-interface-design`**: Stable, typed REST contracts between engine endpoints (`:8765`) and desktop frontend (`:3000`).
-- **`constraint-driven-development`**: Guards against silently weakening project test bars, deleting checks, or bypassing gates.
-- **`debugging-and-error-recovery`**: Systematic troubleshooting for external service disconnects (Ollama, Playwright, SQLite).
-- **`observability-and-instrumentation`**: Structured JSON logging across attack agents, calibration runs, and evaluation judges.
-- **`git-workflow-and-versioning`**: Multi-developer branch discipline (`main`, `muneeb`, `salman`, `shahzaman`) and atomic commits.
-- **`differential-review`**: Blast-radius calculation on branch diffs prior to merging.
-- **`source-driven-development`**: Grounding all implementation decisions in verified official library documentation.
-- **`browser-testing-with-devtools`**: Real-time DOM inspection during web target calibration.
-- **`code-review-and-quality`**: 5-axis code quality review prior to PR submission.
-- **`playwright-skill`**: Browser automation patterns, robust locators, and wait strategies for web target calibration.
-- **`agentic-actions-auditor`**: CI/CD and AI agent integration vulnerability assessments.
 
-### Good (High-Value Workflow & Quality Tools)
-
-- **Planning & Task Breakdown**: `writing-plans`, `planning-and-task-breakdown`, `executing-plans`, `incremental-implementation`, `subagent-driven-development`
-- **Quality & Review Loops**: `review-pr`, `code-improver`, `pr-improver`, `code-simplification`, `second-opinion`, `receiving-code-review`, `requesting-code-review`, `panel-review`
-- **Architecture & Architecture Decisions**: `spec-driven-development`, `doubt-driven-development`, `documentation-and-adrs`, `sharp-edges`, `deprecation-and-migration`
-- **Branch & Performance**: `finishing-a-development-branch`, `using-git-worktrees`, `performance-optimization`, `context-engineering`, `dispatching-parallel-agents`
-
-### Standard Feature Implementation Lifecycle
-
-For any new feature or bugfix, the agent workflow must be:
-
-1. **Plan & Spec Check**: Check `Project-Context/architecture.md` using `spec-to-code-compliance` and `writing-plans`.
-2. **Implement**: Apply `modern-python` (backend) or `frontend-ui-engineering` (frontend) with `test-driven-development`.
-3. **Verify**: Execute terminal tests using `verification-before-completion`. **Evidence before assertions.**
+### Lifecycle: Plan -> Implement -> Verify -> Report
+For every new feature or bugfix, agents must follow this sequential lifecycle:
+1. **Plan & Spec Check**: Review `architecture.md` and formulate an explicit implementation plan.
+2. **Implement**: Code changes incrementally with strict typing and unit test coverage.
+3. **Verify**: Execute verification commands in the terminal. Confirm exit code 0 and inspect outputs.
 4. **Report**: File the mandatory post-implementation report in `Project-Context/logs.md` per `rules.md`.
 
-## Startup
+---
 
-Run the full stack (engine + desktop) with a single command from the repo root:
+## Startup & Execution
 
+Run the complete stack (FastAPI engine + React desktop) with a single command from the repository root:
 ```powershell
 .\run_aegis.ps1
 ```
 
-This script auto-detects `.venv`, installs desktop npm deps on first run, starts both processes,
-and opens the browser at `http://127.0.0.1:3000/`. Press `Ctrl+C` to stop everything cleanly.
+This script auto-detects `.venv`, validates Node.js dependencies, starts both services, and launches the browser at `http://127.0.0.1:3000/`. Press `Ctrl+C` for clean process termination.
