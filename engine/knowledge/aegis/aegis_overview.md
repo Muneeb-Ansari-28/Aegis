@@ -7,7 +7,7 @@ Aegis is an automated red-teaming engine and local security copilot for testing 
 The system is composed of:
 - **FastAPI Engine**: Runs on `http://127.0.0.1:8765`, providing REST APIs and WebSocket telemetry.
 - **Desktop Electron/React Application**: Runs on port 3000 during development or as a packaged desktop binary.
-- **Ollama Integration**: Connects locally on port 11434 for local embeddings (`nomic-embed-text`) and conversational inference (`llama3.2`).
+- **Ollama Integration**: Connects locally on port 11434 for local embeddings (`nomic-embed-text`) and conversational inference (`Qwen3-4B-Instruct` and `Llama-Guard-3-1B`).
 - **Playwright Connector**: Automates browser sessions against web-based LLM chat applications.
 - **ChromaDB Vector Store**: Embedded persistent vector database stored locally in the user's application data directory (`%APPDATA%\Aegis\chroma`).
 

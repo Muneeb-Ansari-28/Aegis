@@ -1,6 +1,19 @@
 # Aegis Project Status
 
-## Current review snapshot - 2026-11-12 (Activation of Fully Constructed OWASP 2026 Categories: LLM01, LLM03, LLM08, LLM10)
+## Current review snapshot - 2026-11-17 (Qwen3-4B Migration, Llama-Guard CPU Triage & 4-Tier Defense Funnel)
+
+The core LLM stack and evaluation pipeline have been migrated to the updated model configuration and four-tier evaluation funnel:
+- **Qwen3-4B Migration**: Shifted default model from `llama3.2:latest` to `hf.co/mradermacher/Huihui-Qwen3-4B-Instruct-2507-abliterated-GGUF:Q4_K_M` across all agent roles (Base, Attack, Judge, Recon, and RAG Assistant). Added robust handling for reasoning/thinking GGUFs in `OllamaClient`.
+- **Llama-Guard-3-1B CPU Triage (Tier 1)**: Fully integrated `MODEL_TRIAGE: llama-guard3:1b` operating exclusively on host CPU (`num_gpu: 0`), preserving VRAM for the primary model and short-circuiting benign interactions with sub-100ms latency.
+- **Four-Tier Evaluation Funnel**:
+  1. *Tier 0 (Deterministic Token Echo)*: Instant 0ms detection of benchmark tokens (`PROMPT_INJECTION_CONFIRMED`, `INJECTION_SUCCESSFUL`, `OVERRIDE_VALIDE`, etc.).
+  2. *Tier 0.5 (Anchored Refusal Check)*: 0ms regex check for standard model refusal markers.
+  3. *Tier 1 (Llama-Guard CPU Triage)*: Host CPU safety filter classifying policy-compliant benign interactions.
+  4. *Tier 2 (Qwen3-4B Rubric Judge)*: Category-specific rubric judgment for subtle jailbreaks and persona shifts.
+- **Cost & Telemetry**: Added `qwen3`, `huihui`, `llama-guard`, and `llama-guard3` to zero-marginal-cost dictionary ($0.00). Updated desktop UI copilot badge to reflect Qwen3-4B & nomic-embed.
+- **Verification Evidence**: 100% test pass rate across full test suite: **172/172 unit tests passed**, **40/40 integration tests passed** (**212/212 total passed with 0 regressions**).
+
+## Prior review snapshot - 2026-11-12 (Activation of Fully Constructed OWASP 2026 Categories: LLM01, LLM03, LLM08, LLM10)
 
 All 4 canonical OWASP GenAI 2026 categories that have constructed prompt libraries, attack techniques, and evaluation rules in Aegis have been brought to 100% complete, verified execution and evaluation pipelines and enabled for user selection in the Test Scope wizard:
 - **LLM01 · Prompt Injection**: Activated with 8 fixed KB prompts, 6 attack techniques, 5 evaluation rules, compliance token detector (PROMPT_INJECTION_CONFIRMED, OVERRIDE_EXECUTED, etc.), and dedicated judge rubric judge_rubric_llm01.md.

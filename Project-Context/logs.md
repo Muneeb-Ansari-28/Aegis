@@ -1086,3 +1086,13 @@ feature was implemented = Local-first RAG AI Assistant with OWASP 2026 Knowledge
   - Updated `category_catalog.py` to set `implementation_status="implemented"` for all 4 constructed categories (`LLM01`, `LLM03`, `LLM08`, `LLM10`), leaving untouched categories (`LLM02`, `LLM04`, `LLM05`, `LLM06`, `LLM07`, `LLM09`) as `under_development`.
   - Updated `TestPlanner` rules to schedule `LLM01`, `LLM03` (when tools detected), `LLM08`, and `LLM10` with allocated prompt budgets.
   - Verified 100% test pass rate across 209 unit and integration tests (`209 passed in 190.27s`) and verified desktop frontend production build (`tsc && vite build`) with 0 errors — by "Muneeb" at 22:20, 2026-11-12
+
+- `IMPLEMENTED` Qwen3-4B Migration & Llama-Guard-3-1B CPU Triage Implementation (`engine/app/core/config.py`, `engine/app/llm/ollama_client.py`, `engine/app/agents/evaluation/triage.py`, `engine/app/agents/evaluation/evaluator.py`, `engine/app/agents/evaluation/deterministic.py`, `engine/app/core/cost_estimator.py`, `desktop/src/App.tsx`, `scripts/setup_models.ps1`, `docs/user-guide.md`, `engine/knowledge/aegis/`).
+  - Shifted default LLM model across base, attack, judge, recon, and assistant copilot from `llama3.2:latest` to `hf.co/mradermacher/Huihui-Qwen3-4B-Instruct-2507-abliterated-GGUF:Q4_K_M`.
+  - Configured `MODEL_TRIAGE: llama-guard3:1b` with explicit host CPU offload (`num_gpu: 0`), preventing VRAM eviction of the primary model and short-circuiting benign interactions in ~70ms.
+  - Enhanced `OllamaClient` to support `options` dictionary (`num_gpu`), increased client timeout to 180s for cold model loading, and implemented thinking/reasoning token extraction (`resp.get("response") or resp.get("thinking")`) with leading role token sanitization.
+  - Added additional benchmark compliance tokens (`INJECTION_SUCCESSFUL`, `OVERRIDE_VALIDE`) to `DeterministicDetector`.
+  - Added `qwen3`, `huihui`, `llama-guard`, and `llama-guard3` to zero-marginal-cost local pricing dictionary ($0.00).
+  - Updated desktop copilot telemetry badges to reflect Qwen3-4B & nomic-embed.
+  - Created standalone interactive system architecture visualization artifact in `.archify/explainer-aegis-architecture-20261117-205000/`.
+  - Updated unit and integration tests. Verified 100% test pass rate across entire suite: 172/172 unit tests passed, 40/40 integration tests passed (212/212 total passed with 0 regressions) — by "Muneeb" at 21:20, 2026-11-17

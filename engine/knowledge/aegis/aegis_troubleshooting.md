@@ -16,8 +16,9 @@
   - Check listening port: `http://localhost:11434`.
   - Verify installed models using `ollama list`. Required models:
     - Embedding model: `nomic-embed-text:latest`
-    - Assistant & Attack model: `llama3.2:latest`
-  - If a model is missing, pull it via `ollama pull nomic-embed-text:latest` or `ollama pull llama3.2:latest`.
+    - Assistant & Attack model: `hf.co/mradermacher/Huihui-Qwen3-4B-Instruct-2507-abliterated-GGUF:Q4_K_M`
+    - Triage model: `llama-guard3:1b`
+  - If a model is missing, pull it via `ollama pull nomic-embed-text:latest` or `ollama pull hf.co/mradermacher/Huihui-Qwen3-4B-Instruct-2507-abliterated-GGUF:Q4_K_M` or `ollama pull llama-guard3:1b`.
 
 ## Playwright Browser Calibration Failures
 

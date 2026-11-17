@@ -27,7 +27,7 @@ def test_assistant_status_endpoint(client: TestClient):
     assert data["status"] in ("ready", "degraded")
     assert data["kb_chunks_indexed"] >= 100
     assert "nomic-embed-text" in data["embed_model"]
-    assert "llama3.2" in data["assistant_model"]
+    assert "qwen3" in data["assistant_model"].lower() or "huihui" in data["assistant_model"].lower()
 
 
 def test_assistant_chat_empty_message_returns_400(client: TestClient):

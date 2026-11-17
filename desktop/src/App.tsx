@@ -147,9 +147,9 @@ function Assistant({history}:{history:LocalScan[]}) {
             <div className="assistant-avatar"><Bot size={19}/><i/></div>
             <div>
               <strong>Aegis Assistant</strong>
-              <small><span className="status-dot online"/>Local RAG · llama3.2 & nomic-embed</small>
+              <small><span className="status-dot online"/>Local RAG · Qwen3-4B & nomic-embed</small>
             </div>
-            <span className="chat-model">RAG · LLAMA 3.2</span>
+            <span className="chat-model">RAG · QWEN 3 (4B)</span>
           </div>
 
           <div className="chat-messages">
