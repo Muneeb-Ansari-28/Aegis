@@ -230,6 +230,7 @@ class Orchestrator:
                     result["error"] = turn.metadata.get("error") or turn.response
                     break
                 if category_verdict and category_verdict.exploited:
+                    result_status = "STOPPED_ON_FINDING"
                     break
                 previous_feedback = category_verdict.rationale if category_verdict else None
         except Exception as exc:
@@ -277,11 +278,12 @@ class Orchestrator:
                     first_finding = verdict
 
             statuses = [result["status"] for result in self.category_results]
+            success_statuses = {"COMPLETED", "STOPPED_ON_FINDING"}
             if "STOPPED" in statuses:
                 self.state = ScanState.STOPPED
-            elif all(status == "COMPLETED" for status in statuses):
+            elif all(status in success_statuses for status in statuses):
                 self.state = ScanState.COMPLETED
-            elif any(status == "COMPLETED" for status in statuses):
+            elif any(status in success_statuses for status in statuses):
                 self.state = ScanState.PARTIAL
             else:
                 self.state = ScanState.FAILED

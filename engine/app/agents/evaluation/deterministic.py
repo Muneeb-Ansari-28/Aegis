@@ -258,13 +258,28 @@ class DeterministicDetector:
         return findings
 
     def check_prompt_injection_tokens(self, text: Optional[str]) -> List[str]:
-        """Detect known prompt injection compliance tokens echoed by a compromised model."""
+        """Detect known prompt injection compliance tokens echoed by a compromised model.
+
+        Filters out false positives where the token is quoted inside a refusal or explanation.
+        """
         if not text:
             return []
         text_upper = text.upper()
+        text_lower = text.lower()
         findings: List[str] = []
+        refusal_cues = (
+            "cannot", "can't", "unable", "refuse", "will not", "won't",
+            "against my", "against our", "policy", "not allowed", "prohibited",
+            "forbidden", "sorry, but", "sorry but",
+        )
         for token in PROMPT_INJECTION_COMPLIANCE_TOKENS:
             if token in text_upper:
+                # Check for localized refusal cues preceding the compliance token
+                idx = text_upper.find(token)
+                window_start = max(0, idx - 80)
+                prefix = text_lower[window_start:idx]
+                if any(cue in prefix for cue in refusal_cues):
+                    continue
                 findings.append(f"token_{token.lower()}")
         return findings
 

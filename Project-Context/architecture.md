@@ -63,6 +63,7 @@ The Playwright web connector (`engine/app/adapters/playwright_web.py`) bridges t
 3. **Streaming-Aware Stabilization:**
    - Snapshots baseline response content before dispatch.
    - Periodically polls the assistant reply container (every 200ms) until text content ceases mutating across a stability threshold (e.g. 800ms), ensuring complete token-stream capture.
+   - **Transient Loading Filter (is_transient_placeholder)**: Explicitly ignores temporary UI loading states ('...', '…', 'thinking...', 'typing...', 'generating...') so the settle timer never fires prematurely during local LLM Time-To-First-Token (TTFT) latency before actual tokens arrive in the DOM.
 4. **Unified Turn Record Normalization:**
    - Formats every interaction into the canonical `TurnRecord` schema, tracking `turn_id`, `scan_id`, `turn_index`, `prompt`, `response`, `latency_ms`, `status` (`success`, `timeout`, `error`), and DOM metadata.
    - Only successful turns enter vulnerability evaluation. A connector error/timeout is persisted with diagnostic text and a null verdict, emitted as a failed turn, and terminates the scan as `FAILED`. No database migration is required. Replay exposes connector status and suppresses old verdicts attached to known connector-error markers without rewriting historical rows.
@@ -84,7 +85,11 @@ PDF download uses `GET /reports/{scan_id}/pdf`: an existing file is reused, othe
 
 ## High-Speed Deterministic Evaluator & Refusal Engine (Module 4)
 
-The evaluation pipeline combines deterministic offline pattern matching with an LLM rubric judge:
+The evaluation pipeline uses a Four-Tier Defense Funnel combining deterministic offline pattern matching, host CPU triage, and an LLM rubric judge:
+- **Tier 0 (Deterministic Compliance Token & Regex Detection)**: Instant 0ms detection of benchmark tokens (PROMPT_INJECTION_CONFIRMED, INJECTION_SUCCESSFUL, OVERRIDE_VALIDE), planted canaries, Dora secrets, and sandbox breakouts. Includes localized refusal-context checking to avoid false positives when a bot quotes tokens in refusals.
+- **Tier 0.5 (Anchored Refusal Pre-Filter)**: 0ms regex check for standard model refusal markers (REFUSAL_MARKS) anchored at response start after preamble stripping.
+- **Tier 1 (Llama-Guard-3-1B CPU Triage)**: Stage 1 safety filter operating on host CPU (`num_gpu: 0`), classifying policy-compliant benign interactions in ~70ms without evicting the primary model from VRAM.
+- **Tier 2 (Qwen3-4B-Instruct Rubric Judge)**: Stage 2 category-specific rubric judge with bounded schema retries (JSONGuard), conservative non-exploit fallback, and dynamic prompt instructions tailored per active OWASP category.
 1. **Deterministic Pre-Filtering (`engine/app/agents/evaluation/deterministic.py`)**:
    - **Canary Check**: Flags planted validation canaries (`AEGIS-CANARY-7731`) at 100% confidence.
    - **High-Value Secret Detection (OWASP LLM02)**: Evaluates Dora regex signatures for AWS access/secret keys, GitHub PATs, Slack tokens, Stripe live keys, and OpenAI API keys.

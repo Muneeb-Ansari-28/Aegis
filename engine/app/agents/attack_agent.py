@@ -5,6 +5,7 @@ when the fixed pool is exhausted. Never uses jailbreaks or safeguard bypass.
 """
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 
@@ -15,7 +16,49 @@ from app.kb.loader import KBLoader
 
 logger = logging.getLogger(__name__)
 
+# Categories where prompt syntax must be transmitted verbatim to test parser/renderer safety
+CATEGORIES_NO_REPHRASE: set[str] = {"LLM10"}
+
 _ATTACK_SYSTEM_PROMPT_PATH = Path(__file__).parent / "prompts" / "attack_system.md"
+
+
+def _clean_rephrase_output(raw: Optional[str], base_prompt: str) -> str:
+    """Clean LLM-generated rephrase to strip role headers, preambles, and leaked meta-instructions."""
+    if not raw:
+        return base_prompt
+    text = raw.strip()
+
+    # Strip LLM chat template role tags
+    for role in ("user\n", "assistant\n", "system\n"):
+        if text.lower().startswith(role):
+            text = text[len(role):].strip()
+
+    # Strip common conversational preambles
+    preamble_pattern = re.compile(
+        r"^(?:here(?:\s+is|\s+'s)?\s+(?:the\s+)?(?:rephrased\s+)?prompt:?|"
+        r"rephrased(?:\s+prompt)?:?|"
+        r"new\s+prompt:?)\s*",
+        re.IGNORECASE,
+    )
+    text = preamble_pattern.sub("", text).strip()
+
+    # Strip surrounding quotes if wrapped
+    if (text.startswith('"') and text.endswith('"')) or (text.startswith("'") and text.endswith("'")):
+        text = text[1:-1].strip()
+
+    # If the output still contains testing meta-instructions, reject and fall back to base prompt
+    meta_markers = [
+        "you are a security testing assistant",
+        "rephrase this testing prompt",
+        "rules:",
+        "output only the new prompt",
+    ]
+    text_lowered = text.lower()
+    if any(marker in text_lowered for marker in meta_markers):
+        logger.warning("Rephrase generator echoed meta-instruction prompt; falling back to base prompt.")
+        return base_prompt
+
+    return text if text else base_prompt
 
 
 def _load_prompts_for_category(category: str, prompt_ids: List[str]) -> List[str]:
@@ -101,6 +144,12 @@ class AttackAgent:
             logger.info(f"Turn {turn_index} ({self.category}): Using fixed KB prompt (#{turn_index})")
             return prompt, "kb_fixed_disclosure"
 
+        # Categories requiring strict markup syntax (LLM10) must never be paraphrased
+        if self.category.upper() in CATEGORIES_NO_REPHRASE:
+            prompt = self._fixed_prompts[(turn_index - 1) % len(self._fixed_prompts)]
+            logger.info(f"Turn {turn_index} ({self.category}): Cycling fixed syntax prompt (#{turn_index})")
+            return prompt, "kb_fixed_disclosure"
+
         # Phase 2: LLM-generated rephrase
         logger.info(f"Turn {turn_index} ({self.category}): Generating LLM rephrase via Ollama ({self._settings.MODEL_ATTACK})")
         base_prompt = self._fixed_prompts[(turn_index - 1) % len(self._fixed_prompts)]
@@ -112,9 +161,9 @@ class AttackAgent:
                 prompt=user_message,
                 system=self._system_prompt,
             )
-            generated = generated.strip()
-            if generated:
-                return generated, "llm_rephrase"
+            cleaned = _clean_rephrase_output(generated, base_prompt)
+            if cleaned:
+                return cleaned, "llm_rephrase"
         except Exception as e:
             logger.error(f"Ollama generation failed at turn {turn_index}: {e}")
 
