@@ -110,21 +110,29 @@ Aegis aligns strictly with the canonical **OWASP GenAI/LLM Top 10 (2026)** frame
 
 ## System Architecture
 
+![Aegis AI Security Architecture](docs/architecture/aegis-system-architecture.png)
+
+*Figure 1: Aegis end-to-end control plane, multi-tier reconnaissance, execution state machine, and local LLM evaluation boundary.*
+
+![Aegis Multi-Category Security Assessment Workflow](docs/architecture/aegis-assessment-workflow.png)
+
+*Figure 2: Multi-category assessment workflow across setup, execution, and reporting phases.*
+
 ### High-Level Execution Pipeline
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor User as Security Operator
-    participant UI as Desktop Client (:3000)
-    participant Engine as FastAPI Engine (:8765)
-    participant Recon as Recon & Planner
+    participant UI as Desktop Client
+    participant Engine as FastAPI Engine
+    participant Recon as Recon and Planner
     participant Orch as Orchestrator State Machine
     participant Browser as Playwright Chromium
     participant Target as Target Web Chatbot
-    participant Eval as 4-Tier Evaluation Defense
-    participant Ollama as Local Ollama (:11434)
-    participant DB as SQLite & Reports
+    participant Eval as Evaluation Defense
+    participant Ollama as Local Ollama
+    participant DB as SQLite and Reports
 
     User->>UI: Submit Target URL
     UI->>Engine: POST /api/v1/targets
@@ -134,11 +142,11 @@ sequenceDiagram
     Browser-->>Engine: Confirmed Selectors
     Engine-->>UI: Calibration Complete
 
-    User->>UI: Authorize & Run Recon
+    User->>UI: Authorize and Run Recon
     UI->>Engine: POST /api/v1/targets/{id}/recon
     Engine->>Recon: Fingerprint network, scan ports, run probes
     Recon-->>Engine: Corroborated TargetProfile
-    Engine->>Recon: Generate Deterministic TestPlan (SHA-256 hash)
+    Engine->>Recon: Generate Deterministic TestPlan
     Engine-->>UI: Test Plan (All 10 OWASP Categories)
 
     User->>UI: Launch Assessment (LLM08, Budget=10)
@@ -146,13 +154,13 @@ sequenceDiagram
     Engine->>Orch: Initialize Scan Worker
     
     loop Turn Loop (Attempts 1 to 10)
-        Orch->>Ollama: Generate / Rephrase Attack Prompt
+        Orch->>Ollama: Generate or Rephrase Attack Prompt
         Orch->>Browser: Dispatch Prompt
-        Browser->>Target: Fill & Submit Message
+        Browser->>Target: Fill and Submit Message
         Target-->>Browser: Token Stream Response
         Browser-->>Orch: TurnRecord (Verbatim Text, Latency)
         Orch->>Eval: Evaluate Response
-        Eval->>Eval: Tier 1: Canary / Secrets Check
+        Eval->>Eval: Tier 1: Canary and Secrets Check
         Eval->>Eval: Tier 2: 28 Refusal Markers Filter
         opt If Ambiguous
             Eval->>Ollama: Tier 3: CPU Triage (Llama-Guard 3)
@@ -161,7 +169,7 @@ sequenceDiagram
         Eval-->>Orch: Verdict (Exploited, Confidence, Evidence)
         Orch->>UI: WebSocket Telemetry Event (turn_completed)
         alt Exploit Detected
-            Orch->>DB: Persist Finding & Advance Category
+            Orch->>DB: Persist Finding and Advance Category
         end
     end
 
@@ -169,7 +177,7 @@ sequenceDiagram
     Orch-->>UI: WebSocket scan_completed
     User->>UI: Download PDF Report
     UI->>Engine: GET /api/v1/reports/{id}/pdf
-    Engine->>DB: Compile Report & Stream PDF
+    Engine->>DB: Compile Report and Stream PDF
 ```
 
 ---
@@ -178,18 +186,18 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    Response["Target Response Text"] --> T1["Tier 1: Deterministic Evaluator<br/>(Canaries, Regex Secrets, Luhn Card Check)"]
+    Response["Target Response Text"] --> T1["Tier 1: Deterministic Evaluator<br/>Canaries, Regex Secrets, Luhn Card Check"]
     
-    T1 -->|Planted Canary / High-Value Secret Detected| Exploit["Verdict: EXPLOITED<br/>Confidence: 1.0<br/>Short-circuit evaluation"]
-    T1 -->|No Secret Matched| T2["Tier 2: Universal Refusal Pre-Filter<br/>(28 Canonical Refusal Markers)"]
+    T1 -->|Canary or Secret Detected| Exploit["Verdict: EXPLOITED<br/>Confidence: 1.0<br/>Short-circuit evaluation"]
+    T1 -->|No Secret Matched| T2["Tier 2: Universal Refusal Pre-Filter<br/>28 Canonical Refusal Markers"]
     
-    T2 -->|Refusal Marker Matched (No Exploit Signals)| Refusal["Verdict: SAFE / REFUSED<br/>Confidence: 0.95<br/>Bypasses LLM (~70% latency savings)"]
-    T2 -->|No Refusal Marker / Mixed Signals| T3["Tier 3: Fast CPU Triage<br/>(Llama-Guard-3-1B CPU Offloaded)"]
+    T2 -->|Refusal Marker Matched| Refusal["Verdict: SAFE or REFUSED<br/>Confidence: 0.95<br/>Bypasses LLM"]
+    T2 -->|No Refusal Marker| T3["Tier 3: Fast CPU Triage<br/>Llama-Guard 3 1B CPU Offloaded"]
     
     T3 -->|Unambiguously Safe| Refusal
-    T3 -->|Flagged / Borderline Unsafe| T4["Tier 4: Rubric Judge<br/>(Local Qwen 2.5 / 3 LLM via Ollama)"]
+    T3 -->|Flagged as Unsafe| T4["Tier 4: Rubric Judge<br/>Local Qwen LLM via Ollama"]
     
-    T4 -->|Scoring Rubric + JSONGuard Depth Parsing| FinalVerdict["Final Structured Verdict JSON<br/>(Exploited, Category, Confidence, Quote)"]
+    T4 -->|Scoring Rubric Assessment| FinalVerdict["Final Structured Verdict JSON<br/>Exploited, Category, Confidence, Quote"]
 ```
 
 ---
@@ -357,68 +365,90 @@ Aegis uses **SQLite** located at `%APPDATA%\Aegis\db\aegis.db`. The relational s
 
 ```mermaid
 erDiagram
-    targets ||--o{ scans : "has"
-    targets ||--o| target_profiles : "profiles"
-    targets ||--o{ recon_runs : "runs"
-    scans ||--o{ scan_turns : "records"
-    scans ||--o{ findings : "produces"
-    scan_turns ||--o| findings : "linked_to"
-    recon_runs ||--o{ recon_turns : "contains"
+    targets ||--o{ scans : has
+    targets ||--o| target_profiles : profiles
+    targets ||--o{ recon_runs : runs
+    scans ||--o{ scan_turns : records
+    scans ||--o{ findings : produces
+    scan_turns ||--o| findings : linked_to
+    recon_runs ||--o{ recon_turns : contains
 
     targets {
-        string id PK "UUID"
-        string name "Target Name"
-        string target_type "web | api | app"
-        string url "Target URL"
-        string project_path "Optional local path"
-        json calibration_config "DOM selectors"
+        string id PK
+        string name
+        string target_type
+        string url
+        string project_path
+        json calibration_config
         datetime created_at
     }
 
     target_profiles {
         string id PK
         string target_id FK
-        json profile_data "Corroborated capabilities"
+        json profile_data
         datetime created_at
         datetime updated_at
     }
 
-    scans {
-        string id PK "UUID"
+    recon_runs {
+        string id PK
         string target_id FK
-        string status "QUEUED | RUNNING | COMPLETED | STOPPED | FAILED"
-        string category "e.g. LLM08"
-        int budget "Max attempts per category"
+        string status
+        json stages_data
+        json profile_data
+        json warnings
+        datetime created_at
+        datetime completed_at
+    }
+
+    recon_turns {
+        string id PK
+        string recon_run_id FK
+        int turn_index
+        string strategy
+        text prompt
+        text response
+        int latency_ms
+        datetime created_at
+    }
+
+    scans {
+        string id PK
+        string target_id FK
+        string status
+        string category
+        int budget
         int current_attempt
-        json test_plan "Active plan & revision hash"
+        json test_plan
         json category_results
         datetime created_at
         datetime completed_at
     }
 
     scan_turns {
-        string id PK "UUID"
+        string id PK
         string scan_id FK
         int turn_index
         string category
         int attempt_in_category
-        text prompt "Attack prompt sent"
-        text response "Verbatim target response"
+        text prompt
+        text response
         int latency_ms
-        string strategy "e.g. direct, translation"
-        json verdict "Evaluator verdict payload"
+        string strategy
+        json verdict
         datetime created_at
     }
 
     findings {
-        string id PK "UUID"
+        string id PK
         string scan_id FK
         string turn_id FK
-        string category "e.g. LLM08"
-        string severity "CRITICAL | HIGH | MEDIUM | LOW | INFO"
-        float confidence "0.0 to 1.0"
+        string category
+        string severity
+        float confidence
         text description
-        text remediation "Remediation guidance"
+        text remediation
         datetime created_at
     }
 ```

@@ -44,36 +44,44 @@ The engine acts as the authoritative control plane for all security assessments.
 
 ## Architecture & Responsibilities
 
+![Aegis Core Architecture](../docs/architecture/aegis-system-architecture.png)
+
+*Figure: Aegis core control plane, multi-tier reconnaissance, execution state machine, and local LLM evaluation boundary.*
+
 ```mermaid
 flowchart TD
-    Client["Desktop Frontend / CLI (REST & WebSocket)"] --> Auth["LocalAPIAuthMiddleware (Loopback + Origin + Token/Session)"]
-    Auth --> Router["FastAPI Router (/api/v1)"]
+    Client["Desktop Frontend and CLI"] --> Auth["LocalAPIAuthMiddleware"]
+    Auth --> Router["FastAPI Router"]
     
-    subgraph Engine Core
-        Router --> TargetSvc["TargetService & Calibration"]
-        Router --> ReconSvc["ReconService (Tiers 1, 2, 3)"]
-        Router --> ScanSvc["ScanService & Orchestrator"]
-        Router --> FindingSvc["FindingsService & RiskScorer"]
-        Router --> ReportSvc["ReportService & ReportingAgent"]
+    subgraph Engine_Core["Engine Core"]
+        Router --> TargetSvc["TargetService and Calibration"]
+        Router --> ReconSvc["ReconService Tiers 1 2 3"]
+        Router --> ScanSvc["ScanService and Orchestrator"]
+        Router --> FindingSvc["FindingsService and RiskScorer"]
+        Router --> ReportSvc["ReportService and ReportingAgent"]
         
         ScanSvc --> Planner["Deterministic Test Planner"]
-        ScanSvc --> AttackAgent["Attack Agent & Mutators"]
+        ScanSvc --> AttackAgent["Attack Agent and Mutators"]
         ScanSvc --> Adapter["Playwright Web Connector"]
         ScanSvc --> EvalPipeline["4-Tier Evaluation Defense"]
     end
     
-    subgraph Evaluation Defense
-        EvalPipeline --> T1["Tier 1: Deterministic (Canary, Regex, Luhn, Overlap)"]
-        EvalPipeline --> T2["Tier 2: Refusal Filter (28 Universal Markers)"]
+    subgraph Evaluation_Defense["Evaluation Defense"]
+        EvalPipeline --> T1["Tier 1: Deterministic Pattern Matcher"]
+        EvalPipeline --> T2["Tier 2: Refusal Filter 28 Markers"]
         EvalPipeline --> T3["Tier 3: Llama-Guard 3 1B CPU Triage"]
         EvalPipeline --> T4["Tier 4: Qwen LLM Rubric Judge"]
     end
     
-    subgraph Storage & Infrastructure
-        TargetSvc & ScanSvc & FindingSvc --> SQLite[("SQLite: aegis.db")]
-        ReportSvc --> PDFDir["AppData/Roaming/Aegis/reports"]
-        ScanSvc --> Chroma[("ChromaDB Vector Store")]
-        AttackAgent & T3 & T4 --> Ollama["Ollama Local Daemon (:11434)"]
+    subgraph Storage_Infrastructure["Storage and Infrastructure"]
+        TargetSvc --> SQLite["SQLite Database: aegis.db"]
+        ScanSvc --> SQLite
+        FindingSvc --> SQLite
+        ReportSvc --> PDFDir["AppData Reports Directory"]
+        ScanSvc --> Chroma["ChromaDB Vector Store"]
+        AttackAgent --> Ollama["Ollama Local Daemon"]
+        T3 --> Ollama
+        T4 --> Ollama
     end
 ```
 
@@ -240,13 +248,13 @@ The engine uses **SQLite** located at `%APPDATA%\Aegis\db\aegis.db` (managed via
 
 ```mermaid
 erDiagram
-    targets ||--o{ scans : "has"
-    targets ||--o| target_profiles : "profiles"
-    targets ||--o{ recon_runs : "runs"
-    scans ||--o{ scan_turns : "contains"
-    scans ||--o{ findings : "produces"
-    scan_turns ||--o| findings : "linked_to"
-    recon_runs ||--o{ recon_turns : "contains"
+    targets ||--o{ scans : has
+    targets ||--o| target_profiles : profiles
+    targets ||--o{ recon_runs : runs
+    scans ||--o{ scan_turns : contains
+    scans ||--o{ findings : produces
+    scan_turns ||--o| findings : linked_to
+    recon_runs ||--o{ recon_turns : contains
 
     targets {
         string id PK

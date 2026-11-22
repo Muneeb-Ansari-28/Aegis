@@ -57,62 +57,46 @@ Aegis aligns strictly with the canonical **OWASP GenAI/LLM Top 10 (2026)** frame
 
 ## High-Level System Topology
 
+![Aegis AI Security Architecture](aegis-system-architecture.png)
+
+*Figure 1: Aegis end-to-end control plane, multi-tier reconnaissance, execution state machine, and local LLM evaluation boundary.*
+
+![Aegis Multi-Category Security Assessment Workflow](aegis-assessment-workflow.png)
+
+*Figure 2: Multi-category assessment workflow across setup, execution, and reporting phases.*
+
 ```mermaid
-graph TB
-    subgraph Client Layer
-        UI["Aegis Desktop (React 18 + Vite :5173/:3000)"]
+flowchart TD
+    Client["Desktop Client: React 18 and Vite"] --> Auth["LocalAPIAuthMiddleware"]
+    Auth --> API["FastAPI Engine Control Plane"]
+    
+    subgraph Control_Plane["Control Plane Services"]
+        API --> TargetSvc["TargetService"]
+        API --> ReconSvc["ReconService"]
+        API --> ScanSvc["ScanService"]
+        
+        ScanSvc --> Orch["Orchestrator State Machine"]
+        Orch --> Planner["Deterministic Test Planner"]
+        Orch --> Recon["Reconnaissance Engine"]
+        Orch --> Browser["Playwright Chromium Driver"]
+        Orch --> Eval["4-Tier Evaluation Defense"]
+        Eval --> Risk["Deterministic Risk Scorer"]
+        Risk --> SQLite["SQLite Database: aegis.db"]
+        Orch --> Report["Reporting Agent and PDF Engine"]
+        Report --> PDFReports["AppData Reports Directory"]
     end
-
-    subgraph Security Boundary
-        Auth["LocalAPIAuthMiddleware<br/>Loopback Check | Origin Validation | Session Token"]
+    
+    subgraph Target_Environment["Target Environment"]
+        Browser --> WebTarget["Web Chatbot Target e.g. Weak Bot"]
+        WebTarget --> Browser
     end
-
-    subgraph Control Plane
-        API["FastAPI Engine (:8765)"]
-        Orch["Deterministic Orchestrator (State Machine)"]
-        Planner["Pure-Python Test Planner"]
-        Recon["Multi-Tier Reconnaissance Engine"]
-        Eval["4-Tier Evaluation Defense Pipeline"]
-        Risk["Deterministic Risk Scorer"]
-        Report["Reporting Agent & PDF Engine"]
+    
+    subgraph LLM_Runtime["Local LLM Runtime"]
+        Recon --> Ollama["Local Ollama Daemon"]
+        Eval --> Ollama
+        Orch --> Ollama
+        ScanSvc --> Chroma["ChromaDB Vector Store"]
     end
-
-    subgraph Local LLM Runtime
-        Ollama["Ollama Local Daemon (:11434)"]
-        M_Attack["Attack Model: Qwen 2.5 3B / Qwen3-4B"]
-        M_Judge["Judge Model: Qwen 2.5 3B / Qwen3-4B"]
-        M_Triage["Triage Model: Llama-Guard 3 1B (CPU)"]
-        M_Embed["Embedding Model: Nomic-Embed-Text v1.5"]
-    end
-
-    subgraph Target Environment
-        Browser["Playwright Headless/Headed Chromium"]
-        WebTarget["Web Chatbot Target (e.g. Weak Bot :8001)"]
-    end
-
-    subgraph Local Storage
-        SQLite[("SQLite: aegis.db")]
-        Chroma[("ChromaDB Vector Store")]
-        Files["AppData Reports & Profiles"]
-    end
-
-    UI -->|REST & WebSocket| Auth
-    Auth --> API
-    API --> TargetSvc["TargetService"] & ScanSvc["ScanService"] & ReconSvc["ReconService"]
-    ScanSvc --> Orch
-    Orch --> Planner
-    Orch --> Recon
-    Orch --> Browser
-    Browser -->|DOM Input/Output| WebTarget
-    Browser -->|Raw Turns| Orch
-    Orch --> Eval
-    Eval --> Risk
-    Risk --> SQLite
-    Orch --> Report
-    Report --> Files
-    Recon & Eval & Orch --> Ollama
-    Ollama --- M_Attack & M_Judge & M_Triage & M_Embed
-    ScanSvc --> Chroma
 ```
 
 ---
@@ -160,17 +144,16 @@ A multi-tier evaluation pipeline balancing sub-millisecond execution with deep s
 flowchart TD
     Response["Target Response Text"] --> T1["Tier 1: Deterministic Pattern Matcher"]
     
-    T1 -->|Canary Found: AEGIS-CANARY-7731| ExploitTrue["Verdict: EXPLOITED (Confidence: 1.0)"]
-    T1 -->|Secret / PII / Escape Found| ExploitTrue
-    T1 -->|No Immediate Pattern Match| T2["Tier 2: Universal Refusal Pre-Filter"]
+    T1 -->|Canary or Secret Found| ExploitTrue["Verdict: EXPLOITED<br/>Confidence: 1.0"]
+    T1 -->|No Secret Matched| T2["Tier 2: Universal Refusal Pre-Filter"]
     
-    T2 -->|28 Canonical Refusal Marks Found| ExploitFalse["Verdict: SAFE / REFUSED (Confidence: 0.95)"]
-    T2 -->|Refusal Absent / Ambiguous| T3["Tier 3: Fast CPU Triage (Llama-Guard-3-1B)"]
+    T2 -->|Refusal Marker Matched| ExploitFalse["Verdict: SAFE or REFUSED<br/>Confidence: 0.95"]
+    T2 -->|Refusal Absent or Ambiguous| T3["Tier 3: Fast CPU Triage<br/>Llama-Guard 3 1B"]
     
     T3 -->|Unambiguously Safe| ExploitFalse
-    T3 -->|Potentially Unsafe / Flagged| T4["Tier 4: LLM Rubric Judge (Qwen Model)"]
+    T3 -->|Flagged as Unsafe| T4["Tier 4: LLM Rubric Judge<br/>Local Qwen Model"]
     
-    T4 -->|Scoring Rubric + JSONGuard| FinalVerdict["Structured Verdict JSON"]
+    T4 -->|Scoring Rubric Assessment| FinalVerdict["Structured Verdict JSON"]
 ```
 
 ### 6. Deterministic Orchestrator (Module 5)
