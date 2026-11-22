@@ -71,19 +71,19 @@ Aegis aligns strictly with the canonical **OWASP GenAI/LLM Top 10 (2026)** frame
 
 | Category ID | Canonical Category Name | Implementation Status | Aegis Execution Strategy |
 | :--- | :--- | :--- | :--- |
-| **LLM01** | Prompt Injection | Under Development | Modeled in Planner; custom delimiter & system instruction overrides |
+| **LLM01** | **Prompt Injection** | **Active Pipeline** | Direct & indirect injection, delimiter breaking, instruction overrides, dedicated `LLM01` rubric judge |
 | **LLM02** | Sensitive Information Disclosure | Under Development | Modeled in Planner; PII (Luhn check), API secrets, and cloud credential detection |
-| **LLM03** | Excessive Agency | Under Development | Modeled in Planner; autonomous tool invocation and unauthorized API execution checks |
+| **LLM03** | **Excessive Agency** | **Active Pipeline** | Autonomous tool invocation, permission escalation, API execution checks, dedicated `LLM03` rubric judge |
 | **LLM04** | Supply Chain | Under Development | Modeled in Planner; dependency scanning and untrusted package imports |
 | **LLM05** | Data and Model Poisoning | Under Development | Modeled in Planner; training dataset and fine-tuning artifact validation |
 | **LLM06** | Unbounded Consumption | Under Development | Modeled in Planner; token exhaustion, quadratic complexity, and rate-limit DOS checks |
 | **LLM07** | Misinformation | Under Development | Modeled in Planner; factual hallucination and ungrounded citation probing |
-| **LLM08** | **Hidden Context Exposure** | **Active Pipeline** | Fully implemented; direct disclosure prompts, canary verification, refusal filtering, rubric judge |
+| **LLM08** | **Hidden Context Exposure** | **Active Pipeline** | Direct disclosure prompts, canary verification (`AEGIS-CANARY-7731`), refusal filtering, dedicated `LLM08` rubric judge |
 | **LLM09** | Vector and Embedding Weaknesses | Under Development | Modeled in Planner; vector collision, poisoning, and embedding manipulation |
-| **LLM10** | Improper Output Handling | Under Development | Modeled in Planner; XSS, markdown injection, code execution, and sandbox breakout heuristics |
+| **LLM10** | **Improper Output Handling** | **Active Pipeline** | XSS, markdown/HTML injection, code execution, sandbox breakout heuristics, dedicated `LLM10` rubric judge |
 
 > [!NOTE]
-> **Active Implementation Scope**: **OWASP LLM08 (Hidden Context Exposure)** is fully functional end-to-end. The test planner models all 10 categories, displaying under-development categories as transparently disabled with specific rationale until their execution pipelines are activated.
+> **Active Implementation Scope**: **OWASP LLM01 (Prompt Injection)**, **LLM03 (Excessive Agency)**, **LLM08 (Hidden Context Exposure)**, and **LLM10 (Improper Output Handling)** have complete active execution pipelines with dedicated judge rubrics and attempt budgets. The remaining 6 categories are modeled in the deterministic planner and will activate as their attack seed libraries and specialized evaluators are released.
 
 ---
 

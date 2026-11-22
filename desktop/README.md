@@ -46,7 +46,7 @@ The desktop workspace connects directly to the Aegis Engine (`http://127.0.0.1:8
   - *Interactive Mode*: Opens a headed browser with an injected click-to-capture overlay for custom web applications.
 - **OWASP 2026 Multi-Category Scope Transparency**:
   - Displays all 10 canonical categories (`LLM01` through `LLM10`).
-  - Highlights currently executable categories (e.g. `LLM08 Hidden Context Exposure`) while clearly explaining dependencies for categories currently under development.
+  - Highlights currently executable categories (`LLM01 Prompt Injection`, `LLM03 Excessive Agency`, `LLM08 Hidden Context Exposure`, and `LLM10 Improper Output Handling`) while clearly explaining dependencies for categories currently under development.
 - **Real-Time Telemetry Stream**: WebSocket-driven live event log showing turn index, category, prompt dispatch, token response latency, and evaluation verdicts.
 - **Evidence Inspection**: Structured evidence views showing exact prompts sent, target responses received, highlighted leaks, and actionable remediation steps.
 - **Executive PDF Export**: One-click download of styled, tamper-evident audit reports with executive summaries and financial token cost metrics.
