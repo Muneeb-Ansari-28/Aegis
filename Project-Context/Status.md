@@ -1,6 +1,17 @@
 # Aegis Project Status
 
-## Current review snapshot - 2026-11-17 (Qwen3-4B Migration, Llama-Guard CPU Triage & 4-Tier Defense Funnel)
+## Current review snapshot - 2026-11-22 (Playwright Loading Race Condition Fix, Dedicated Model Evaluation Hardening & Five Core Accuracy Improvements)
+
+The live scanning connector and evaluation pipeline have been hardened against UI latency race conditions and evaluation edge-case errors:
+- **Playwright Transient Loading Filter**: Added `is_transient_placeholder()` and `TRANSIENT_LOADING_MARKERS` to `engine/app/adapters/playwright_web.py`. Prevents automated scans from prematurely finalizing turn captures on initial LLM Time-To-First-Token UI placeholders (`"..."`, `"thinking..."`, `"typing..."`), ensuring full streaming token completion is captured.
+- **Dynamic Category Judge Rubrics**: Resolved category mismatch in `RubricJudge._build_judge_request()` by dynamically passing and formatting active OWASP category names and schema contracts for `LLM01`, `LLM03`, `LLM07`, `LLM08`, and `LLM10`.
+- **Sanitized AttackAgent Rephrasing**: Added `_clean_rephrase_output()` in `attack_agent.py` to strip LLM role headers (`user\n`, `assistant\n`), conversational preambles, and prevent leaked testing meta-instructions from reaching target chatbots.
+- **Preserved LLM10 Syntax Payloads**: Enforced `CATEGORIES_NO_REPHRASE = {"LLM10"}` to ensure Markdown tracking pixels, HTML injection tags, and `javascript:` URI schemes are tested verbatim without paraphrase distortion.
+- **Refusal-Aware Token Detection for LLM01**: Updated `DeterministicDetector.check_prompt_injection_tokens()` and `Evaluator.evaluate()` with localized refusal/negation detection. Hardened target chatbots quoting compliance tokens within an explicit refusal are accurately classified as non-exploited refusals rather than false-positive exploits.
+- **Accurate Category Outcome Status**: Orchestrator sets `result["status"] = "STOPPED_ON_FINDING"` upon early-exit finding confirmation (clarifying report tables and audit summaries), with `ScanState.COMPLETED` lifecycle alignment.
+- **Verification Evidence**: 100% test pass rate across entire suite: **179/179 unit tests passed**, **40/40 integration tests passed** (**219/219 total passed with 0 regressions**).
+
+## Prior review snapshot - 2026-11-17 (Qwen3-4B Migration, Llama-Guard CPU Triage & 4-Tier Defense Funnel)
 
 The core LLM stack and evaluation pipeline have been migrated to the updated model configuration and four-tier evaluation funnel:
 - **Qwen3-4B Migration**: Shifted default model from `llama3.2:latest` to `hf.co/mradermacher/Huihui-Qwen3-4B-Instruct-2507-abliterated-GGUF:Q4_K_M` across all agent roles (Base, Attack, Judge, Recon, and RAG Assistant). Added robust handling for reasoning/thinking GGUFs in `OllamaClient`.

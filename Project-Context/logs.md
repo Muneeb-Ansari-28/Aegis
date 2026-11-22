@@ -1096,3 +1096,12 @@ feature was implemented = Local-first RAG AI Assistant with OWASP 2026 Knowledge
   - Updated desktop copilot telemetry badges to reflect Qwen3-4B & nomic-embed.
   - Created standalone interactive system architecture visualization artifact in `.archify/explainer-aegis-architecture-20261117-205000/`.
   - Updated unit and integration tests. Verified 100% test pass rate across entire suite: 172/172 unit tests passed, 40/40 integration tests passed (212/212 total passed with 0 regressions) — by "Muneeb" at 21:20, 2026-11-17
+
+- `FIXED` Playwright Transient Placeholder Handling & Five High-Priority Evaluation Accuracy Improvements (`engine/app/adapters/playwright_web.py`, `engine/app/agents/attack_agent.py`, `engine/app/agents/evaluation/judge.py`, `engine/app/agents/evaluation/evaluator.py`, `engine/app/agents/evaluation/deterministic.py`, `engine/app/agents/orchestrator.py`, `engine/tests/unit/test_playwright_transient.py`, `engine/tests/unit/test_evaluation_improvements.py`).
+  - Added `TRANSIENT_LOADING_MARKERS` and `is_transient_placeholder()` in `playwright_web.py` to prevent premature response stabilization on local LLM Time-To-First-Token latency dots (`"..."`, `"thinking..."`, etc.).
+  - Fixed category prompt mismatch in `RubricJudge._build_judge_request()`: dynamic category formatting and schema instructions for LLM01, LLM03, LLM07, LLM08, and LLM10 replacing previous hardcoded LLM08 string.
+  - Sanitized AttackAgent rephrasing with `_clean_rephrase_output()`, stripping chat template role headers (`user\n`, `assistant\n`), preambles, and preventing leaked meta-instructions from being dispatched to target chatbots.
+  - Enforced `CATEGORIES_NO_REPHRASE = {"LLM10"}` in `AttackAgent` to preserve verbatim syntax fidelity for Markdown pixels, HTML tags, and `javascript:` URIs.
+  - Added refusal-aware context checks to `DeterministicDetector.check_prompt_injection_tokens` and `Evaluator.evaluate(target_cat="LLM01")`, preventing false positives when hardened targets refuse injections by quoting the compliance token.
+  - Updated category outcome status to `STOPPED_ON_FINDING` when an exploit halts the category, and updated Orchestrator lifecycle state aggregation to treat `STOPPED_ON_FINDING` as successful scan completion.
+  - Verified 100% test pass rate: 179/179 unit tests passed, 40/40 integration tests passed (219/219 total passed with 0 regressions) — by "Muneeb" at 15:45, 2026-11-22

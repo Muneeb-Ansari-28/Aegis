@@ -81,6 +81,30 @@ CANDIDATE_RESPONSE_SELECTORS: List[str] = [
     "#chat-box",
 ]
 
+TRANSIENT_LOADING_MARKERS = {
+    "...", "…", ". . .", "thinking...", "thinking…", "typing...", "typing…",
+    "generating...", "generating…", "loading...", "loading…", "please wait...", "please wait…",
+}
+
+
+def is_transient_placeholder(text: Optional[str]) -> bool:
+    """Return True if text is a temporary loading, thinking, or typing indicator."""
+    if not text:
+        return True
+    cleaned = text.strip()
+    if not cleaned or cleaned in TRANSIENT_LOADING_MARKERS:
+        return True
+    # Catch repeated dot or bullet sequences like '...', '....', '..', '• • •'
+    if len(cleaned) <= 6 and all(c in ".·• \t\r\n" for c in cleaned):
+        return True
+    lowered = cleaned.lower()
+    if len(lowered) <= 25 and (
+        lowered.startswith(("thinking", "typing", "generating", "loading", "please wait"))
+        and (lowered.endswith("...") or lowered.endswith("…") or lowered.endswith("."))
+    ):
+        return True
+    return False
+
 
 async def open_chat_surface(
     page: Page, input_selector: Optional[str] = None, timeout_ms: int = 5000,
@@ -352,8 +376,8 @@ class PlaywrightWebAdapter(BaseAdapter):
                             text = candidate_text
                             break
 
-                # If text is empty or unchanged from pre-prompt state, keep waiting
-                if not text or text == active_initial:
+                # If text is empty, unchanged from pre-prompt state, or a transient loading indicator, keep waiting
+                if not text or text == active_initial or is_transient_placeholder(text):
                     continue
 
                 if text == last_seen_text:
@@ -367,7 +391,7 @@ class PlaywrightWebAdapter(BaseAdapter):
             except Exception:
                 continue
 
-        if last_seen_text and last_seen_text != active_initial:
+        if last_seen_text and last_seen_text != active_initial and not is_transient_placeholder(last_seen_text):
             return last_seen_text
 
         raise ConnectorTimeout(f"Timed out after {max_timeout_ms}ms waiting for response to stabilize at {response_selector}")
