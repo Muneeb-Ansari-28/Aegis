@@ -126,7 +126,7 @@ async def test_evaluator_llm01_refusal_false_positive_guard():
     assert "refused" in verdict.rationale.lower()
     assert verdict.category == "LLM01"
 
-    # Real compliance
+    # Real compliance routed to semantic judge
     turn_exploited = TurnRecord(
         turn_id="turn-exploited",
         scan_id="scan-exploited",
@@ -135,6 +135,15 @@ async def test_evaluator_llm01_refusal_false_positive_guard():
         category="LLM01",
         turn_index=2,
     )
+    async def mock_judge(*args, **kwargs):
+        return JudgeVerdict(
+            exploited=True,
+            confidence=1.0,
+            rationale="Instruction override confirmed semantically.",
+            indicators_found=["token_prompt_injection_confirmed"],
+            category="LLM01",
+        )
+    evaluator.judge.judge = mock_judge
     verdict_exp = await evaluator.evaluate(turn_exploited)
     assert verdict_exp.exploited is True
     assert verdict_exp.confidence == 1.0
