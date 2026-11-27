@@ -1,0 +1,129 @@
+{
+  "generated_at": "2026-11-23T17:25:43.250029+00:00",
+  "summary": {
+    "total_records": 1449,
+    "total_products": 6,
+    "total_categories": 9,
+    "total_material_types": 4,
+    "total_partitioned_files": 62
+  },
+  "records_by_product": {
+    "promptfoo": 107,
+    "deepteam": 286,
+    "garak": 173,
+    "pyrit": 172,
+    "agentdojo": 167,
+    "cyberseceval": 544
+  },
+  "records_by_category": {
+    "01_prompt_injection": 656,
+    "02_sensitive_information_disclosure": 124,
+    "03_misinformation": 116,
+    "04_system_prompt_leakage": 70,
+    "05_excessive_agency": 328,
+    "06_vector_rag_weaknesses": 20,
+    "07_supply_chain": 86,
+    "08_unbounded_consumption": 6,
+    "unmapped_research": 43
+  },
+  "records_by_material_type": {
+    "evaluation_prompts": 260,
+    "attack_payloads": 724,
+    "supporting_strategies": 122,
+    "attack_generation_prompts": 343
+  },
+  "matrix_product_category": {
+    "promptfoo": {
+      "01_prompt_injection": 37,
+      "05_excessive_agency": 28,
+      "02_sensitive_information_disclosure": 19,
+      "04_system_prompt_leakage": 15,
+      "08_unbounded_consumption": 5,
+      "03_misinformation": 3
+    },
+    "deepteam": {
+      "05_excessive_agency": 100,
+      "03_misinformation": 34,
+      "02_sensitive_information_disclosure": 33,
+      "06_vector_rag_weaknesses": 17,
+      "04_system_prompt_leakage": 30,
+      "01_prompt_injection": 66,
+      "07_supply_chain": 6
+    },
+    "garak": {
+      "04_system_prompt_leakage": 11,
+      "03_misinformation": 77,
+      "unmapped_research": 11,
+      "01_prompt_injection": 24,
+      "07_supply_chain": 50
+    },
+    "pyrit": {
+      "01_prompt_injection": 122,
+      "05_excessive_agency": 10,
+      "unmapped_research": 32,
+      "02_sensitive_information_disclosure": 2,
+      "03_misinformation": 2,
+      "06_vector_rag_weaknesses": 3,
+      "08_unbounded_consumption": 1
+    },
+    "agentdojo": {
+      "01_prompt_injection": 27,
+      "05_excessive_agency": 130,
+      "02_sensitive_information_disclosure": 10
+    },
+    "cyberseceval": {
+      "04_system_prompt_leakage": 14,
+      "01_prompt_injection": 380,
+      "05_excessive_agency": 60,
+      "07_supply_chain": 30,
+      "02_sensitive_information_disclosure": 60
+    }
+  },
+  "matrix_category_material": {
+    "01_prompt_injection": {
+      "evaluation_prompts": 156,
+      "supporting_strategies": 36,
+      "attack_generation_prompts": 153,
+      "attack_payloads": 311
+    },
+    "02_sensitive_information_disclosure": {
+      "attack_payloads": 84,
+      "evaluation_prompts": 6,
+      "attack_generation_prompts": 34
+    },
+    "03_misinformation": {
+      "attack_payloads": 82,
+      "evaluation_prompts": 13,
+      "attack_generation_prompts": 21
+    },
+    "04_system_prompt_leakage": {
+      "attack_payloads": 34,
+      "evaluation_prompts": 12,
+      "attack_generation_prompts": 24
+    },
+    "05_excessive_agency": {
+      "evaluation_prompts": 32,
+      "attack_payloads": 115,
+      "attack_generation_prompts": 95,
+      "supporting_strategies": 86
+    },
+    "06_vector_rag_weaknesses": {
+      "attack_generation_prompts": 12,
+      "attack_payloads": 2,
+      "evaluation_prompts": 6
+    },
+    "07_supply_chain": {
+      "attack_generation_prompts": 4,
+      "attack_payloads": 81,
+      "evaluation_prompts": 1
+    },
+    "08_unbounded_consumption": {
+      "attack_payloads": 4,
+      "evaluation_prompts": 2
+    },
+    "unmapped_research": {
+      "attack_payloads": 11,
+      "evaluation_prompts": 32
+    }
+  }
+}

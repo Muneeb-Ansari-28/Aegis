@@ -1,0 +1,260 @@
+{
+  "taxonomy": "Aegis 8 Core Vulnerability Categories + Unmapped Research",
+  "categories": {
+    "01_prompt_injection": {
+      "name": "Prompt Injection",
+      "description": "Manipulating LLM behavior via crafted inputs, direct jailbreaks, indirect document/data injections, and instruction overrides.",
+      "sources_represented": [
+        "promptfoo",
+        "deepteam",
+        "garak",
+        "pyrit",
+        "agentdojo",
+        "cyberseceval"
+      ],
+      "mapped_constructs": {
+        "promptfoo": [
+          "redteam/plugins/harmful/*",
+          "redteam/plugins/jailbreak*",
+          "redteam/strategies/*"
+        ],
+        "deepteam": [
+          "vulnerabilities/prompt_injection.py",
+          "vulnerabilities/indirect_prompt_injection.py",
+          "attacks/single_turn_jailbreak.py"
+        ],
+        "garak": [
+          "probes/promptinject.py",
+          "probes/dan.py",
+          "probes/atkgen.py",
+          "probes/latentinjection.py",
+          "data/dan/*.json"
+        ],
+        "pyrit": [
+          "datasets/jailbreak/templates/*.yaml",
+          "datasets/jailbreak/many_shot_examples.json",
+          "score/*.py"
+        ],
+        "agentdojo": [
+          "runs/* (important_instructions, ignore_previous, direct)"
+        ],
+        "cyberseceval": [
+          "CybersecurityBenchmarks/datasets/prompt_injection/prompt_injection.json"
+        ]
+      }
+    },
+    "02_sensitive_information_disclosure": {
+      "name": "Sensitive Information Disclosure",
+      "description": "Extracting PII, confidential credentials, API keys, private databases, or pre-training memorized passages.",
+      "sources_represented": [
+        "promptfoo",
+        "deepteam",
+        "garak",
+        "pyrit",
+        "agentdojo",
+        "cyberseceval"
+      ],
+      "mapped_constructs": {
+        "promptfoo": [
+          "plugins/pii",
+          "plugins/cross-session-leak"
+        ],
+        "deepteam": [
+          "vulnerabilities/pii_leakage.py",
+          "vulnerabilities/intellectual_property.py"
+        ],
+        "garak": [
+          "probes/leakreplay.py",
+          "probes/apikey.py",
+          "probes/snowball.py"
+        ],
+        "pyrit": [
+          "datasets/assert_behaviors/doxxing.yaml",
+          "datasets/assert_behaviors/identity_verification_failures.yaml"
+        ],
+        "agentdojo": [
+          "default_suites/v1/slack (channel and private message exfiltration)"
+        ],
+        "cyberseceval": [
+          "datasets/mitre (credential access, exfiltration)"
+        ]
+      }
+    },
+    "03_misinformation": {
+      "name": "Misinformation",
+      "description": "Eliciting false factual assertions, unverified medical/legal advice, hallucinations, or biased fabricated biographies.",
+      "sources_represented": [
+        "promptfoo",
+        "deepteam",
+        "garak",
+        "pyrit"
+      ],
+      "mapped_constructs": {
+        "promptfoo": [
+          "plugins/hallucination"
+        ],
+        "deepteam": [
+          "vulnerabilities/hallucination.py",
+          "vulnerabilities/misinformation.py"
+        ],
+        "garak": [
+          "probes/misleading.py",
+          "probes/goodside.py::WhoIsRiley",
+          "probes/hallucination.py",
+          "probes/donotanswer.py"
+        ],
+        "pyrit": [
+          "datasets/assert_behaviors/harmful_medical_advice.yaml",
+          "datasets/assert_behaviors/grounding_attribution_errors.yaml"
+        ]
+      }
+    },
+    "04_system_prompt_leakage": {
+      "name": "System Prompt Leakage",
+      "description": "Revealing hidden developer instructions, system personas, planted canaries, or secret initialization rules.",
+      "sources_represented": [
+        "promptfoo",
+        "deepteam",
+        "garak",
+        "cyberseceval"
+      ],
+      "mapped_constructs": {
+        "promptfoo": [
+          "plugins/debug-access"
+        ],
+        "deepteam": [
+          "vulnerabilities/system_leakage.py"
+        ],
+        "garak": [
+          "probes/goodside.py (ThreatIntelligence, DavidGoodside)"
+        ],
+        "cyberseceval": [
+          "CybersecurityBenchmarks/datasets/prompt_injection (canary and secret key tests)"
+        ]
+      }
+    },
+    "05_excessive_agency": {
+      "name": "Excessive Agency",
+      "description": "Exploiting autonomous agent tool use, unauthorized financial transactions, malicious function execution, and sandbox escapes.",
+      "sources_represented": [
+        "promptfoo",
+        "deepteam",
+        "garak",
+        "pyrit",
+        "agentdojo",
+        "cyberseceval"
+      ],
+      "mapped_constructs": {
+        "promptfoo": [
+          "plugins/bfla",
+          "plugins/bola",
+          "plugins/sql-injection",
+          "plugins/ssrf"
+        ],
+        "deepteam": [
+          "vulnerabilities/bfla.py",
+          "vulnerabilities/bfac.py",
+          "vulnerabilities/ssrf.py",
+          "vulnerabilities/sql_injection.py"
+        ],
+        "garak": [
+          "probes/agent_breaker.py",
+          "probes/exploitation.py",
+          "probes/xss.py",
+          "probes/sql.py"
+        ],
+        "pyrit": [
+          "datasets/assert_behaviors/actionability_failures.yaml",
+          "escalation_judgment_failures.yaml",
+          "flawed_action_plan_failures.yaml"
+        ],
+        "agentdojo": [
+          "default_suites/v1/banking",
+          "default_suites/v1/workspace",
+          "default_suites/v1/travel"
+        ],
+        "cyberseceval": [
+          "CybersecurityBenchmarks/datasets/interpreter/interpreter.json",
+          "datasets/mitre/execution"
+        ]
+      }
+    },
+    "06_vector_rag_weaknesses": {
+      "name": "Vector and RAG Weaknesses",
+      "description": "Poisoning retrieved context, polluting vector embeddings, context window flooding, and RAG knowledge boundary bleeding.",
+      "sources_represented": [
+        "deepteam",
+        "garak",
+        "pyrit"
+      ],
+      "mapped_constructs": {
+        "deepteam": [
+          "vulnerabilities/context_leakage.py"
+        ],
+        "garak": [
+          "probes/rag.py",
+          "probes/fileformats.py"
+        ],
+        "pyrit": [
+          "datasets/assert_behaviors/poor_retrieval_augmented_generation.yaml",
+          "out_of_scope_knowledge.yaml"
+        ]
+      }
+    },
+    "07_supply_chain": {
+      "name": "Supply Chain",
+      "description": "Software supply chain vulnerabilities, package hallucination / slopsquatting, and generating insecure third-party dependencies.",
+      "sources_represented": [
+        "garak",
+        "cyberseceval"
+      ],
+      "mapped_constructs": {
+        "garak": [
+          "probes/packagehallucination.py (Python, Ruby, JavaScript, Rust, Go)"
+        ],
+        "cyberseceval": [
+          "CybersecurityBenchmarks/datasets/autocomplete/autocomplete.json (CWE vulnerability insertion)"
+        ]
+      }
+    },
+    "08_unbounded_consumption": {
+      "name": "Unbounded Consumption",
+      "description": "Denial of service through unbounded token generation, infinite loops, resource exhaustion, and glitch tokens.",
+      "sources_represented": [
+        "deepteam",
+        "garak",
+        "pyrit"
+      ],
+      "mapped_constructs": {
+        "deepteam": [
+          "vulnerabilities/dos.py"
+        ],
+        "garak": [
+          "probes/divergence.py",
+          "probes/glitch.py"
+        ],
+        "pyrit": [
+          "datasets/assert_behaviors/unbounded_resource_use.yaml"
+        ]
+      }
+    },
+    "unmapped_research": {
+      "name": "Unmapped Research",
+      "description": "General model evaluations, alignment diagnostics, and linguistic tests that do not map cleanly to OWASP top 8.",
+      "sources_represented": [
+        "garak",
+        "pyrit"
+      ],
+      "mapped_constructs": {
+        "garak": [
+          "probes/lmrc.py (ethical risk cards)",
+          "probes/continuation.py"
+        ],
+        "pyrit": [
+          "datasets/assert_behaviors/anthropomorphic_behaviors.yaml",
+          "crystal_mountain_vs_snoqualmie.yaml"
+        ]
+      }
+    }
+  }
+}

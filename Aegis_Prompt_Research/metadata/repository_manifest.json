@@ -1,0 +1,54 @@
+{
+  "generated_at": "2026-11-23T17:25:43.243422+00:00",
+  "total_repositories": 6,
+  "repositories": {
+    "promptfoo": {
+      "name": "Promptfoo",
+      "repository_url": "https://github.com/promptfoo/promptfoo",
+      "local_path": "downloaded_repositories/promptfoo",
+      "license": "MIT",
+      "primary_focus": "Red-teaming attack payloads, OWASP vulnerability plugins, automated evaluation rubrics, multi-turn strategies",
+      "extracted_records": 107
+    },
+    "deepteam": {
+      "name": "DeepTeam (Confident AI)",
+      "repository_url": "https://github.com/confident-ai/deepteam",
+      "local_path": "downloaded_repositories/deepteam",
+      "license": "Apache-2.0",
+      "primary_focus": "37 OWASP & agentic vulnerability definitions, Crescendo/Tree/Linear jailbreak engines, evaluation metrics rubrics",
+      "extracted_records": 286
+    },
+    "garak": {
+      "name": "NVIDIA Garak",
+      "repository_url": "https://github.com/NVIDIA/garak",
+      "local_path": "downloaded_repositories/garak",
+      "license": "Apache-2.0",
+      "primary_focus": "Static vulnerability probes, DAN jailbreaks, Package Hallucination slopsquatting, training data extraction, detector heuristics",
+      "extracted_records": 173
+    },
+    "pyrit": {
+      "name": "Microsoft PyRIT",
+      "repository_url": "https://github.com/microsoft/PyRIT",
+      "local_path": "downloaded_repositories/pyrit",
+      "license": "MIT",
+      "primary_focus": "90+ jailbreak templates, 52 ASSERT behavioral failure rubrics, many-shot jailbreak priming turns, scoring judge prompts",
+      "extracted_records": 172
+    },
+    "agentdojo": {
+      "name": "AgentDojo (ETH Zurich SpyLab)",
+      "repository_url": "https://github.com/ethz-spylab/agentdojo",
+      "local_path": "downloaded_repositories/agentdojo",
+      "license": "MIT",
+      "primary_focus": "Indirect prompt injection within real tool environments (banking, slack, travel, workspace), unauthorized agent actions, exfiltration",
+      "extracted_records": 167
+    },
+    "cyberseceval": {
+      "name": "Meta CyberSecEval (Purple Llama)",
+      "repository_url": "https://github.com/meta-llama/PurpleLlama",
+      "local_path": "downloaded_repositories/cyberseceval",
+      "license": "MIT",
+      "primary_focus": "Direct/indirect prompt injection benchmarks, code interpreter sandbox escapes, autocomplete CWE vulnerability insertion, MITRE ATT&CK",
+      "extracted_records": 544
+    }
+  }
+}

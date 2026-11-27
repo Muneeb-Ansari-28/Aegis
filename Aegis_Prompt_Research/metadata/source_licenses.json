@@ -1,0 +1,49 @@
+{
+  "generated_at": "2026-11-23T17:25:43.244013+00:00",
+  "license_summary": "All 6 open-source projects are licensed under highly permissive OSI-approved open source licenses (MIT and Apache-2.0).",
+  "compatibility_with_aegis": "Fully compatible. Both MIT and Apache-2.0 permit commercial and non-commercial reuse, modification, and extraction of research artifacts with proper attribution.",
+  "licenses": {
+    "promptfoo": {
+      "license_name": "MIT License",
+      "spdx_id": "MIT",
+      "commercial_use": true,
+      "attribution_required": true,
+      "url": "https://github.com/promptfoo/promptfoo/blob/main/LICENSE"
+    },
+    "deepteam": {
+      "license_name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0",
+      "commercial_use": true,
+      "attribution_required": true,
+      "url": "https://github.com/confident-ai/deepteam/blob/main/LICENSE"
+    },
+    "garak": {
+      "license_name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0",
+      "commercial_use": true,
+      "attribution_required": true,
+      "url": "https://github.com/NVIDIA/garak/blob/main/LICENSE"
+    },
+    "pyrit": {
+      "license_name": "MIT License",
+      "spdx_id": "MIT",
+      "commercial_use": true,
+      "attribution_required": true,
+      "url": "https://github.com/microsoft/PyRIT/blob/main/LICENSE"
+    },
+    "agentdojo": {
+      "license_name": "MIT License",
+      "spdx_id": "MIT",
+      "commercial_use": true,
+      "attribution_required": true,
+      "url": "https://github.com/ethz-spylab/agentdojo/blob/main/LICENSE"
+    },
+    "cyberseceval": {
+      "license_name": "MIT License",
+      "spdx_id": "MIT",
+      "commercial_use": true,
+      "attribution_required": true,
+      "url": "https://github.com/meta-llama/PurpleLlama/blob/main/LICENSE"
+    }
+  }
+}
