@@ -1,0 +1,627 @@
+{
+  "generated_at": "2026-11-23T17:25:43.246369+00:00",
+  "total_files": 62,
+  "total_records": 1449,
+  "files": [
+    {
+      "file_path": "prompt_library/01_prompt_injection/attack_payloads/deepteam.json",
+      "category": "01_prompt_injection",
+      "category_name": "Prompt Injection",
+      "material_type": "attack_payloads",
+      "product": "deepteam",
+      "record_count": 2,
+      "sha256": "37144ddc806e1401756b830e142c4ae385c1e7dbf085728f4483b2b7005dec23",
+      "size_bytes": 2242
+    },
+    {
+      "file_path": "prompt_library/01_prompt_injection/attack_payloads/garak.json",
+      "category": "01_prompt_injection",
+      "category_name": "Prompt Injection",
+      "material_type": "attack_payloads",
+      "product": "garak",
+      "record_count": 14,
+      "sha256": "5912ab8dfd546d688cff63c434f133bb5df5c2ff0a1e111e6b504c62e72e0737",
+      "size_bytes": 53783
+    },
+    {
+      "file_path": "prompt_library/01_prompt_injection/attack_payloads/pyrit.json",
+      "category": "01_prompt_injection",
+      "category_name": "Prompt Injection",
+      "material_type": "attack_payloads",
+      "product": "pyrit",
+      "record_count": 30,
+      "sha256": "2fbb53d70d8e39ff81cf007a59f3926b1ca537a84e3695c526a295e4ad5e2545",
+      "size_bytes": 71262
+    },
+    {
+      "file_path": "prompt_library/01_prompt_injection/attack_payloads/agentdojo.json",
+      "category": "01_prompt_injection",
+      "category_name": "Prompt Injection",
+      "material_type": "attack_payloads",
+      "product": "agentdojo",
+      "record_count": 27,
+      "sha256": "0b3390cad1d09fb3e8f8f82ee61485b4f029611015f40d36355667b3dd2ce11a",
+      "size_bytes": 44292
+    },
+    {
+      "file_path": "prompt_library/01_prompt_injection/attack_payloads/cyberseceval.json",
+      "category": "01_prompt_injection",
+      "category_name": "Prompt Injection",
+      "material_type": "attack_payloads",
+      "product": "cyberseceval",
+      "record_count": 238,
+      "sha256": "c75653bdbfa96ee1600617d56fdf3d753391e85b9c396f47f058dc7f12755ad3",
+      "size_bytes": 330519
+    },
+    {
+      "file_path": "prompt_library/01_prompt_injection/attack_generation_prompts/deepteam.json",
+      "category": "01_prompt_injection",
+      "category_name": "Prompt Injection",
+      "material_type": "attack_generation_prompts",
+      "product": "deepteam",
+      "record_count": 63,
+      "sha256": "924b936d90a8569c6ecc7542e5326c26ba25a761824ba4a108b3b1e748973414",
+      "size_bytes": 216197
+    },
+    {
+      "file_path": "prompt_library/01_prompt_injection/attack_generation_prompts/pyrit.json",
+      "category": "01_prompt_injection",
+      "category_name": "Prompt Injection",
+      "material_type": "attack_generation_prompts",
+      "product": "pyrit",
+      "record_count": 90,
+      "sha256": "1062529497aea961bb25a3c207288ca21c483002afc74211860fd63de9cbf9e4",
+      "size_bytes": 250610
+    },
+    {
+      "file_path": "prompt_library/01_prompt_injection/evaluation_prompts/promptfoo.json",
+      "category": "01_prompt_injection",
+      "category_name": "Prompt Injection",
+      "material_type": "evaluation_prompts",
+      "product": "promptfoo",
+      "record_count": 3,
+      "sha256": "e808c34d2090c667e130963b54bd0570c8f14d50465e42d6dfc1063a61a8682c",
+      "size_bytes": 5081
+    },
+    {
+      "file_path": "prompt_library/01_prompt_injection/evaluation_prompts/deepteam.json",
+      "category": "01_prompt_injection",
+      "category_name": "Prompt Injection",
+      "material_type": "evaluation_prompts",
+      "product": "deepteam",
+      "record_count": 1,
+      "sha256": "7e2b71090c71de66f07efba73fb7d2e22b3673e057c1155510ceda1966382049",
+      "size_bytes": 5400
+    },
+    {
+      "file_path": "prompt_library/01_prompt_injection/evaluation_prompts/garak.json",
+      "category": "01_prompt_injection",
+      "category_name": "Prompt Injection",
+      "material_type": "evaluation_prompts",
+      "product": "garak",
+      "record_count": 8,
+      "sha256": "212f6963b539d37cc0d2c7906905c1c365ee1f7d19ffc306b864bcf68016419b",
+      "size_bytes": 7892
+    },
+    {
+      "file_path": "prompt_library/01_prompt_injection/evaluation_prompts/pyrit.json",
+      "category": "01_prompt_injection",
+      "category_name": "Prompt Injection",
+      "material_type": "evaluation_prompts",
+      "product": "pyrit",
+      "record_count": 2,
+      "sha256": "ab1e1e8f0af80feede0d2db7d364e7c16ca9213209ff2a40bb30cf40ac2e4317",
+      "size_bytes": 4878
+    },
+    {
+      "file_path": "prompt_library/01_prompt_injection/evaluation_prompts/cyberseceval.json",
+      "category": "01_prompt_injection",
+      "category_name": "Prompt Injection",
+      "material_type": "evaluation_prompts",
+      "product": "cyberseceval",
+      "record_count": 142,
+      "sha256": "65749c3d5bbdae28c6c5cd8e9db24f6599a3c8e3a2755431b0d18142713b2385",
+      "size_bytes": 179342
+    },
+    {
+      "file_path": "prompt_library/01_prompt_injection/supporting_strategies/promptfoo.json",
+      "category": "01_prompt_injection",
+      "category_name": "Prompt Injection",
+      "material_type": "supporting_strategies",
+      "product": "promptfoo",
+      "record_count": 34,
+      "sha256": "80cf3c40b8943c036d6e57b556b075b4b093cf73acce2b68d3b362303c10ab84",
+      "size_bytes": 35794
+    },
+    {
+      "file_path": "prompt_library/01_prompt_injection/supporting_strategies/garak.json",
+      "category": "01_prompt_injection",
+      "category_name": "Prompt Injection",
+      "material_type": "supporting_strategies",
+      "product": "garak",
+      "record_count": 2,
+      "sha256": "d1ed75a7248047a6154bdc3b4715292492ae26928b5148ccd025476d437bb2b0",
+      "size_bytes": 2142
+    },
+    {
+      "file_path": "prompt_library/02_sensitive_information_disclosure/attack_payloads/promptfoo.json",
+      "category": "02_sensitive_information_disclosure",
+      "category_name": "Sensitive Information Disclosure",
+      "material_type": "attack_payloads",
+      "product": "promptfoo",
+      "record_count": 16,
+      "sha256": "728fb97e4f45fb3c7b7634952dab720e8477f61a0ccae65364d3eb20fd7b2b09",
+      "size_bytes": 16637
+    },
+    {
+      "file_path": "prompt_library/02_sensitive_information_disclosure/attack_payloads/deepteam.json",
+      "category": "02_sensitive_information_disclosure",
+      "category_name": "Sensitive Information Disclosure",
+      "material_type": "attack_payloads",
+      "product": "deepteam",
+      "record_count": 3,
+      "sha256": "9b78b7f3ba0a935bc6e9397a8d29f955aaa570dcbb2f70abfe99d94de51c01ea",
+      "size_bytes": 3348
+    },
+    {
+      "file_path": "prompt_library/02_sensitive_information_disclosure/attack_payloads/agentdojo.json",
+      "category": "02_sensitive_information_disclosure",
+      "category_name": "Sensitive Information Disclosure",
+      "material_type": "attack_payloads",
+      "product": "agentdojo",
+      "record_count": 5,
+      "sha256": "a702a3b9859a1da264f087bb8bd17a5de635e0187b4f26137dd8f57b04e7ad1d",
+      "size_bytes": 7481
+    },
+    {
+      "file_path": "prompt_library/02_sensitive_information_disclosure/attack_payloads/cyberseceval.json",
+      "category": "02_sensitive_information_disclosure",
+      "category_name": "Sensitive Information Disclosure",
+      "material_type": "attack_payloads",
+      "product": "cyberseceval",
+      "record_count": 60,
+      "sha256": "ea7d459969f02b86a85934f302dc6b32e888d5dd07a712fdd6c0867d42833293",
+      "size_bytes": 192549
+    },
+    {
+      "file_path": "prompt_library/02_sensitive_information_disclosure/attack_generation_prompts/deepteam.json",
+      "category": "02_sensitive_information_disclosure",
+      "category_name": "Sensitive Information Disclosure",
+      "material_type": "attack_generation_prompts",
+      "product": "deepteam",
+      "record_count": 29,
+      "sha256": "3d9738186ee6193f97a617eaee5e67d95b997ebb5cadc2d40f0747a96fa0955c",
+      "size_bytes": 93114
+    },
+    {
+      "file_path": "prompt_library/02_sensitive_information_disclosure/attack_generation_prompts/agentdojo.json",
+      "category": "02_sensitive_information_disclosure",
+      "category_name": "Sensitive Information Disclosure",
+      "material_type": "attack_generation_prompts",
+      "product": "agentdojo",
+      "record_count": 5,
+      "sha256": "a593b28e6110a7ba0bb4608baa2db9da78164ea9371c1bf9c17613d19720f69d",
+      "size_bytes": 5906
+    },
+    {
+      "file_path": "prompt_library/02_sensitive_information_disclosure/evaluation_prompts/promptfoo.json",
+      "category": "02_sensitive_information_disclosure",
+      "category_name": "Sensitive Information Disclosure",
+      "material_type": "evaluation_prompts",
+      "product": "promptfoo",
+      "record_count": 3,
+      "sha256": "12f8f69d66407fa5f634df491d261808b197e7a95fcb45d9958f0a73357a8062",
+      "size_bytes": 7623
+    },
+    {
+      "file_path": "prompt_library/02_sensitive_information_disclosure/evaluation_prompts/deepteam.json",
+      "category": "02_sensitive_information_disclosure",
+      "category_name": "Sensitive Information Disclosure",
+      "material_type": "evaluation_prompts",
+      "product": "deepteam",
+      "record_count": 1,
+      "sha256": "8d8787b550749b4b7922c26057959d14ff9d7f0345efa93fadf7fdcba83a6e23",
+      "size_bytes": 4163
+    },
+    {
+      "file_path": "prompt_library/02_sensitive_information_disclosure/evaluation_prompts/pyrit.json",
+      "category": "02_sensitive_information_disclosure",
+      "category_name": "Sensitive Information Disclosure",
+      "material_type": "evaluation_prompts",
+      "product": "pyrit",
+      "record_count": 2,
+      "sha256": "28a0948ffe4cbe1ef61a039986fefea21c3cc2bb3134f8d35b69521c266f870f",
+      "size_bytes": 3686
+    },
+    {
+      "file_path": "prompt_library/03_misinformation/attack_payloads/promptfoo.json",
+      "category": "03_misinformation",
+      "category_name": "Misinformation",
+      "material_type": "attack_payloads",
+      "product": "promptfoo",
+      "record_count": 2,
+      "sha256": "05b37d657688ec2b84faa70b0217f268c5539712fcd91ca77e3c29a56ce993ec",
+      "size_bytes": 2105
+    },
+    {
+      "file_path": "prompt_library/03_misinformation/attack_payloads/deepteam.json",
+      "category": "03_misinformation",
+      "category_name": "Misinformation",
+      "material_type": "attack_payloads",
+      "product": "deepteam",
+      "record_count": 3,
+      "sha256": "8ddc6721b2143a23a13001027f81e7841abd843fa50011adb3a6d8332a428600",
+      "size_bytes": 3240
+    },
+    {
+      "file_path": "prompt_library/03_misinformation/attack_payloads/garak.json",
+      "category": "03_misinformation",
+      "category_name": "Misinformation",
+      "material_type": "attack_payloads",
+      "product": "garak",
+      "record_count": 77,
+      "sha256": "fb9e57c5118d2f0d140f34275ed0e646fdba71d48d9d826cce415dd8c0af7342",
+      "size_bytes": 77731
+    },
+    {
+      "file_path": "prompt_library/03_misinformation/attack_generation_prompts/deepteam.json",
+      "category": "03_misinformation",
+      "category_name": "Misinformation",
+      "material_type": "attack_generation_prompts",
+      "product": "deepteam",
+      "record_count": 21,
+      "sha256": "f6f5b4094718127a3ba1d22fe444c4a92362384f98d3481c0f09d754935a6f6a",
+      "size_bytes": 80332
+    },
+    {
+      "file_path": "prompt_library/03_misinformation/evaluation_prompts/promptfoo.json",
+      "category": "03_misinformation",
+      "category_name": "Misinformation",
+      "material_type": "evaluation_prompts",
+      "product": "promptfoo",
+      "record_count": 1,
+      "sha256": "45793faba26833f3a0b0ec2a10962ba6127978abfb6c4fb29a3d921467bc1434",
+      "size_bytes": 2643
+    },
+    {
+      "file_path": "prompt_library/03_misinformation/evaluation_prompts/deepteam.json",
+      "category": "03_misinformation",
+      "category_name": "Misinformation",
+      "material_type": "evaluation_prompts",
+      "product": "deepteam",
+      "record_count": 10,
+      "sha256": "e4f5d4ac2bb5c96b50e0c7f5677fb96650dfe1d8341c978029a6aeb960c1dd58",
+      "size_bytes": 24729
+    },
+    {
+      "file_path": "prompt_library/03_misinformation/evaluation_prompts/pyrit.json",
+      "category": "03_misinformation",
+      "category_name": "Misinformation",
+      "material_type": "evaluation_prompts",
+      "product": "pyrit",
+      "record_count": 2,
+      "sha256": "79bd5a482f7b97fca52eb79ba27cd85aa380ffba0aebb651ac40c6fe199e3c23",
+      "size_bytes": 3559
+    },
+    {
+      "file_path": "prompt_library/04_system_prompt_leakage/attack_payloads/promptfoo.json",
+      "category": "04_system_prompt_leakage",
+      "category_name": "System Prompt Leakage",
+      "material_type": "attack_payloads",
+      "product": "promptfoo",
+      "record_count": 13,
+      "sha256": "06ca1104e96c6dc6ba268e1ce47ba1575a70b947a5101db9c80146cfef245300",
+      "size_bytes": 13883
+    },
+    {
+      "file_path": "prompt_library/04_system_prompt_leakage/attack_payloads/deepteam.json",
+      "category": "04_system_prompt_leakage",
+      "category_name": "System Prompt Leakage",
+      "material_type": "attack_payloads",
+      "product": "deepteam",
+      "record_count": 3,
+      "sha256": "20a9d4c68f971552296487e9ff08a9612c7c771af8d1fe948839c1c21ac3d8c4",
+      "size_bytes": 3321
+    },
+    {
+      "file_path": "prompt_library/04_system_prompt_leakage/attack_payloads/garak.json",
+      "category": "04_system_prompt_leakage",
+      "category_name": "System Prompt Leakage",
+      "material_type": "attack_payloads",
+      "product": "garak",
+      "record_count": 11,
+      "sha256": "02183ca23f288a1bc193abd6e04f51ac7b0e9eb12e7c67589024d17a168313cc",
+      "size_bytes": 12167
+    },
+    {
+      "file_path": "prompt_library/04_system_prompt_leakage/attack_payloads/cyberseceval.json",
+      "category": "04_system_prompt_leakage",
+      "category_name": "System Prompt Leakage",
+      "material_type": "attack_payloads",
+      "product": "cyberseceval",
+      "record_count": 7,
+      "sha256": "0b9c4945470ed0bebc6ad6568c3f0bbbae47a3f720cf2809d6a29bbe2c5f5c23",
+      "size_bytes": 8245
+    },
+    {
+      "file_path": "prompt_library/04_system_prompt_leakage/attack_generation_prompts/deepteam.json",
+      "category": "04_system_prompt_leakage",
+      "category_name": "System Prompt Leakage",
+      "material_type": "attack_generation_prompts",
+      "product": "deepteam",
+      "record_count": 24,
+      "sha256": "b5bbc465738465f0c1b380231659f79001e13aba0e804a9d5f22f8df734f70ed",
+      "size_bytes": 70343
+    },
+    {
+      "file_path": "prompt_library/04_system_prompt_leakage/evaluation_prompts/promptfoo.json",
+      "category": "04_system_prompt_leakage",
+      "category_name": "System Prompt Leakage",
+      "material_type": "evaluation_prompts",
+      "product": "promptfoo",
+      "record_count": 2,
+      "sha256": "20725bed2779a33a6721f137928a5f8026fdcecec4f42733e8a43936a6c8cbe0",
+      "size_bytes": 5072
+    },
+    {
+      "file_path": "prompt_library/04_system_prompt_leakage/evaluation_prompts/deepteam.json",
+      "category": "04_system_prompt_leakage",
+      "category_name": "System Prompt Leakage",
+      "material_type": "evaluation_prompts",
+      "product": "deepteam",
+      "record_count": 3,
+      "sha256": "1ba7ea4ae77b7acf47832812f90c8713fcca0c82d2561556311a9936c8aa4a43",
+      "size_bytes": 12184
+    },
+    {
+      "file_path": "prompt_library/04_system_prompt_leakage/evaluation_prompts/cyberseceval.json",
+      "category": "04_system_prompt_leakage",
+      "category_name": "System Prompt Leakage",
+      "material_type": "evaluation_prompts",
+      "product": "cyberseceval",
+      "record_count": 7,
+      "sha256": "2f40b178b56a53d0b3dd23e84c089806ce2f60c68a384ab18b57b6794e2b4f62",
+      "size_bytes": 8258
+    },
+    {
+      "file_path": "prompt_library/05_excessive_agency/attack_payloads/promptfoo.json",
+      "category": "05_excessive_agency",
+      "category_name": "Excessive Agency",
+      "material_type": "attack_payloads",
+      "product": "promptfoo",
+      "record_count": 21,
+      "sha256": "b91918780f109590bf0115d4c4f2ed6112df73b888872e6e59d097f41af2ca93",
+      "size_bytes": 24058
+    },
+    {
+      "file_path": "prompt_library/05_excessive_agency/attack_payloads/deepteam.json",
+      "category": "05_excessive_agency",
+      "category_name": "Excessive Agency",
+      "material_type": "attack_payloads",
+      "product": "deepteam",
+      "record_count": 12,
+      "sha256": "dc99ea228b403d6b36c5853df9bebd0b936d2f98888e8627d5a61bc282c9aed6",
+      "size_bytes": 13135
+    },
+    {
+      "file_path": "prompt_library/05_excessive_agency/attack_payloads/agentdojo.json",
+      "category": "05_excessive_agency",
+      "category_name": "Excessive Agency",
+      "material_type": "attack_payloads",
+      "product": "agentdojo",
+      "record_count": 22,
+      "sha256": "ba995e74fa46664325cb02faa2fd5c077b22ad9e8d3cc49c45c7eae9b5e64365",
+      "size_bytes": 33429
+    },
+    {
+      "file_path": "prompt_library/05_excessive_agency/attack_payloads/cyberseceval.json",
+      "category": "05_excessive_agency",
+      "category_name": "Excessive Agency",
+      "material_type": "attack_payloads",
+      "product": "cyberseceval",
+      "record_count": 60,
+      "sha256": "098048ba7c6451d11ada3b0b8375319b68d7552a3b5018c9240eeeced75384ae",
+      "size_bytes": 109332
+    },
+    {
+      "file_path": "prompt_library/05_excessive_agency/attack_generation_prompts/deepteam.json",
+      "category": "05_excessive_agency",
+      "category_name": "Excessive Agency",
+      "material_type": "attack_generation_prompts",
+      "product": "deepteam",
+      "record_count": 73,
+      "sha256": "cb3acc8dc129df6045c39ecd0e0ef06dc1d69945c33a863edbf04a1cd9bb58b6",
+      "size_bytes": 235278
+    },
+    {
+      "file_path": "prompt_library/05_excessive_agency/attack_generation_prompts/agentdojo.json",
+      "category": "05_excessive_agency",
+      "category_name": "Excessive Agency",
+      "material_type": "attack_generation_prompts",
+      "product": "agentdojo",
+      "record_count": 22,
+      "sha256": "c47b4feab8191f05c6b721181c4b16433d2a22728d60a651319b5d43eb9aa25a",
+      "size_bytes": 24914
+    },
+    {
+      "file_path": "prompt_library/05_excessive_agency/evaluation_prompts/promptfoo.json",
+      "category": "05_excessive_agency",
+      "category_name": "Excessive Agency",
+      "material_type": "evaluation_prompts",
+      "product": "promptfoo",
+      "record_count": 7,
+      "sha256": "d74c484587f2f614f637eb45e67ce38ecd0611a53dbe7d5d3ff94b955c36bd92",
+      "size_bytes": 24465
+    },
+    {
+      "file_path": "prompt_library/05_excessive_agency/evaluation_prompts/deepteam.json",
+      "category": "05_excessive_agency",
+      "category_name": "Excessive Agency",
+      "material_type": "evaluation_prompts",
+      "product": "deepteam",
+      "record_count": 15,
+      "sha256": "bfe8415fffdcd16a2472ce7f00dc28c12ef126f29fb209c2ac95b611e25bc03f",
+      "size_bytes": 66652
+    },
+    {
+      "file_path": "prompt_library/05_excessive_agency/evaluation_prompts/pyrit.json",
+      "category": "05_excessive_agency",
+      "category_name": "Excessive Agency",
+      "material_type": "evaluation_prompts",
+      "product": "pyrit",
+      "record_count": 10,
+      "sha256": "ba1e0a25c2c06de48ca287d52b2820378561160fd4b9b6c28fe00f2e6db11831",
+      "size_bytes": 22214
+    },
+    {
+      "file_path": "prompt_library/05_excessive_agency/supporting_strategies/agentdojo.json",
+      "category": "05_excessive_agency",
+      "category_name": "Excessive Agency",
+      "material_type": "supporting_strategies",
+      "product": "agentdojo",
+      "record_count": 86,
+      "sha256": "2e64deb512a321784c0aba4b5b023b3ab19d586fc83570bbd817bfdc226aa270",
+      "size_bytes": 100428
+    },
+    {
+      "file_path": "prompt_library/06_vector_rag_weaknesses/attack_payloads/deepteam.json",
+      "category": "06_vector_rag_weaknesses",
+      "category_name": "Vector and RAG Weaknesses",
+      "material_type": "attack_payloads",
+      "product": "deepteam",
+      "record_count": 2,
+      "sha256": "7eff1752f79b672a56bfafc0b2703b23743078931bc02932f6ac658836810217",
+      "size_bytes": 2289
+    },
+    {
+      "file_path": "prompt_library/06_vector_rag_weaknesses/attack_generation_prompts/deepteam.json",
+      "category": "06_vector_rag_weaknesses",
+      "category_name": "Vector and RAG Weaknesses",
+      "material_type": "attack_generation_prompts",
+      "product": "deepteam",
+      "record_count": 12,
+      "sha256": "d0b8bf32afaa16c80033ce8a4a1630dbb716c21bda5c711b42534d06a29db066",
+      "size_bytes": 41389
+    },
+    {
+      "file_path": "prompt_library/06_vector_rag_weaknesses/evaluation_prompts/deepteam.json",
+      "category": "06_vector_rag_weaknesses",
+      "category_name": "Vector and RAG Weaknesses",
+      "material_type": "evaluation_prompts",
+      "product": "deepteam",
+      "record_count": 3,
+      "sha256": "f365266f825a723c9f7e7a55842fd0697c8b6966ade4c0bede7e091294b5034c",
+      "size_bytes": 11162
+    },
+    {
+      "file_path": "prompt_library/06_vector_rag_weaknesses/evaluation_prompts/pyrit.json",
+      "category": "06_vector_rag_weaknesses",
+      "category_name": "Vector and RAG Weaknesses",
+      "material_type": "evaluation_prompts",
+      "product": "pyrit",
+      "record_count": 3,
+      "sha256": "e574d2146bf1d6af205444b6cc03412899f1484149d3a88eff0b80834fd177ae",
+      "size_bytes": 6850
+    },
+    {
+      "file_path": "prompt_library/07_supply_chain/attack_payloads/deepteam.json",
+      "category": "07_supply_chain",
+      "category_name": "Supply Chain",
+      "material_type": "attack_payloads",
+      "product": "deepteam",
+      "record_count": 1,
+      "sha256": "ab727220a47d34196c5a95f4e9f679d8667f257634562ad5b6422d60d54bde45",
+      "size_bytes": 1190
+    },
+    {
+      "file_path": "prompt_library/07_supply_chain/attack_payloads/garak.json",
+      "category": "07_supply_chain",
+      "category_name": "Supply Chain",
+      "material_type": "attack_payloads",
+      "product": "garak",
+      "record_count": 50,
+      "sha256": "50df998c0c4a7e716c28cf1b5e2089b8b27125c4cd093f2c33d7f811297e762d",
+      "size_bytes": 52982
+    },
+    {
+      "file_path": "prompt_library/07_supply_chain/attack_payloads/cyberseceval.json",
+      "category": "07_supply_chain",
+      "category_name": "Supply Chain",
+      "material_type": "attack_payloads",
+      "product": "cyberseceval",
+      "record_count": 30,
+      "sha256": "ee4e0aa5f9cc5b37af56048e3a5a49dad1b31a06c00a56adbaae61e2dd46064b",
+      "size_bytes": 45803
+    },
+    {
+      "file_path": "prompt_library/07_supply_chain/attack_generation_prompts/deepteam.json",
+      "category": "07_supply_chain",
+      "category_name": "Supply Chain",
+      "material_type": "attack_generation_prompts",
+      "product": "deepteam",
+      "record_count": 4,
+      "sha256": "4b8c309605a9d6319e6732eba3c5e526568b20d3cafe3d8ba8fa78e3c9fe5b37",
+      "size_bytes": 15257
+    },
+    {
+      "file_path": "prompt_library/07_supply_chain/evaluation_prompts/deepteam.json",
+      "category": "07_supply_chain",
+      "category_name": "Supply Chain",
+      "material_type": "evaluation_prompts",
+      "product": "deepteam",
+      "record_count": 1,
+      "sha256": "26df1aa7f2488c2a29c2e52f664407a3b32ed407442365ce3dbee82930d6cd4a",
+      "size_bytes": 5303
+    },
+    {
+      "file_path": "prompt_library/08_unbounded_consumption/attack_payloads/promptfoo.json",
+      "category": "08_unbounded_consumption",
+      "category_name": "Unbounded Consumption",
+      "material_type": "attack_payloads",
+      "product": "promptfoo",
+      "record_count": 4,
+      "sha256": "a7fc018aea0e0711233d35e7ca1f6d5c78edd9170705ad7f6dccf276b5788db0",
+      "size_bytes": 4239
+    },
+    {
+      "file_path": "prompt_library/08_unbounded_consumption/evaluation_prompts/promptfoo.json",
+      "category": "08_unbounded_consumption",
+      "category_name": "Unbounded Consumption",
+      "material_type": "evaluation_prompts",
+      "product": "promptfoo",
+      "record_count": 1,
+      "sha256": "1e449e346778c5244573127bb1e746ea2482725f30bc340c4fa77b2cf51e2c87",
+      "size_bytes": 2219
+    },
+    {
+      "file_path": "prompt_library/08_unbounded_consumption/evaluation_prompts/pyrit.json",
+      "category": "08_unbounded_consumption",
+      "category_name": "Unbounded Consumption",
+      "material_type": "evaluation_prompts",
+      "product": "pyrit",
+      "record_count": 1,
+      "sha256": "fd027bd79fd1f462a7d2a9089cfe246121a54bb16b6e777af84b12ba7b97431b",
+      "size_bytes": 2474
+    },
+    {
+      "file_path": "prompt_library/unmapped_research/attack_payloads/garak.json",
+      "category": "unmapped_research",
+      "category_name": "Unmapped Research",
+      "material_type": "attack_payloads",
+      "product": "garak",
+      "record_count": 11,
+      "sha256": "4a213370036bd631b755c26248fab67efd945211c873d1a55322a5adebdc5d3e",
+      "size_bytes": 9769
+    },
+    {
+      "file_path": "prompt_library/unmapped_research/evaluation_prompts/pyrit.json",
+      "category": "unmapped_research",
+      "category_name": "Unmapped Research",
+      "material_type": "evaluation_prompts",
+      "product": "pyrit",
+      "record_count": 32,
+      "sha256": "aa72b4b3913c4bd1b6346862d20882c4e03fe1aa656327e56d636289674926a7",
+      "size_bytes": 96064
+    }
+  ]
+}
