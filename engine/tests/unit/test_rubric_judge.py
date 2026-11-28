@@ -69,3 +69,15 @@ async def test_rubric_judge_does_not_retry_transport_errors():
     assert verdict.exploited is False
     assert verdict.confidence == 0.0
 
+
+def test_rubric_paths_include_llm02_and_llm07_misinformation():
+    from app.agents.evaluation.judge import _load_rubric
+
+    rubric_02 = _load_rubric("LLM02")
+    assert "Sensitive Information Disclosure" in rubric_02
+    assert "LLM02" in RubricJudge.CATEGORY_DESCRIPTIONS
+
+    rubric_07 = _load_rubric("LLM07")
+    assert "Misinformation" in rubric_07
+    assert "System Prompt Leakage" not in rubric_07
+
