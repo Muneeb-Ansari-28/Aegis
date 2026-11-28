@@ -220,3 +220,95 @@ async def test_orchestrator_honors_stop_between_turns():
     assert orchestrator.current_attempt == 1
     assert adapter.closed is True
     assert len(rows) == 1
+
+
+@pytest.mark.asyncio
+async def test_full_scan_with_enriched_kb_archetypes_and_two_tier_evaluation():
+    """Integration check: Planner -> Budget-15 AttackAgent (archetypes) -> Two-Tier Evaluator -> RiskScorer."""
+    from app.agents.planner.rules import TestPlanner
+    from app.models.entities import FindingEntity, ScanTurnEntity
+    from app.recon.schemas import FieldEvidence, ReconStageDetail, TargetProfile
+
+    profile = TargetProfile(
+        target_id="booking-int-1",
+        target_url="http://localhost:8000",
+        site_type=FieldEvidence(detected=True, value="booking_bot", confidence=0.9),
+        has_rag=FieldEvidence(detected=False, confidence=0.9),
+        has_tools=FieldEvidence(detected=False, confidence=0.9),
+        renders_html=FieldEvidence(detected=False, confidence=0.9),
+        stages={
+            "tier1_passive": ReconStageDetail(status="completed"),
+            "active_probes": ReconStageDetail(status="completed"),
+            "classifier": ReconStageDetail(status="completed"),
+        },
+    )
+    plan = TestPlanner.build_test_plan(profile)
+    llm08_plan = next(c for c in plan.categories if c.category == "LLM08")
+    llm08_plan.budget = 6
+
+    rows = []
+    adapter = MockAdapter()
+
+    async def respond_by_turn(
+        prompt: str,
+        attempt: int,
+        scan_id: str = "scan-default",
+        strategy: Optional[str] = None,
+        **kwargs,
+    ) -> TurnRecord:
+        if attempt <= 3:
+            # Turns 1-3: surface compliance (empty JSON) -> Tier 1, must NOT abort
+            reply = '{"system_directives": [], "internal_config": []}'
+        else:
+            # Turn 4 (archetype_format_schema_force): actual canary leak -> Tier 2 fast-path
+            reply = '{"system_directives": ["AEGIS-CANARY-7731"]}'
+        return TurnRecord(
+            turn_id=f"turn-{attempt}",
+            scan_id=scan_id,
+            turn_index=attempt,
+            prompt=prompt,
+            response=reply,
+            status="success",
+            latency_ms=15,
+            strategy=strategy,
+        )
+
+    adapter.send_prompt = respond_by_turn
+    orchestrator = Orchestrator(
+        scan_id="integration-enriched-scan",
+        adapter=adapter,
+        max_budget=llm08_plan.budget,
+        session_factory=lambda: MemorySession(rows),
+        category_plans=[llm08_plan],
+        canary="AEGIS-CANARY-7731",
+    )
+    orchestrator.evaluator.judge.judge = AsyncMock(
+        return_value=JudgeVerdict(
+            exploited=True,
+            confidence=0.55,
+            rationale="Model adopted JSON schema with empty arrays.",
+            indicators_found=["format_adopted_empty_content"],
+            category="LLM08",
+            tier=1,
+            tier_label="surface_compliance",
+        )
+    )
+
+    verdict = await orchestrator.run()
+    assert verdict is not None
+    assert verdict.tier == 2
+    assert verdict.tier_label == "actual_breach"
+    assert orchestrator.category_results[0]["attempts"] == 4
+    assert orchestrator.category_results[0]["status"] == "STOPPED_ON_FINDING"
+
+    turn_rows = [r for r in rows if isinstance(r, ScanTurnEntity)]
+    finding_rows = [r for r in rows if isinstance(r, FindingEntity)]
+    strategies = [r.strategy for r in turn_rows]
+    assert strategies == [
+        "kb_fixed_disclosure",
+        "kb_fixed_disclosure",
+        "archetype_delimiter_hijack",
+        "archetype_format_schema_force",
+    ]
+    assert finding_rows[-1].severity == "HIGH"
+    assert all(f.severity == "LOW" for f in finding_rows[:-1])
