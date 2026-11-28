@@ -202,3 +202,15 @@ def test_prompt_metadata_filter_prioritizes_domain_and_skips_non_attack(tmp_path
     booking_profile = make_profile(site_type="booking_bot")
     selected = PromptMetadataFilter.get_applicable_prompts("LLM01", booking_profile, library_root=lib_root)
     assert selected == ["booking_01", "common_01"]
+
+
+def test_prompt_metadata_filter_llm08_includes_research_and_llm07_excludes_legacy():
+    booking_profile = make_profile(site_type="booking_bot")
+    llm08_ids = PromptMetadataFilter.get_applicable_prompts("LLM08", booking_profile)
+    assert llm08_ids[0].startswith("booking_llm08_")
+    assert "booking_llm08_discount_rules_001" in llm08_ids
+    assert any(pid.startswith("llm08_research_") for pid in llm08_ids)
+
+    llm07_ids = PromptMetadataFilter.get_applicable_prompts("LLM07", booking_profile)
+    assert not any(pid.startswith("llm07_direct_") for pid in llm07_ids)
+    assert not any(pid.startswith("llm07_roleplay_") for pid in llm07_ids)

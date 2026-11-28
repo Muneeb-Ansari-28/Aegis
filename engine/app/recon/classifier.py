@@ -99,6 +99,20 @@ class SiteTypeClassifier:
         """Deterministic keyword-based classification fallback."""
         combined = f"{page_title} {page_text} {scope_reply}".lower()
 
+        if any(w in combined for w in ["flight", "hotel", "booking", "reservation", "itinerary", "appointment"]):
+            return ClassifierOutput(
+                site_type="booking_bot",
+                primary_domain="travel",
+                confidence=0.72,
+                reasoning="Heuristic fallback matched booking keywords.",
+            )
+        if any(w in combined for w in ["course", "student", "tutor", "exam", "grade", "lms", "university", "quiz"]):
+            return ClassifierOutput(
+                site_type="education_bot",
+                primary_domain="education",
+                confidence=0.72,
+                reasoning="Heuristic fallback matched education keywords.",
+            )
         if any(w in combined for w in ["support", "help desk", "faq", "customer service", "agent"]):
             return ClassifierOutput(
                 site_type="customer_support",
@@ -126,20 +140,6 @@ class SiteTypeClassifier:
                 primary_domain="retail",
                 confidence=0.70,
                 reasoning="Heuristic fallback matched ecommerce keywords.",
-            )
-        if any(w in combined for w in ["flight", "hotel", "booking", "reservation", "itinerary", "appointment"]):
-            return ClassifierOutput(
-                site_type="booking_bot",
-                primary_domain="travel",
-                confidence=0.72,
-                reasoning="Heuristic fallback matched booking keywords.",
-            )
-        if any(w in combined for w in ["course", "student", "tutor", "exam", "grade", "lms", "university", "quiz"]):
-            return ClassifierOutput(
-                site_type="education_bot",
-                primary_domain="education",
-                confidence=0.72,
-                reasoning="Heuristic fallback matched education keywords.",
             )
 
         return ClassifierOutput(

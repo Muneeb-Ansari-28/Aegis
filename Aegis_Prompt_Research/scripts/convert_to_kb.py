@@ -86,12 +86,24 @@ DOMAIN_CATEGORIES = (
 )
 
 
+_JAILBREAK_PROMPT_PATTERNS = (
+    re.compile(r"\bdo anything now\b", re.IGNORECASE),
+    re.compile(r"\bdan\b", re.IGNORECASE),
+    re.compile(r"\bjailbreak\b", re.IGNORECASE),
+    re.compile(r"immerse yourself into the role", re.IGNORECASE),
+    re.compile(r"always intelligent and machiavellian", re.IGNORECASE),
+)
+
+
 def _is_jailbreak(record: Dict[str, Any]) -> bool:
     haystack = " ".join(
         str(record.get(k, "") or "")
         for k in ("attack_type", "attack_technique", "vulnerability_subcategory", "source_file", "notes")
     ).lower()
-    return any(kw in haystack for kw in JAILBREAK_KEYWORDS)
+    if any(kw in haystack for kw in JAILBREAK_KEYWORDS):
+        return True
+    prompt_text = str(record.get("original_prompt", "") or "")
+    return any(pat.search(prompt_text) for pat in _JAILBREAK_PROMPT_PATTERNS)
 
 
 def _has_concrete_prompt(text: Any) -> bool:

@@ -38,6 +38,11 @@ _NON_ATTACK_LIBRARY_FILES = frozenset({
     "supporting_strategies.json",
 })
 
+_LEGACY_2025_DISCLOSURE_FILES = frozenset({
+    "llm07_direct_disclosure.json",
+    "llm07_disclosure_request.json",
+})
+
 _SITE_TYPE_ALIASES = {
     "booking_bot": "booking",
     "booking": "booking",
@@ -86,6 +91,8 @@ class PromptMetadataFilter:
             is_domain_file = len(rel_parts) >= 2 and rel_parts[0] == "domains"
             if is_domain_file and (not norm_site or rel_parts[1] != norm_site):
                 continue
+            if target_cat == "LLM07" and json_path.name in _LEGACY_2025_DISCLOSURE_FILES:
+                continue
 
             try:
                 with open(json_path, "r", encoding="utf-8-sig") as f:
@@ -113,7 +120,11 @@ class PromptMetadataFilter:
 
                     matches_category = False
                     if target_cat == "LLM08":
-                        if rec_cat_upper in ("LLM08", "LLM07") or id_upper.startswith(("LLM08", "LLM07")):
+                        is_legacy_2025_disclosure = (
+                            json_path.name in _LEGACY_2025_DISCLOSURE_FILES
+                            or (material_type is None and (rec_cat_upper == "LLM07" or id_upper.startswith("LLM07")))
+                        )
+                        if rec_cat_upper == "LLM08" or id_upper.startswith("LLM08") or is_legacy_2025_disclosure:
                             matches_category = True
                     elif target_cat == "LLM09":
                         if rec_cat_upper == "LLM09" or id_upper.startswith("LLM09"):
@@ -129,7 +140,11 @@ class PromptMetadataFilter:
 
                     allowed_techniques = _ALLOWED_TECHNIQUES.get(target_cat)
                     technique = prompt_record.get("technique")
-                    if allowed_techniques is not None and technique not in allowed_techniques:
+                    if (
+                        allowed_techniques is not None
+                        and material_type != "attack_payloads"
+                        and technique not in allowed_techniques
+                    ):
                         continue
 
                     # Evaluate 'requires' rules

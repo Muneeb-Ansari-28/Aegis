@@ -33,11 +33,11 @@ async def test_classifier_deterministic_fallback():
     )
     assert res3.site_type == "general_assistant"
 
-    # Booking bot keywords
+    # Booking bot keywords (including "agent" in scope_reply should still classify as booking_bot)
     res4 = classifier._deterministic_fallback(
         page_title="SkyReserve",
         page_text="Manage your flight booking, hotel reservation, and itinerary.",
-        scope_reply="I can look up your reservation.",
+        scope_reply="I am your travel booking agent.",
     )
     assert res4.site_type == "booking_bot"
     assert res4.primary_domain == "travel"
