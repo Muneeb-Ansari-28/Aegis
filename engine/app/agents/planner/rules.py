@@ -128,7 +128,7 @@ class TestPlanner:
             category="LLM08",
             name=cat_def.name,
             priority=priority,
-            budget=10,
+            budget=15,
             status="scheduled",
             implementation_status="implemented",
             testability="ready",
@@ -189,7 +189,7 @@ class TestPlanner:
             priority = 1
             selectable = True
             status = "scheduled"
-            budget = 6
+            budget = 10
         elif not profile.has_tools.detected and profile.has_tools.confidence >= 0.85:
             applicability = "not_applicable"
             reason = "Not applicable (recon: affirmative proof target does not expose external tools)."
@@ -239,7 +239,7 @@ class TestPlanner:
             category="LLM10",
             name=cat_def.name,
             priority=priority,
-            budget=4,
+            budget=8,
             status="scheduled",
             implementation_status="implemented",
             testability="ready",
@@ -256,7 +256,7 @@ class TestPlanner:
             category="LLM01",
             name=cat_def.name,
             priority=priority,
-            budget=8,
+            budget=15,
             status="scheduled",
             implementation_status="implemented",
             testability="ready",

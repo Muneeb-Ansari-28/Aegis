@@ -52,7 +52,7 @@ def test_planner_schedules_llm08_hidden_context_exposure():
     assert llm08.testability == "ready"
     assert llm08.applicability == "applicable"
     assert llm08.selectable is True
-    assert llm08.budget == 10
+    assert llm08.budget == 15
     assert llm08.priority == 1
     assert len(llm08.planned_prompt_ids) > 0
 
