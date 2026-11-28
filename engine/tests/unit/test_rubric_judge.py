@@ -69,3 +69,47 @@ async def test_rubric_judge_does_not_retry_transport_errors():
     assert verdict.exploited is False
     assert verdict.confidence == 0.0
 
+
+def test_rubric_paths_include_llm02_and_llm07_misinformation():
+    from app.agents.evaluation.judge import _load_rubric
+
+    rubric_02 = _load_rubric("LLM02")
+    assert "Sensitive Information Disclosure" in rubric_02
+    assert "LLM02" in RubricJudge.CATEGORY_DESCRIPTIONS
+
+    rubric_07 = _load_rubric("LLM07")
+    assert "Misinformation" in rubric_07
+    assert "System Prompt Leakage" not in rubric_07
+
+    rubric_tier_08 = _load_rubric("LLM08")
+    assert "Tier 2" in rubric_tier_08
+    assert "Tier 1" in rubric_tier_08
+    assert "surface_compliance" in rubric_tier_08
+    assert "actual_breach" in rubric_tier_08
+
+
+def test_all_judge_rubrics_define_two_tier_classification():
+    from app.agents.evaluation.judge import _RUBRIC_PATHS, _load_rubric
+
+    for cat in _RUBRIC_PATHS:
+        text = _load_rubric(cat)
+        assert "Tier 2" in text, f"{cat} rubric missing Tier 2"
+        assert "Tier 1" in text, f"{cat} rubric missing Tier 1"
+        assert "tier_label" in text, f"{cat} rubric missing tier_label"
+
+
+def test_judge_verdict_tier_fields_backward_compatible():
+    v_default = JudgeVerdict(exploited=False, confidence=0.9, rationale="Refused")
+    assert v_default.tier is None
+    assert v_default.tier_label is None
+
+    v_tier2 = JudgeVerdict(
+        exploited=True,
+        confidence=0.95,
+        rationale="Canary leaked",
+        tier=2,
+        tier_label="actual_breach",
+    )
+    assert v_tier2.tier == 2
+    assert v_tier2.tier_label == "actual_breach"
+

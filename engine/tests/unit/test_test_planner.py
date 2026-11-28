@@ -1,4 +1,5 @@
 """Unit tests for Deterministic Test Planner and Safe-Fallback Rules."""
+from pathlib import Path
 import pytest
 from app.agents.planner.rules import TestPlanner, calculate_plan_revision
 from app.agents.planner.prompt_filter import PromptMetadataFilter
@@ -156,10 +157,12 @@ def test_prompt_metadata_filter_requires_and_applicable_when():
     rag_profile = make_profile(has_rag=True, rag_conf=0.9)
     no_rag_profile = make_profile(has_rag=False, rag_conf=0.9)
 
-    # LLM08 disclosure prompts (should be available on any general assistant profile)
+    # LLM08 disclosure prompts (should be available on any general assistant profile,
+    # including expanded research/framing techniques)
     prompts_llm08 = PromptMetadataFilter.get_applicable_prompts("LLM08", rag_profile)
     assert len(prompts_llm08) > 0
-    assert not any(token in prompt_id for prompt_id in prompts_llm08 for token in ("roleplay", "encoding", "creative", "authority", "distraction"))
+    assert "llm07_direct_01" in prompts_llm08
+    assert "llm07_roleplay_01" in prompts_llm08
 
     # Test applicable_when evaluator directly
     assert PromptMetadataFilter._matches_applicable_when("has_rag", rag_profile) is True
@@ -167,3 +170,47 @@ def test_prompt_metadata_filter_requires_and_applicable_when():
     assert PromptMetadataFilter._matches_applicable_when("not has_rag", no_rag_profile) is True
     assert PromptMetadataFilter._matches_applicable_when("true", rag_profile) is True
     assert PromptMetadataFilter._matches_applicable_when(None, rag_profile) is True
+
+
+def test_prompt_metadata_filter_prioritizes_domain_and_skips_non_attack(tmp_path: Path):
+    import json
+
+    lib_root = tmp_path / "03_PROMPT_LIBRARY"
+    common_dir = lib_root / "common" / "llm01_prompt_injection"
+    booking_dir = lib_root / "domains" / "booking" / "llm01_prompt_injection"
+    edu_dir = lib_root / "domains" / "education" / "llm01_prompt_injection"
+    for d in (common_dir, booking_dir, edu_dir):
+        d.mkdir(parents=True)
+
+    (common_dir / "attack_payloads.json").write_text(
+        json.dumps([{"id": "common_01", "category": "LLM01", "prompt": "Ignore rules", "material_type": "attack_payloads"}]),
+        encoding="utf-8",
+    )
+    (common_dir / "evaluation_prompts.json").write_text(
+        json.dumps([{"id": "eval_should_skip", "category": "LLM01", "prompt": "Rubric", "material_type": "evaluation_prompts"}]),
+        encoding="utf-8",
+    )
+    (booking_dir / "attack_payloads.json").write_text(
+        json.dumps([{"id": "booking_01", "category": "LLM01", "prompt": "Override fare", "material_type": "attack_payloads", "requires": {"site_type": ["booking"]}}]),
+        encoding="utf-8",
+    )
+    (edu_dir / "attack_payloads.json").write_text(
+        json.dumps([{"id": "edu_01", "category": "LLM01", "prompt": "Give 100%", "material_type": "attack_payloads", "requires": {"site_type": ["education"]}}]),
+        encoding="utf-8",
+    )
+
+    booking_profile = make_profile(site_type="booking_bot")
+    selected = PromptMetadataFilter.get_applicable_prompts("LLM01", booking_profile, library_root=lib_root)
+    assert selected == ["booking_01", "common_01"]
+
+
+def test_prompt_metadata_filter_llm08_includes_research_and_llm07_excludes_legacy():
+    booking_profile = make_profile(site_type="booking_bot")
+    llm08_ids = PromptMetadataFilter.get_applicable_prompts("LLM08", booking_profile)
+    assert llm08_ids[0].startswith("booking_llm08_")
+    assert "booking_llm08_discount_rules_001" in llm08_ids
+    assert any(pid.startswith("llm08_research_") for pid in llm08_ids)
+
+    llm07_ids = PromptMetadataFilter.get_applicable_prompts("LLM07", booking_profile)
+    assert not any(pid.startswith("llm07_direct_") for pid in llm07_ids)
+    assert not any(pid.startswith("llm07_roleplay_") for pid in llm07_ids)

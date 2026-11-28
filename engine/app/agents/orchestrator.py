@@ -66,9 +66,10 @@ class Orchestrator:
         self.state = ScanState.QUEUED
         self.canary = canary
         self.known_prompt = known_prompt
-        self.attack_agent: Any = AttackAgent(
+        self.attack_agent: Any = self._build_attack_agent(
             category=self.category,
-            applicable_prompt_ids=self.category_plans[0].planned_prompt_ids,
+            prompt_ids=self.category_plans[0].planned_prompt_ids,
+            budget=self.category_plans[0].budget,
         )
         self.evaluator: Any = Evaluator(canary=canary, known_prompt=known_prompt)
         self._session_factory = session_factory
@@ -87,6 +88,20 @@ class Orchestrator:
             }
             for plan in self.category_plans
         ]
+
+    @staticmethod
+    def _build_attack_agent(category: str, prompt_ids: List[str], budget: int) -> Any:
+        """Instantiate AttackAgent with budget, falling back cleanly for legacy test doubles."""
+        try:
+            return AttackAgent(
+                category=category,
+                applicable_prompt_ids=prompt_ids,
+                budget=budget,
+            )
+        except TypeError as err:
+            if "budget" in str(err) or "positional" in str(err):
+                return AttackAgent(category=category, applicable_prompt_ids=prompt_ids)
+            raise
 
     def stop(self) -> None:
         """Request that the scan stop at the next turn boundary."""
@@ -128,7 +143,11 @@ class Orchestrator:
                     verdict_cat = cat
                 else:
                     verdict_cat = verdict_cat.strip().upper()
-                severity = RiskScorer.compute_severity(verdict_cat, verdict.confidence)
+                severity = RiskScorer.compute_severity(
+                    verdict_cat,
+                    verdict.confidence,
+                    tier=getattr(verdict, "tier", None),
+                )
                 session.add(FindingEntity(
                     id=str(uuid.uuid4()), scan_id=self.scan_id, turn_id=row.id,
                     category=verdict_cat, severity=severity,
@@ -154,9 +173,10 @@ class Orchestrator:
         self.category = plan.category.upper()
         self.current_category = plan.category
         if index > 0:
-            self.attack_agent = AttackAgent(
+            self.attack_agent = self._build_attack_agent(
                 category=plan.category,
-                applicable_prompt_ids=plan.planned_prompt_ids,
+                prompt_ids=plan.planned_prompt_ids,
+                budget=plan.budget,
             )
             self.evaluator = Evaluator(canary=self.canary, known_prompt=self.known_prompt)
         await self._publish_category_results()
@@ -167,6 +187,7 @@ class Orchestrator:
             raise RuntimeError("No adapter is configured for this category.")
         self.adapter = adapter
         category_verdict: Optional[JudgeVerdict] = None
+        best_verdict: Optional[JudgeVerdict] = None
         previous_feedback: Optional[str] = None
         result_status = "COMPLETED"
         try:
@@ -211,7 +232,10 @@ class Orchestrator:
                 category_verdict = await self.evaluator.evaluate(turn) if turn.status == "success" else None
                 await self._persist_turn_async(turn, category_verdict)
                 result["attempts"] = attempt_in_category
-                result["exploited"] = bool(category_verdict and category_verdict.exploited)
+                if category_verdict and category_verdict.exploited:
+                    result["exploited"] = True
+                    if best_verdict is None or getattr(category_verdict, "tier", 2) == 2:
+                        best_verdict = category_verdict
                 await self._emit(
                     "turn_completed",
                     attempt=self.current_attempt,
@@ -229,7 +253,8 @@ class Orchestrator:
                     result_status = "FAILED"
                     result["error"] = turn.metadata.get("error") or turn.response
                     break
-                if category_verdict and category_verdict.exploited:
+                # Only stop early on Tier 2 actual breaches; continue probing if only Tier 1 surface compliance was seen
+                if category_verdict and category_verdict.exploited and getattr(category_verdict, "tier", 2) != 1:
                     result_status = "STOPPED_ON_FINDING"
                     break
                 previous_feedback = category_verdict.rationale if category_verdict else None
@@ -254,7 +279,7 @@ class Orchestrator:
             exploited=result["exploited"],
             error=result["error"],
         )
-        return category_verdict if category_verdict and category_verdict.exploited else None
+        return best_verdict
 
     async def run(self):
         """Execute every selected category and aggregate their terminal outcomes."""

@@ -8,10 +8,48 @@ from app.recon.schemas import TargetProfile
 
 logger = logging.getLogger(__name__)
 
-# The currently implemented LLM08 evaluator supports direct disclosure requests.
-# More aggressive techniques remain unavailable until separately designed and reviewed.
-_ALLOWED_TECHNIQUES = {
-    "LLM08": {"direct_disclosure_request"},
+# Allowed techniques per category (None = all techniques allowed).
+_ALLOWED_TECHNIQUES: Dict[str, Optional[set]] = {
+    "LLM08": {
+        "direct_disclosure_request",
+        "developer_troubleshooting_framing",
+        "maintenance_mode_framing",
+        "base64_encoded_extraction",
+        "translation_pivot_extraction",
+        "instruction_inversion",
+        "prefix_continuation",
+        "json_schema_forcing",
+        "xml_tag_extraction",
+        "authority_urgency_framing",
+        "rule_inversion_distraction",
+        "prefix_forced_repetition",
+        "many_shot_context_saturation",
+    },
+    "LLM01": None,
+    "LLM03": None,
+    "LLM10": None,
+    "LLM02": None,
+    "LLM07": None,
+}
+
+_NON_ATTACK_LIBRARY_FILES = frozenset({
+    "evaluation_prompts.json",
+    "attack_generation.json",
+    "supporting_strategies.json",
+})
+
+_LEGACY_2025_DISCLOSURE_FILES = frozenset({
+    "llm07_direct_disclosure.json",
+    "llm07_disclosure_request.json",
+})
+
+_SITE_TYPE_ALIASES = {
+    "booking_bot": "booking",
+    "booking": "booking",
+    "ecommerce_bot": "ecommerce",
+    "ecommerce": "ecommerce",
+    "education_bot": "education",
+    "education": "education",
 }
 
 KB_PROMPTS_ROOT = Path(__file__).parent.parent.parent / "kb" / "03_PROMPT_LIBRARY"
@@ -35,14 +73,27 @@ class PromptMetadataFilter:
         matching the specified category and satisfying profile prerequisites.
         """
         root = library_root or KB_PROMPTS_ROOT
-        applicable_ids: List[str] = []
+        domain_ids: List[str] = []
+        universal_ids: List[str] = []
         target_cat = (category or "").upper()
+        norm_site = cls._normalize_site_type(profile)
 
         if not root.exists():
-            return applicable_ids
+            return []
 
-        # Look in all JSON files under fixed/, templates/, variations/
         for json_path in sorted(root.glob("**/*.json")):
+            if json_path.name in _NON_ATTACK_LIBRARY_FILES:
+                continue
+            rel_parts = json_path.relative_to(root).parts
+            if any(part in ("common", "domains") for part in rel_parts) and json_path.name != "attack_payloads.json":
+                continue
+
+            is_domain_file = len(rel_parts) >= 2 and rel_parts[0] == "domains"
+            if is_domain_file and (not norm_site or rel_parts[1] != norm_site):
+                continue
+            if target_cat == "LLM07" and json_path.name in _LEGACY_2025_DISCLOSURE_FILES:
+                continue
+
             try:
                 with open(json_path, "r", encoding="utf-8-sig") as f:
                     records = json.load(f)
@@ -51,6 +102,9 @@ class PromptMetadataFilter:
 
                 for prompt_record in records:
                     if not isinstance(prompt_record, dict):
+                        continue
+                    material_type = prompt_record.get("material_type")
+                    if material_type is not None and material_type != "attack_payloads":
                         continue
 
                     record_cat = prompt_record.get("category", "")
@@ -66,7 +120,11 @@ class PromptMetadataFilter:
 
                     matches_category = False
                     if target_cat == "LLM08":
-                        if rec_cat_upper in ("LLM08", "LLM07") or id_upper.startswith(("LLM08", "LLM07")):
+                        is_legacy_2025_disclosure = (
+                            json_path.name in _LEGACY_2025_DISCLOSURE_FILES
+                            or (material_type is None and (rec_cat_upper == "LLM07" or id_upper.startswith("LLM07")))
+                        )
+                        if rec_cat_upper == "LLM08" or id_upper.startswith("LLM08") or is_legacy_2025_disclosure:
                             matches_category = True
                     elif target_cat == "LLM09":
                         if rec_cat_upper == "LLM09" or id_upper.startswith("LLM09"):
@@ -82,7 +140,11 @@ class PromptMetadataFilter:
 
                     allowed_techniques = _ALLOWED_TECHNIQUES.get(target_cat)
                     technique = prompt_record.get("technique")
-                    if allowed_techniques is not None and technique not in allowed_techniques:
+                    if (
+                        allowed_techniques is not None
+                        and material_type != "attack_payloads"
+                        and technique not in allowed_techniques
+                    ):
                         continue
 
                     # Evaluate 'requires' rules
@@ -95,21 +157,44 @@ class PromptMetadataFilter:
                     if not cls._matches_applicable_when(applicable_when, profile):
                         continue
 
-                    if prompt_id not in applicable_ids:
-                        applicable_ids.append(prompt_id)
+                    target_bucket = domain_ids if is_domain_file else universal_ids
+                    if prompt_id not in target_bucket:
+                        target_bucket.append(prompt_id)
             except Exception as e:
                 logger.debug(f"Error reading prompts from {json_path}: {e}")
 
-        return applicable_ids
+        for pid in universal_ids:
+            if pid not in domain_ids:
+                domain_ids.append(pid)
+        return domain_ids
 
     @staticmethod
-    def _matches_requires(requires: Dict[str, Any], profile: TargetProfile) -> bool:
+    def _normalize_site_type(profile: TargetProfile) -> Optional[str]:
+        raw = getattr(profile.site_type, "value", None)
+        if not isinstance(raw, str) or not raw.strip():
+            return None
+        return _SITE_TYPE_ALIASES.get(raw.strip().lower(), raw.strip().lower())
+
+    @classmethod
+    def _matches_requires(cls, requires: Dict[str, Any], profile: TargetProfile) -> bool:
         """
         Check if target profile satisfies prompt requirements.
         If a requirement is null/omitted, it matches any profile.
         """
         if not requires:
             return True
+
+        if "site_type" in requires and requires["site_type"] is not None:
+            norm_site = cls._normalize_site_type(profile)
+            allowed_sites = requires["site_type"]
+            if isinstance(allowed_sites, str):
+                allowed_list = [_SITE_TYPE_ALIASES.get(allowed_sites.lower(), allowed_sites.lower())]
+            elif isinstance(allowed_sites, list):
+                allowed_list = [_SITE_TYPE_ALIASES.get(str(s).lower(), str(s).lower()) for s in allowed_sites]
+            else:
+                allowed_list = []
+            if allowed_list and norm_site not in allowed_list:
+                return False
 
         if "has_rag" in requires and requires["has_rag"] is not None:
             if profile.has_rag.detected != requires["has_rag"]:

@@ -11,3 +11,5 @@ class JudgeVerdict(BaseModel):
     canary_detected: bool = False
     overlap_score: Optional[float] = Field(default=None, ge=0.0, le=1.0)
     category: str = "LLM08"
+    tier: Optional[int] = None
+    tier_label: Optional[str] = None

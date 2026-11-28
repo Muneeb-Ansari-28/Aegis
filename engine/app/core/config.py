@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     BROWSER_TIMEOUT_MS: int = 30000
 
     # Scan Control Budgets
-    MAX_ATTEMPTS_PER_CATEGORY: int = 10
+    MAX_ATTEMPTS_PER_CATEGORY: int = 15
 
     # Database
     DATABASE_URL: str = f"sqlite:///{(get_app_data_dir() / 'db' / 'aegis.db').as_posix()}"

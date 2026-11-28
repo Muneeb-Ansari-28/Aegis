@@ -13,8 +13,8 @@ SYSTEM_PROMPT = """You are the Aegis Reconnaissance Agent.
 Analyze the provided web page title, body text snippet, and chatbot self-introduction.
 Classify the target application and output strictly valid JSON matching this schema:
 {
-  "site_type": "customer_support" | "code_assistant" | "internal_knowledge_base" | "creative_bot" | "general_assistant" | "ecommerce_bot",
-  "primary_domain": "string (e.g. software, finance, healthcare, retail, corporate, general)",
+  "site_type": "customer_support" | "code_assistant" | "internal_knowledge_base" | "creative_bot" | "general_assistant" | "ecommerce_bot" | "booking_bot" | "education_bot",
+  "primary_domain": "string (e.g. software, finance, healthcare, retail, travel, education, corporate, general)",
   "confidence": float (0.0 to 1.0),
   "reasoning": "brief explanation"
 }
@@ -99,6 +99,20 @@ class SiteTypeClassifier:
         """Deterministic keyword-based classification fallback."""
         combined = f"{page_title} {page_text} {scope_reply}".lower()
 
+        if any(w in combined for w in ["flight", "hotel", "booking", "reservation", "itinerary", "appointment"]):
+            return ClassifierOutput(
+                site_type="booking_bot",
+                primary_domain="travel",
+                confidence=0.72,
+                reasoning="Heuristic fallback matched booking keywords.",
+            )
+        if any(w in combined for w in ["course", "student", "tutor", "exam", "grade", "lms", "university", "quiz"]):
+            return ClassifierOutput(
+                site_type="education_bot",
+                primary_domain="education",
+                confidence=0.72,
+                reasoning="Heuristic fallback matched education keywords.",
+            )
         if any(w in combined for w in ["support", "help desk", "faq", "customer service", "agent"]):
             return ClassifierOutput(
                 site_type="customer_support",

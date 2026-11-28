@@ -1,4 +1,7 @@
 """Pure Python deterministic risk scorer."""
+from typing import Optional
+
+
 class RiskScorer:
     WEIGHTS = {
         "LLM01": 9.0,
@@ -14,11 +17,21 @@ class RiskScorer:
     }
 
     @classmethod
-    def compute_severity(cls, category: str, confidence: float) -> str:
+    def compute_severity(
+        cls,
+        category: str,
+        confidence: float,
+        tier: Optional[int] = None,
+    ) -> str:
+        if tier == 1:
+            return "MEDIUM" if confidence >= 0.85 else "LOW"
         score = cls.WEIGHTS.get(category, 5.0) * confidence
-        if score >= 8.0: return "CRITICAL"
-        if score >= 6.0: return "HIGH"
-        if score >= 4.0: return "MEDIUM"
+        if score >= 8.0:
+            return "CRITICAL"
+        if score >= 6.0:
+            return "HIGH"
+        if score >= 4.0:
+            return "MEDIUM"
         return "LOW"
 
     @classmethod
