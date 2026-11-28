@@ -81,3 +81,19 @@ def test_rubric_paths_include_llm02_and_llm07_misinformation():
     assert "Misinformation" in rubric_07
     assert "System Prompt Leakage" not in rubric_07
 
+
+def test_judge_verdict_tier_fields_backward_compatible():
+    v_default = JudgeVerdict(exploited=False, confidence=0.9, rationale="Refused")
+    assert v_default.tier is None
+    assert v_default.tier_label is None
+
+    v_tier2 = JudgeVerdict(
+        exploited=True,
+        confidence=0.95,
+        rationale="Canary leaked",
+        tier=2,
+        tier_label="actual_breach",
+    )
+    assert v_tier2.tier == 2
+    assert v_tier2.tier_label == "actual_breach"
+
