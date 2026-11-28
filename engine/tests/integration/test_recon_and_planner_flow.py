@@ -171,8 +171,10 @@ async def test_full_recon_to_test_plan_pipeline(tmp_path, mem_db):
         scheduled_cats = [c.category for c in test_plan.get_scheduled_categories()]
         assert "LLM08" in scheduled_cats
         assert "LLM01" in scheduled_cats
+        assert "LLM02" in scheduled_cats
+        assert "LLM07" in scheduled_cats
         assert "LLM10" in scheduled_cats
-        assert test_plan.selectable_category_ids == ["LLM01", "LLM08", "LLM10"]
+        assert test_plan.selectable_category_ids == ["LLM01", "LLM02", "LLM07", "LLM08", "LLM10"]
 
         # Verify LLM08 is scheduled and ready
         llm08_plan = next(c for c in test_plan.categories if c.category == "LLM08")

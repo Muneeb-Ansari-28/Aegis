@@ -10,7 +10,7 @@ from app.schemas.verdict import JudgeVerdict
 
 # Categories where non-violent security exploits (canaries, prompt leaks, PII, injection tokens,
 # sandbox escape, markup) are rated 'safe' by Llama-Guard and must not short-circuit Stage 3.
-_TRIAGE_BYPASS_CATEGORIES = frozenset({"LLM01", "LLM02", "LLM03", "LLM08", "LLM10"})
+_TRIAGE_BYPASS_CATEGORIES = frozenset({"LLM01", "LLM02", "LLM03", "LLM07", "LLM08", "LLM10"})
 
 
 class Evaluator:

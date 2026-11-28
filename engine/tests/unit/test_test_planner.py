@@ -142,15 +142,35 @@ def test_selectable_categories_restricted_to_implemented():
     plan = TestPlanner.build_test_plan(profile)
 
     # Implemented categories with complete pipelines and matching prerequisites are selectable
-    assert plan.selectable_category_ids == ["LLM01", "LLM03", "LLM08", "LLM10"]
+    assert plan.selectable_category_ids == ["LLM01", "LLM02", "LLM03", "LLM07", "LLM08", "LLM10"]
     selectable = plan.get_selectable_categories()
-    assert len(selectable) == 4
-    assert [c.category for c in selectable] == ["LLM01", "LLM03", "LLM08", "LLM10"]
+    assert len(selectable) == 6
+    assert [c.category for c in selectable] == ["LLM01", "LLM02", "LLM03", "LLM07", "LLM08", "LLM10"]
 
     # Under-development categories must never be selectable
     under_dev = [c for c in plan.categories if c.implementation_status == "under_development"]
-    assert len(under_dev) == 6
+    assert len(under_dev) == 4
     assert all(not c.selectable for c in under_dev)
+
+
+def test_planner_schedules_llm02_and_llm07_with_curated_prompts():
+    profile = make_profile(site_type="booking_bot")
+    plan = TestPlanner.build_test_plan(profile)
+
+    llm02 = next(c for c in plan.categories if c.category == "LLM02")
+    assert llm02.selectable is True
+    assert llm02.implementation_status == "implemented"
+    assert llm02.budget == 12
+    assert llm02.priority == 2
+    assert llm02.planned_prompt_ids[0].startswith("booking_llm02_")
+
+    llm07 = next(c for c in plan.categories if c.category == "LLM07")
+    assert llm07.selectable is True
+    assert llm07.implementation_status == "implemented"
+    assert llm07.budget == 10
+    assert llm07.priority == 4
+    assert len(llm07.planned_prompt_ids) > 0
+    assert not any(pid.startswith("llm07_direct_") for pid in llm07.planned_prompt_ids)
 
 
 def test_prompt_metadata_filter_requires_and_applicable_when():
