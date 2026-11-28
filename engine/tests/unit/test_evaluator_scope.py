@@ -33,7 +33,7 @@ async def test_llm08_does_not_report_secret_patterns_as_llm02():
 async def test_under_development_category_cannot_produce_finding():
     """Verify under-development categories fail closed and never produce findings."""
     evaluator = Evaluator()
-    for cat in ["LLM02", "LLM04", "LLM05", "LLM06", "LLM07", "LLM09"]:
+    for cat in ["LLM04", "LLM05", "LLM06", "LLM09"]:
         verdict = await evaluator.evaluate(turn(cat, "Example token: AKIA1234567890123456 /root/escaped"))
         assert verdict.exploited is False
         assert verdict.confidence == 0.0

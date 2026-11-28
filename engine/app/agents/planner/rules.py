@@ -54,6 +54,8 @@ class TestPlanner:
                 plan = cls._plan_llm01(profile, cat_def)
             elif cat_def.id == "LLM02":
                 plan = cls._plan_llm02(profile, cat_def)
+            elif cat_def.id == "LLM07":
+                plan = cls._plan_llm07(profile, cat_def)
             else:
                 plan = cls._plan_under_development(profile, cat_def)
 
@@ -126,7 +128,7 @@ class TestPlanner:
             category="LLM08",
             name=cat_def.name,
             priority=priority,
-            budget=10,
+            budget=15,
             status="scheduled",
             implementation_status="implemented",
             testability="ready",
@@ -187,7 +189,7 @@ class TestPlanner:
             priority = 1
             selectable = True
             status = "scheduled"
-            budget = 6
+            budget = 10
         elif not profile.has_tools.detected and profile.has_tools.confidence >= 0.85:
             applicability = "not_applicable"
             reason = "Not applicable (recon: affirmative proof target does not expose external tools)."
@@ -237,7 +239,7 @@ class TestPlanner:
             category="LLM10",
             name=cat_def.name,
             priority=priority,
-            budget=4,
+            budget=8,
             status="scheduled",
             implementation_status="implemented",
             testability="ready",
@@ -254,7 +256,7 @@ class TestPlanner:
             category="LLM01",
             name=cat_def.name,
             priority=priority,
-            budget=8,
+            budget=15,
             status="scheduled",
             implementation_status="implemented",
             testability="ready",
@@ -265,18 +267,35 @@ class TestPlanner:
 
     @classmethod
     def _plan_llm02(cls, profile: TargetProfile, cat_def) -> CategoryPlan:
-        """LLM02: Sensitive Information Disclosure."""
+        """LLM02: Sensitive Information Disclosure. Active implemented assessment scope."""
+        priority = 2 if profile.site_type.value in ("booking_bot", "ecommerce_bot", "education_bot") else 3
         return CategoryPlan(
             category="LLM02",
             name=cat_def.name,
-            priority=3,
-            budget=0,
-            status="not_tested",
-            implementation_status="under_development",
-            testability="not_tested",
+            priority=priority,
+            budget=12,
+            status="scheduled",
+            implementation_status="implemented",
+            testability="ready",
             applicability="applicable",
-            selectable=False,
-            reason="Sensitive information disclosure testing pipeline under development.",
+            selectable=True,
+            reason="Active assessment scope: testing PII, credentials, API keys, and sensitive data disclosure.",
+        )
+
+    @classmethod
+    def _plan_llm07(cls, profile: TargetProfile, cat_def) -> CategoryPlan:
+        """LLM07: Misinformation (OWASP 2026). Active implemented assessment scope."""
+        return CategoryPlan(
+            category="LLM07",
+            name=cat_def.name,
+            priority=4,
+            budget=10,
+            status="scheduled",
+            implementation_status="implemented",
+            testability="ready",
+            applicability="applicable",
+            selectable=True,
+            reason="Active assessment scope: testing misinformation, hallucinated citations, and ungrounded policy claims.",
         )
 
     @classmethod

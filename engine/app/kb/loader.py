@@ -91,13 +91,24 @@ class KBLoader:
         return prompts
 
     @classmethod
-    def _matches_category(cls, record_cat: Optional[str], prompt_id: str, target_cat: str) -> bool:
+    def _matches_category(
+        cls,
+        record_cat: Optional[str],
+        prompt_id: str,
+        target_cat: str,
+        material_type: Optional[str] = None,
+    ) -> bool:
         """Check category matching with support for canonical OWASP 2026 remappings."""
         target = target_cat.upper().strip()
         rec = record_cat.upper().strip() if record_cat else ""
         pid = prompt_id.upper().strip()
+        is_legacy_2025 = material_type is None and (rec == "LLM07" or pid.startswith("LLM07"))
         if target == "LLM08":
-            return rec in ("LLM08", "LLM07") or pid.startswith(("LLM08", "LLM07"))
+            return rec == "LLM08" or pid.startswith("LLM08") or is_legacy_2025
+        if target == "LLM07":
+            if is_legacy_2025:
+                return False
+            return rec == "LLM07" or pid.startswith("LLM07")
         if target == "LLM09":
             return rec == "LLM09" or pid.startswith("LLM09")
         if rec:
@@ -127,7 +138,12 @@ class KBLoader:
             item = library.get(pid.strip())
             if item is None:
                 continue
-            if target_cat and not cls._matches_category(item.get("category"), pid, target_cat):
+            if target_cat and not cls._matches_category(
+                item.get("category"),
+                pid,
+                target_cat,
+                material_type=item.get("raw", {}).get("material_type"),
+            ):
                 logger.warning(
                     "Prompt %s category %s does not match requested %s",
                     pid,
