@@ -6,6 +6,12 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
+_NON_ATTACK_LIBRARY_FILES = frozenset({
+    "evaluation_prompts.json",
+    "attack_generation.json",
+    "supporting_strategies.json",
+})
+
 
 class DuplicatePromptIdError(ValueError):
     """Raised when two KB records claim the same prompt ID."""
@@ -36,6 +42,11 @@ class KBLoader:
             return prompts
 
         for file_path in sorted(library_dir.glob("**/*.json")):
+            if file_path.name in _NON_ATTACK_LIBRARY_FILES:
+                continue
+            rel_parts = file_path.relative_to(library_dir).parts
+            if any(part in ("common", "domains") for part in rel_parts) and file_path.name != "attack_payloads.json":
+                continue
             try:
                 content = file_path.read_text(encoding="utf-8-sig")
                 data = json.loads(content)
@@ -44,6 +55,9 @@ class KBLoader:
                     continue
                 for record in records:
                     if not isinstance(record, dict):
+                        continue
+                    material_type = record.get("material_type")
+                    if material_type is not None and material_type != "attack_payloads":
                         continue
                     prompt_id = record.get("id") or record.get("prompt_id")
                     if not isinstance(prompt_id, str) or not prompt_id.strip():
